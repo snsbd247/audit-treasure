@@ -115,6 +115,7 @@ const AccountingVouchers = () => {
   };
 
   const openCreate = () => {
+    setEditingVoucher(null);
     setFormDate(new Date().toISOString().slice(0, 10));
     setFormBranch(""); setFormFinYear(""); setFormDesc("");
     setEntries([
@@ -122,6 +123,41 @@ const AccountingVouchers = () => {
       { id: "2", account_id: "", debit: 0, credit: 0, narration: "" },
     ]);
     setDialogOpen(true);
+  };
+
+  const openView = async (v: Voucher) => {
+    const { data } = await supabase.from("voucher_entries").select("*, chart_of_accounts:account_id(account_name, account_code)").eq("voucher_id", v.id).order("sort_order");
+    setViewEntries((data || []).map((e: any) => ({ ...e, account_name: e.chart_of_accounts?.account_name || "—", account_code: e.chart_of_accounts?.account_code || "" })));
+    setViewVoucher(v);
+  };
+
+  const openEdit = async (v: Voucher) => {
+    const { data } = await supabase.from("voucher_entries").select("*").eq("voucher_id", v.id).order("sort_order");
+    setEditingVoucher(v);
+    setFormDate(v.voucher_date);
+    setFormBranch(v.branch_id || "");
+    setFormFinYear(v.financial_year_id || "");
+    setFormDesc(v.description || "");
+    setEntries((data || []).map((e: any) => ({
+      id: e.id,
+      account_id: e.account_id,
+      debit: Number(e.debit),
+      credit: Number(e.credit),
+      narration: e.narration || "",
+    })));
+    setDialogOpen(true);
+  };
+
+  const canEditVoucher = (v: Voucher) => {
+    if (v.status === "draft" || v.status === "rejected") return userCanEdit;
+    if (v.status === "approved") return isSuperAdmin;
+    return false;
+  };
+
+  const canDeleteVoucher = (v: Voucher) => {
+    if (v.status === "draft" || v.status === "rejected") return userCanDelete;
+    if (v.status === "approved") return isSuperAdmin;
+    return false;
   };
 
   const handleSave = async (submitForApproval: boolean) => {
