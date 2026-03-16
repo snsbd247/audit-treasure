@@ -443,7 +443,51 @@ const BackupPage = () => {
         </Card>
       </div>
 
-      {/* Schedule Settings */}
+      {/* Google Drive Cloud Backup */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2"><Cloud className="w-4 h-4" />Google Drive Backup</CardTitle>
+          <CardDescription>Upload backups to Google Drive for offsite cloud storage</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {cloudConfigured === false ? (
+            <div className="p-4 rounded-lg border border-border bg-muted/50 space-y-2">
+              <p className="text-sm font-medium text-foreground">Google Drive not configured</p>
+              <p className="text-xs text-muted-foreground">To enable cloud backup, add the following secrets in Supabase Edge Function settings:</p>
+              <ul className="text-xs text-muted-foreground list-disc pl-4 space-y-1">
+                <li><code className="bg-muted px-1 rounded">GOOGLE_CLIENT_ID</code> — From Google Cloud Console</li>
+                <li><code className="bg-muted px-1 rounded">GOOGLE_CLIENT_SECRET</code> — From Google Cloud Console</li>
+                <li><code className="bg-muted px-1 rounded">GOOGLE_REFRESH_TOKEN</code> — Generated via OAuth playground</li>
+              </ul>
+            </div>
+          ) : (
+            <>
+              <Button onClick={handleCloudBackup} disabled={cloudUploading || exporting || restoring}>
+                <Cloud className="w-4 h-4 mr-2" />{cloudUploading ? "Uploading to Drive..." : "Backup to Google Drive"}
+              </Button>
+              {cloudFiles.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground">Recent Cloud Backups:</p>
+                  {cloudFiles.slice(0, 5).map((f: any) => (
+                    <div key={f.id} className="flex items-center justify-between text-xs p-2 rounded border border-border">
+                      <span className="font-mono truncate max-w-[300px]">{f.name}</span>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <span>{f.createdTime ? new Date(f.createdTime).toLocaleDateString() : ""}</span>
+                        {f.webViewLink && (
+                          <a href={f.webViewLink} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                            View
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+
       {settings && (
         <Card>
           <CardHeader>
