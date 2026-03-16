@@ -26,6 +26,7 @@ interface Unit { id: string; name: string; abbreviation: string; }
 
 const ItemMasterPage = () => {
   const [items, setItems] = useState<Item[]>([]);
+  const { fc } = useCurrency();
   const [categories, setCategories] = useState<Category[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(true);
