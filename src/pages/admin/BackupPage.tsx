@@ -61,6 +61,9 @@ const BackupPage = () => {
   const [confirmRestore, setConfirmRestore] = useState(false);
   const [restoreFile, setRestoreFile] = useState<File | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [cloudUploading, setCloudUploading] = useState(false);
+  const [cloudFiles, setCloudFiles] = useState<any[]>([]);
+  const [cloudConfigured, setCloudConfigured] = useState<boolean | null>(null);
 
   const fetchHistory = useCallback(async () => {
     setLoadingHistory(true);
