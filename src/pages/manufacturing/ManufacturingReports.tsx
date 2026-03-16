@@ -143,10 +143,10 @@ const ManufacturingReports = () => {
                   <TableRow key={p.id}>
                     <TableCell className="font-geist-mono text-xs">{p.production_number}</TableCell>
                     <TableCell className="font-medium">{p.product_name}</TableCell>
-                    <TableCell className="text-right tabular-nums">{Number(p.raw_material_cost).toLocaleString()}</TableCell>
-                    <TableCell className="text-right tabular-nums">{Number(p.labor_cost).toLocaleString()}</TableCell>
-                    <TableCell className="text-right tabular-nums">{Number(p.electricity_cost).toLocaleString()}</TableCell>
-                    <TableCell className="text-right tabular-nums font-medium">{Number(p.total_cost).toLocaleString()}</TableCell>
+                    <TableCell className="text-right tabular-nums">{fc(Number(p.raw_material_cost))}</TableCell>
+                    <TableCell className="text-right tabular-nums">{fc(Number(p.labor_cost))}</TableCell>
+                    <TableCell className="text-right tabular-nums">{fc(Number(p.electricity_cost))}</TableCell>
+                    <TableCell className="text-right tabular-nums font-medium">{fc(Number(p.total_cost))}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

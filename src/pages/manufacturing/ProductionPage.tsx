@@ -202,7 +202,7 @@ const ProductionPage = () => {
               <div className="space-y-2"><Label>Labor Cost</Label><Input type="number" value={formLabor} onChange={(e) => setFormLabor(e.target.value)} /></div>
               <div className="space-y-2"><Label>Electricity Cost</Label><Input type="number" value={formElec} onChange={(e) => setFormElec(e.target.value)} /></div>
               <div className="space-y-2"><Label>Total Production Cost</Label>
-                <div className="h-10 flex items-center px-3 rounded-md bg-muted text-foreground font-medium tabular-nums">{totalCost.toLocaleString()}</div></div>
+                <div className="h-10 flex items-center px-3 rounded-md bg-muted text-foreground font-medium tabular-nums">{fc(totalCost)}</div></div>
             </div>
             <div className="space-y-2"><Label>Notes</Label><Input value={formNotes} onChange={(e) => setFormNotes(e.target.value)} /></div>
           </div>
