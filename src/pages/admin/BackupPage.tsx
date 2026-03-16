@@ -58,7 +58,7 @@ const BackupPage = () => {
       let restored = 0;
       for (const table of TABLES) {
         if (data[table] && data[table].length > 0) {
-          const { error } = await supabase.from(table).upsert(data[table], { onConflict: "id" });
+          const { error } = await supabase.from(table as any).upsert(data[table] as any, { onConflict: "id" } as any);
           if (error) console.warn(`Error restoring ${table}: ${error.message}`);
           else restored++;
         }
