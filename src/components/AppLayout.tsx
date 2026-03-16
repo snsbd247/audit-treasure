@@ -1,6 +1,7 @@
 import { Outlet } from "react-router-dom";
 import { AppSidebar } from "@/components/AppSidebar";
 import { TopNavbar } from "@/components/TopNavbar";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 export const AppLayout = () => {
   return (
@@ -8,6 +9,7 @@ export const AppLayout = () => {
       <AppSidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <TopNavbar />
+        <Breadcrumbs />
         <main className="flex-1 overflow-auto">
           <Outlet />
         </main>
