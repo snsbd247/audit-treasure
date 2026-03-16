@@ -25,6 +25,8 @@ const GeneralSettingsPage = () => {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const { refetch: refetchCurrency } = useCurrency();
+  const { modules, isModuleEnabled, toggleModule } = useModules();
+  const { isSuperAdmin } = useAuth();
 
   useEffect(() => {
     const init = async () => {
