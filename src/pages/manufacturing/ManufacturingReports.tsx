@@ -122,7 +122,7 @@ const ManufacturingReports = () => {
                     <TableCell>{c.production_date}</TableCell>
                     <TableCell className="font-medium">{c.material_name}</TableCell>
                     <TableCell className="text-right tabular-nums">{Number(c.quantity)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{Number(c.cost).toLocaleString()}</TableCell>
+                    <TableCell className="text-right tabular-nums">{fc(Number(c.cost))}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
