@@ -21,6 +21,7 @@ const GeneralSettingsPage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const { refetch: refetchCurrency } = useCurrency();
 
   useEffect(() => {
     const init = async () => {
