@@ -50,8 +50,8 @@ const CashBookPage = () => {
                   <TableCell className="font-mono text-xs">{e.voucher?.voucher_number}</TableCell>
                   <TableCell>{e.voucher?.voucher_date}</TableCell>
                   <TableCell>{e.voucher?.voucher_type}</TableCell>
-                  <TableCell className="text-right tabular-nums">{Number(e.debit) > 0 ? Number(e.debit).toLocaleString() : "—"}</TableCell>
-                  <TableCell className="text-right tabular-nums">{Number(e.credit) > 0 ? Number(e.credit).toLocaleString() : "—"}</TableCell>
+                  <TableCell className="text-right tabular-nums">{Number(e.debit) > 0 ? fc(Number(e.debit)) : "—"}</TableCell>
+                  <TableCell className="text-right tabular-nums">{Number(e.credit) > 0 ? fc(Number(e.credit)) : "—"}</TableCell>
                 </TableRow>
               ))}
               {entries.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No cash transactions found</TableCell></TableRow>}

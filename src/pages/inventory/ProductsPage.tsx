@@ -147,8 +147,8 @@ const ProductsPage = () => {
                   <TableCell className="font-geist-mono text-xs">{p.product_code}</TableCell>
                   <TableCell className="text-muted-foreground">{p.category_name || "—"}</TableCell>
                   <TableCell>{p.unit}</TableCell>
-                  <TableCell className="text-right tabular-nums">{p.cost_price.toLocaleString()}</TableCell>
-                  <TableCell className="text-right tabular-nums font-medium">{p.selling_price.toLocaleString()}</TableCell>
+                  <TableCell className="text-right tabular-nums">{fc(p.cost_price)}</TableCell>
+                  <TableCell className="text-right tabular-nums font-medium">{fc(p.selling_price)}</TableCell>
                   <TableCell><Badge variant={p.status === "active" ? "default" : "secondary"}>{p.status}</Badge></TableCell>
                   <TableCell>
                     {hasPermission("Inventory", "can_edit") && (

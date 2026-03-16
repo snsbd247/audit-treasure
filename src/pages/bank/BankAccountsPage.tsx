@@ -43,7 +43,7 @@ const BankAccountsPage = () => {
                   <TableCell className="font-mono text-xs">{a.account_code}</TableCell>
                   <TableCell className="font-medium">{a.account_name}</TableCell>
                   <TableCell>{a.account_type}</TableCell>
-                  <TableCell className="text-right tabular-nums">{Number(a.opening_balance).toLocaleString()}</TableCell>
+                  <TableCell className="text-right tabular-nums">{fc(Number(a.opening_balance))}</TableCell>
                 </TableRow>
               ))}
               {accounts.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">No bank accounts found. Add accounts with "Bank" in the name in Chart of Accounts.</TableCell></TableRow>}

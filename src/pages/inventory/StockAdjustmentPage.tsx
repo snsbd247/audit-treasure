@@ -263,7 +263,7 @@ const StockAdjustmentPage = () => {
               </div>
               <div className="space-y-2"><Label>Total Value</Label>
                 <div className="h-10 flex items-center px-3 rounded-md bg-muted text-foreground font-medium tabular-nums">
-                  {totalValue.toLocaleString()}
+                  {fc(totalValue)}
                 </div>
               </div>
             </div>
