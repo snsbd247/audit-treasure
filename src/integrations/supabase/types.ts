@@ -345,6 +345,75 @@ export type Database = {
           },
         ]
       }
+      company_settings: {
+        Row: {
+          address: string | null
+          company_logo_url: string | null
+          company_name: string
+          created_at: string
+          currency_code: string
+          currency_name: string
+          currency_position: string
+          currency_symbol: string
+          default_branch_id: string | null
+          default_financial_year_id: string | null
+          email: string | null
+          id: string
+          phone: string | null
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          company_logo_url?: string | null
+          company_name?: string
+          created_at?: string
+          currency_code?: string
+          currency_name?: string
+          currency_position?: string
+          currency_symbol?: string
+          default_branch_id?: string | null
+          default_financial_year_id?: string | null
+          email?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          company_logo_url?: string | null
+          company_name?: string
+          created_at?: string
+          currency_code?: string
+          currency_name?: string
+          currency_position?: string
+          currency_symbol?: string
+          default_branch_id?: string | null
+          default_financial_year_id?: string | null
+          email?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_settings_default_branch_id_fkey"
+            columns: ["default_branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_settings_default_financial_year_id_fkey"
+            columns: ["default_financial_year_id"]
+            isOneToOne: false
+            referencedRelation: "financial_years"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       custom_roles: {
         Row: {
           created_at: string
