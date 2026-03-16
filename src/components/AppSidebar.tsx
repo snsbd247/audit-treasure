@@ -277,11 +277,12 @@ export const AppSidebar = () => {
           )}
           <div>
             <h2 className="font-bold text-sidebar-foreground text-sm tracking-tight">{branding.software_name || "ERP System"}</h2>
-          {profile && (
-            <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-[180px]">
-              {profile.name || profile.email}
-            </p>
-          )}
+            {profile && (
+              <p className="text-[10px] text-muted-foreground truncate max-w-[140px]">
+                {profile.name || profile.email}
+              </p>
+            )}
+          </div>
         </div>
         {isMobile && (
           <Button variant="ghost" size="icon" onClick={() => setMobileOpen(false)} className="h-8 w-8">

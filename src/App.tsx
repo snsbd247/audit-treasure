@@ -205,6 +205,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
+          </BrandingProvider>
           </ModuleProvider>
           </CurrencyProvider>
           </BranchProvider>
