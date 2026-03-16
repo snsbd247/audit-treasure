@@ -227,7 +227,7 @@ const ChartOfAccounts = () => {
                 <Select value={formParent} onValueChange={setFormParent}>
                   <SelectTrigger><SelectValue placeholder="None (root level)" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None (root level)</SelectItem>
+                    <SelectItem value="__none__">None (root level)</SelectItem>
                     {accounts.filter((a) => a.id !== editAcc?.id).map((a) => (
                       <SelectItem key={a.id} value={a.id}>{a.account_code} — {a.account_name}</SelectItem>
                     ))}
