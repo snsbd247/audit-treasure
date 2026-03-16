@@ -30,6 +30,7 @@ const navGroups: NavGroup[] = [
     label: "Accounts",
     icon: BookOpen,
     module: "accounts",
+    requiredModules: ["accounts"],
     children: [
       { to: "/accounts/chart", label: "Chart of Accounts", icon: BookOpen },
       { to: "/accounts/vouchers?type=journal", label: "Journal Voucher", icon: FileText },
@@ -42,6 +43,7 @@ const navGroups: NavGroup[] = [
     label: "Sales",
     icon: TrendingUp,
     module: "sales",
+    requiredModules: ["sales"],
     children: [
       { to: "/sales", label: "Sales Invoice", icon: Receipt },
       { to: "/sales/returns", label: "Sales Return", icon: ArrowLeftRight },
@@ -53,6 +55,7 @@ const navGroups: NavGroup[] = [
     label: "Purchase",
     icon: ShoppingCart,
     module: "purchase",
+    requiredModules: ["purchase"],
     children: [
       { to: "/purchase", label: "Purchase Entry", icon: ShoppingCart },
       { to: "/purchase/returns", label: "Purchase Return", icon: ArrowLeftRight },
@@ -64,6 +67,7 @@ const navGroups: NavGroup[] = [
     label: "Inventory",
     icon: Warehouse,
     module: "inventory",
+    requiredModules: ["inventory"],
     children: [
       { to: "/inventory/items", label: "Item Master", icon: Package },
       { to: "/inventory/categories", label: "Item Categories", icon: Layers },
@@ -92,6 +96,7 @@ const navGroups: NavGroup[] = [
     label: "Bank & Cash",
     icon: Landmark,
     module: "bank",
+    requiredModules: ["bank"],
     children: [
       { to: "/bank/accounts", label: "Bank Accounts", icon: Landmark },
       { to: "/bank/cashbook", label: "Cash Book", icon: PiggyBank },
@@ -136,6 +141,7 @@ const navGroups: NavGroup[] = [
     label: "Reports",
     icon: BarChart3,
     module: "reports",
+    requiredModules: ["reports"],
     children: [
       { to: "/reports/financial", label: "Financial Reports", icon: FileText },
       { to: "/reports/stock-ledger", label: "Stock Ledger", icon: ScrollText },
