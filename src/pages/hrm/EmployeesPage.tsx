@@ -126,7 +126,7 @@ export default function EmployeesPage() {
   const getBranchName = (id: string | null) => branches.find(b => b.id === id)?.name || "-";
 
   return (
-    <div className="space-y-6">
+    <div className="p-4 lg:p-6 space-y-6 max-w-[1600px] mx-auto">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Employees</h1>
