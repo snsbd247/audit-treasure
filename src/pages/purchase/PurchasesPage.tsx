@@ -35,7 +35,7 @@ interface Purchase {
 }
 interface PurchaseReturn {
   id: string; return_number: string; return_date: string; supplier_id: string | null;
-  total_amount: number; reason: string | null; supplier_name?: string;
+  total_amount: number; reason: string | null; supplier_name?: string; status: string;
 }
 
 const PurchasesPage = () => {
