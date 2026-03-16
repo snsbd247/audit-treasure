@@ -60,6 +60,30 @@ const ProductionPage = () => {
   // Print state
   const [printEntry, setPrintEntry] = useState<ProdEntry | null>(null);
   const [printMaterials, setPrintMaterials] = useState<any[]>([]);
+  const [actionDialogOpen, setActionDialogOpen] = useState(false);
+  const [actionType, setActionType] = useState<"approve" | "cancel" | null>(null);
+  const [actionTarget, setActionTarget] = useState<ProdEntry | null>(null);
+  const [actionReason, setActionReason] = useState("");
+
+  const handleDocAction = async () => {
+    if (!actionTarget || !actionType) return;
+    setSaving(true);
+    try {
+      if (actionType === "approve") {
+        await documentApi.approve("production", actionTarget.id);
+        toast({ title: `Production ${actionTarget.production_number} approved` });
+      } else if (actionType === "cancel") {
+        await documentApi.cancel("production", actionTarget.id, actionReason);
+        toast({ title: `Production ${actionTarget.production_number} cancelled` });
+      }
+      setActionDialogOpen(false);
+      setActionTarget(null);
+      setActionReason("");
+      fetchData();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally { setSaving(false); }
+  };
 
   const fetchData = async () => {
     setLoading(true);
