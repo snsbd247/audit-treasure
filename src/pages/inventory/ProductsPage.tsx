@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Package } from "lucide-react";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface Category { id: string; name: string; }
 interface Product {
