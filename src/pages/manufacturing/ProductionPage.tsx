@@ -184,7 +184,7 @@ const ProductionPage = () => {
                             <TableCell className="font-medium">{mat?.material_name || "—"}</TableCell>
                             <TableCell className="text-right tabular-nums">{r.quantity}</TableCell>
                             <TableCell>{r.unit}</TableCell>
-                            <TableCell className="text-right tabular-nums">{r.cost.toLocaleString()}</TableCell>
+                            <TableCell className="text-right tabular-nums">{fc(r.cost)}</TableCell>
                           </TableRow>
                         );
                       })}
