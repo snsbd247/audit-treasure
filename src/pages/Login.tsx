@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +11,7 @@ import { LogIn, UserPlus, Building2, Eye, EyeOff } from "lucide-react";
 
 const Login = () => {
   const [isSignUp, setIsSignUp] = useState(false);
+  const [loginUsername, setLoginUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -29,7 +31,19 @@ const Login = () => {
         if (error) throw error;
         toast({ title: "Account created", description: "Check your email for verification or sign in directly." });
       } else {
-        const { error } = await signIn(email, password);
+        // Look up email by username
+        const { data: profile, error: lookupError } = await supabase
+          .from("profiles")
+          .select("email")
+          .eq("username", loginUsername)
+          .maybeSingle();
+
+        if (lookupError) throw lookupError;
+        if (!profile || !profile.email) {
+          throw new Error("Username not found. Please check and try again.");
+        }
+
+        const { error } = await signIn(profile.email, password);
         if (error) throw error;
         navigate("/");
       }
@@ -77,12 +91,12 @@ const Login = () => {
               {isSignUp ? "Create Account" : "Welcome Back"}
             </CardTitle>
             <CardDescription className="text-sm">
-              {isSignUp ? "Fill in your details to create a new account" : "Sign in to access your ERP dashboard"}
+              {isSignUp ? "Fill in your details to create a new account" : "Sign in with your username and password"}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              {isSignUp && (
+              {isSignUp ? (
                 <>
                   <div className="space-y-1.5">
                     <Label htmlFor="name" className="text-xs font-medium">Full Name</Label>
@@ -92,12 +106,17 @@ const Login = () => {
                     <Label htmlFor="username" className="text-xs font-medium">Username</Label>
                     <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="johndoe" required className="h-10" />
                   </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="email" className="text-xs font-medium">Email Address</Label>
+                    <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="user@company.com" required className="h-10" />
+                  </div>
                 </>
+              ) : (
+                <div className="space-y-1.5">
+                  <Label htmlFor="loginUsername" className="text-xs font-medium">Username</Label>
+                  <Input id="loginUsername" value={loginUsername} onChange={(e) => setLoginUsername(e.target.value)} placeholder="Enter your username" required className="h-10" />
+                </div>
               )}
-              <div className="space-y-1.5">
-                <Label htmlFor="email" className="text-xs font-medium">Email Address</Label>
-                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="user@company.com" required className="h-10" />
-              </div>
               <div className="space-y-1.5">
                 <Label htmlFor="password" className="text-xs font-medium">Password</Label>
                 <div className="relative">
