@@ -107,6 +107,7 @@ const App = () => (
           <BranchProvider>
           <CurrencyProvider>
           <ModuleProvider>
+          <BrandingProvider>
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<Login />} />
