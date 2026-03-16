@@ -11,9 +11,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Factory, Printer } from "lucide-react";
+import { Plus, Factory, Printer, Check, X, ShieldAlert } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { PrintLayout } from "@/components/PrintLayout";
+import { getDocumentStatusConfig } from "@/hooks/useDocumentRules";
+import { documentApi } from "@/lib/document-api";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Product { id: string; product_name: string; product_code: string; }
 interface Branch { id: string; name: string; }
