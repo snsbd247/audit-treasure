@@ -77,10 +77,37 @@ const PurchasesPage = () => {
 
   const canEdit = hasPermission("purchase", "can_edit") || isSuperAdmin;
   const canAdd = hasPermission("purchase", "can_add") || isSuperAdmin;
+  const userCanDelete = hasPermission("purchase", "can_delete") || isSuperAdmin;
   const [actionDialogOpen, setActionDialogOpen] = useState(false);
   const [actionType, setActionType] = useState<"approve" | "cancel" | "delete" | null>(null);
   const [actionTarget, setActionTarget] = useState<Purchase | null>(null);
   const [actionReason, setActionReason] = useState("");
+
+  // View dialog
+  const [viewPurchase, setViewPurchase] = useState<Purchase | null>(null);
+  const [viewItems, setViewItems] = useState<any[]>([]);
+
+  const openView = async (p: Purchase) => {
+    const { data } = await supabase.from("purchase_items").select("*").eq("purchase_id", p.id);
+    const enriched = (data || []).map((d: any) => {
+      const prod = products.find((pr) => pr.id === d.product_id);
+      return { ...d, product_name: prod?.product_name || "—", product_code: prod?.product_code || "" };
+    });
+    setViewItems(enriched);
+    setViewPurchase(p);
+  };
+
+  const canEditDoc = (status: string) => {
+    if (status === "cancelled") return false;
+    if (status === "approved" || status === "completed") return isSuperAdmin;
+    return canEdit;
+  };
+
+  const canDeleteDoc = (status: string) => {
+    if (status === "cancelled") return false;
+    if (status === "approved" || status === "completed") return isSuperAdmin;
+    return userCanDelete;
+  };
 
   const fetchData = async () => {
     setLoading(true);
