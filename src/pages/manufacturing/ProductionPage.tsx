@@ -127,13 +127,13 @@ const ProductionPage = () => {
 
       // Stock movements: decrease raw materials
       const decreaseMovements = matRows.map((r) => ({
-        product_id: r.material_id, branch_id: formBranch || null,
+        product_id: r.material_id, branch_id: branchId,
         movement_type: "production_out" as const, reference_type: "production", reference_id: (data as any).id,
         quantity: -r.quantity,
       }));
       // Stock movement: increase finished product
       const increaseMovement = {
-        product_id: formProduct, branch_id: formBranch || null,
+        product_id: formProduct, branch_id: branchId,
         movement_type: "production_in" as const, reference_type: "production", reference_id: (data as any).id,
         quantity: parseFloat(formQty) || 1,
       };
