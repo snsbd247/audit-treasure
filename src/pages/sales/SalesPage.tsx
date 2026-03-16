@@ -637,6 +637,56 @@ const SalesPage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {/* View Invoice Dialog */}
+      <Dialog open={!!viewInvoice} onOpenChange={() => setViewInvoice(null)}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Invoice {viewInvoice?.invoice_number}</DialogTitle>
+          </DialogHeader>
+          {viewInvoice && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-4 text-sm">
+                <div><span className="text-muted-foreground">Date:</span> <span className="font-medium">{viewInvoice.invoice_date}</span></div>
+                <div><span className="text-muted-foreground">Customer:</span> <span className="font-medium">{viewInvoice.customer_name || "—"}</span></div>
+                <div><span className="text-muted-foreground">Status:</span> <span className="font-medium capitalize">{viewInvoice.status}</span></div>
+              </div>
+              <Table>
+                <TableHeader><TableRow>
+                  <TableHead>#</TableHead><TableHead>Product</TableHead><TableHead className="text-right">Qty</TableHead>
+                  <TableHead className="text-right">Price</TableHead><TableHead className="text-right">Discount</TableHead><TableHead className="text-right">Total</TableHead>
+                </TableRow></TableHeader>
+                <TableBody>
+                  {viewItems.map((item: any, i: number) => (
+                    <TableRow key={i}>
+                      <TableCell>{i + 1}</TableCell>
+                      <TableCell>{item.product_code} — {item.product_name}</TableCell>
+                      <TableCell className="text-right tabular-nums">{item.quantity}</TableCell>
+                      <TableCell className="text-right tabular-nums">{fc(item.price)}</TableCell>
+                      <TableCell className="text-right tabular-nums">{fc(item.discount)}</TableCell>
+                      <TableCell className="text-right tabular-nums font-medium">{fc(item.total)}</TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow className="bg-muted/50 font-medium">
+                    <TableCell colSpan={5} className="text-right">Total</TableCell>
+                    <TableCell className="text-right tabular-nums">{fc(viewInvoice.total_amount)}</TableCell>
+                  </TableRow>
+                  <TableRow className="font-medium">
+                    <TableCell colSpan={5} className="text-right">Discount</TableCell>
+                    <TableCell className="text-right tabular-nums">{fc(viewInvoice.discount)}</TableCell>
+                  </TableRow>
+                  <TableRow className="bg-muted/50 font-bold">
+                    <TableCell colSpan={5} className="text-right">Net Amount</TableCell>
+                    <TableCell className="text-right tabular-nums">{fc(viewInvoice.net_amount)}</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewInvoice(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -599,6 +599,47 @@ const PurchasesPage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {/* View Purchase Dialog */}
+      <Dialog open={!!viewPurchase} onOpenChange={() => setViewPurchase(null)}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Purchase {viewPurchase?.purchase_number}</DialogTitle>
+          </DialogHeader>
+          {viewPurchase && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-4 text-sm">
+                <div><span className="text-muted-foreground">Date:</span> <span className="font-medium">{viewPurchase.purchase_date}</span></div>
+                <div><span className="text-muted-foreground">Supplier:</span> <span className="font-medium">{viewPurchase.supplier_name || "—"}</span></div>
+                <div><span className="text-muted-foreground">Status:</span> <span className="font-medium capitalize">{viewPurchase.status}</span></div>
+              </div>
+              <Table>
+                <TableHeader><TableRow>
+                  <TableHead>#</TableHead><TableHead>Product</TableHead><TableHead className="text-right">Qty</TableHead>
+                  <TableHead className="text-right">Unit Price</TableHead><TableHead className="text-right">Total</TableHead>
+                </TableRow></TableHeader>
+                <TableBody>
+                  {viewItems.map((item: any, i: number) => (
+                    <TableRow key={i}>
+                      <TableCell>{i + 1}</TableCell>
+                      <TableCell>{item.product_code} — {item.product_name}</TableCell>
+                      <TableCell className="text-right tabular-nums">{item.quantity}</TableCell>
+                      <TableCell className="text-right tabular-nums">{fc(item.unit_price)}</TableCell>
+                      <TableCell className="text-right tabular-nums font-medium">{fc(item.total)}</TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow className="bg-muted/50 font-bold">
+                    <TableCell colSpan={4} className="text-right">Total</TableCell>
+                    <TableCell className="text-right tabular-nums">{fc(viewPurchase.total_amount)}</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewPurchase(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

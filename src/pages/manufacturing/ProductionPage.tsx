@@ -403,6 +403,48 @@ const ProductionPage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {/* View Production Dialog */}
+      <Dialog open={!!viewEntry} onOpenChange={() => setViewEntry(null)}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Production {viewEntry?.production_number}</DialogTitle>
+          </DialogHeader>
+          {viewEntry && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-4 text-sm">
+                <div><span className="text-muted-foreground">Date:</span> <span className="font-medium">{viewEntry.production_date}</span></div>
+                <div><span className="text-muted-foreground">Product:</span> <span className="font-medium">{viewEntry.product_name}</span></div>
+                <div><span className="text-muted-foreground">Quantity:</span> <span className="font-medium">{viewEntry.quantity}</span></div>
+              </div>
+              <Table>
+                <TableHeader><TableRow>
+                  <TableHead>#</TableHead><TableHead>Material</TableHead><TableHead className="text-right">Qty</TableHead>
+                  <TableHead>Unit</TableHead><TableHead className="text-right">Cost</TableHead>
+                </TableRow></TableHeader>
+                <TableBody>
+                  {viewMaterials.map((m: any, i: number) => (
+                    <TableRow key={i}>
+                      <TableCell>{i + 1}</TableCell>
+                      <TableCell>{m.material_name}</TableCell>
+                      <TableCell className="text-right tabular-nums">{m.quantity}</TableCell>
+                      <TableCell>{m.unit}</TableCell>
+                      <TableCell className="text-right tabular-nums font-medium">{fc(m.cost)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <div className="grid grid-cols-3 gap-4 text-sm">
+                <div><span className="text-muted-foreground">Raw Material:</span> <span className="font-medium">{fc(viewEntry.raw_material_cost)}</span></div>
+                <div><span className="text-muted-foreground">Labor:</span> <span className="font-medium">{fc(viewEntry.labor_cost)}</span></div>
+                <div><span className="text-muted-foreground">Total Cost:</span> <span className="font-bold">{fc(viewEntry.total_cost)}</span></div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewEntry(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
