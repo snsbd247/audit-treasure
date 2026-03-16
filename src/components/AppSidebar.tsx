@@ -107,6 +107,7 @@ const navGroups: NavGroup[] = [
       { to: "/admin/roles", label: "Roles & Permissions", icon: Shield },
       { to: "/admin/backup", label: "Backup & Restore", icon: Database },
       { to: "/admin/audit-log", label: "Activity Logs", icon: Activity },
+      { to: "/admin/settings", label: "General Settings", icon: CircleDot },
     ],
   },
 ];

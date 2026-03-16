@@ -17,6 +17,7 @@ import RolesPage from "./pages/admin/RolesPage";
 import BranchesPage from "./pages/admin/BranchesPage";
 import AuditLogPage from "./pages/admin/AuditLogPage";
 import BackupPage from "./pages/admin/BackupPage";
+import GeneralSettingsPage from "./pages/admin/GeneralSettingsPage";
 import ChartOfAccounts from "./pages/accounts/ChartOfAccounts";
 import AccountingVouchers from "./pages/accounts/AccountingVouchers";
 import ProductsPage from "./pages/inventory/ProductsPage";
@@ -87,6 +88,7 @@ const App = () => (
                 <Route path="/admin/financial-years" element={<ProtectedRoute requireAdmin><FinancialYearsPage /></ProtectedRoute>} />
                 <Route path="/admin/audit-log" element={<ProtectedRoute requireAdmin><AuditLogPage /></ProtectedRoute>} />
                 <Route path="/admin/backup" element={<ProtectedRoute requireAdmin><BackupPage /></ProtectedRoute>} />
+                <Route path="/admin/settings" element={<ProtectedRoute requireAdmin><GeneralSettingsPage /></ProtectedRoute>} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
