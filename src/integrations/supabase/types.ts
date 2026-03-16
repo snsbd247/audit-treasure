@@ -267,6 +267,39 @@ export type Database = {
           },
         ]
       }
+      biometric_logs: {
+        Row: {
+          check_in_time: string | null
+          check_out_time: string | null
+          created_at: string
+          date: string
+          device_id: string
+          employee_code: string
+          id: string
+          processed: boolean
+        }
+        Insert: {
+          check_in_time?: string | null
+          check_out_time?: string | null
+          created_at?: string
+          date?: string
+          device_id: string
+          employee_code: string
+          id?: string
+          processed?: boolean
+        }
+        Update: {
+          check_in_time?: string | null
+          check_out_time?: string | null
+          created_at?: string
+          date?: string
+          device_id?: string
+          employee_code?: string
+          id?: string
+          processed?: boolean
+        }
+        Relationships: []
+      }
       bom_items: {
         Row: {
           bom_id: string
@@ -616,6 +649,7 @@ export type Database = {
           national_id: string | null
           photo_url: string | null
           salary: number
+          shift_id: string | null
           status: string
           updated_at: string
           user_id: string | null
@@ -637,6 +671,7 @@ export type Database = {
           national_id?: string | null
           photo_url?: string | null
           salary?: number
+          shift_id?: string | null
           status?: string
           updated_at?: string
           user_id?: string | null
@@ -658,6 +693,7 @@ export type Database = {
           national_id?: string | null
           photo_url?: string | null
           salary?: number
+          shift_id?: string | null
           status?: string
           updated_at?: string
           user_id?: string | null
@@ -682,6 +718,45 @@ export type Database = {
             columns: ["designation_id"]
             isOneToOne: false
             referencedRelation: "designations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employees_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "shifts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      face_data: {
+        Row: {
+          created_at: string
+          employee_id: string
+          face_encoding: string | null
+          id: string
+          photo_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          employee_id: string
+          face_encoding?: string | null
+          id?: string
+          photo_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          employee_id?: string
+          face_encoding?: string | null
+          id?: string
+          photo_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "face_data_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
             referencedColumns: ["id"]
           },
         ]
@@ -942,6 +1017,44 @@ export type Database = {
           year?: number
         }
         Relationships: []
+      }
+      overtime_records: {
+        Row: {
+          approved_by: string | null
+          created_at: string
+          date: string
+          employee_id: string
+          hours: number
+          id: string
+          status: string
+        }
+        Insert: {
+          approved_by?: string | null
+          created_at?: string
+          date?: string
+          employee_id: string
+          hours?: number
+          id?: string
+          status?: string
+        }
+        Update: {
+          approved_by?: string | null
+          created_at?: string
+          date?: string
+          employee_id?: string
+          hours?: number
+          id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "overtime_records_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payroll: {
         Row: {
@@ -1762,6 +1875,109 @@ export type Database = {
             columns: ["sales_invoice_id"]
             isOneToOne: false
             referencedRelation: "sales_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shifts: {
+        Row: {
+          created_at: string
+          end_time: string
+          id: string
+          late_after_minutes: number
+          shift_name: string
+          start_time: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          end_time?: string
+          id?: string
+          late_after_minutes?: number
+          shift_name: string
+          start_time?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          end_time?: string
+          id?: string
+          late_after_minutes?: number
+          shift_name?: string
+          start_time?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      stock_ledger: {
+        Row: {
+          balance_quantity: number
+          branch_id: string | null
+          created_at: string
+          id: string
+          item_id: string
+          quantity_in: number
+          quantity_out: number
+          reference_number: string | null
+          total_value: number
+          transaction_date: string
+          transaction_id: string | null
+          transaction_type: string
+          unit_cost: number
+          warehouse_id: string | null
+        }
+        Insert: {
+          balance_quantity?: number
+          branch_id?: string | null
+          created_at?: string
+          id?: string
+          item_id: string
+          quantity_in?: number
+          quantity_out?: number
+          reference_number?: string | null
+          total_value?: number
+          transaction_date?: string
+          transaction_id?: string | null
+          transaction_type: string
+          unit_cost?: number
+          warehouse_id?: string | null
+        }
+        Update: {
+          balance_quantity?: number
+          branch_id?: string | null
+          created_at?: string
+          id?: string
+          item_id?: string
+          quantity_in?: number
+          quantity_out?: number
+          reference_number?: string | null
+          total_value?: number
+          transaction_date?: string
+          transaction_id?: string | null
+          transaction_type?: string
+          unit_cost?: number
+          warehouse_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_ledger_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_ledger_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "item_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_ledger_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
             referencedColumns: ["id"]
           },
         ]

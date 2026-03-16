@@ -10,6 +10,7 @@ import {
   CreditCard, Landmark, PiggyBank, TrendingUp,
   ArrowLeftRight, Calendar, Activity, Menu, X, CircleDot, Truck, UserCheck,
   Briefcase, Clock, CalendarDays, DollarSign, FileCheck, BadgeCheck, User,
+  Fingerprint, ScanFace, Timer, Gauge,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -71,7 +72,7 @@ const navGroups: NavGroup[] = [
       { to: "/inventory", label: "Stock Overview", icon: Warehouse },
       { to: "/inventory/transfers", label: "Stock Transfer", icon: ArrowLeftRight },
       { to: "/inventory/adjustments", label: "Stock Adjustment", icon: ClipboardList },
-      { to: "/reports/stock-ledger", label: "Stock Ledger", icon: ScrollText },
+      { to: "/inventory/stock-ledger", label: "Stock Ledger", icon: ScrollText },
       { to: "/reports/stock-reports", label: "Stock Reports", icon: BarChart3 },
       { to: "/reports/low-stock", label: "Low Stock Alert", icon: CircleDot },
     ],
@@ -102,10 +103,15 @@ const navGroups: NavGroup[] = [
     module: "hrm",
     requiredModules: ["hrm"],
     children: [
+      { to: "/hrm/dashboard", label: "HR Dashboard", icon: Gauge },
       { to: "/hrm/employees", label: "Employees", icon: Users },
       { to: "/hrm/departments", label: "Departments", icon: Building2 },
       { to: "/hrm/designations", label: "Designations", icon: Briefcase },
+      { to: "/hrm/shifts", label: "Shift Management", icon: Timer },
       { to: "/hrm/attendance", label: "Attendance", icon: Clock },
+      { to: "/hrm/biometric", label: "Biometric Import", icon: Fingerprint },
+      { to: "/hrm/face-attendance", label: "Face Recognition", icon: ScanFace },
+      { to: "/hrm/overtime", label: "Overtime", icon: Clock },
       { to: "/hrm/leave", label: "Leave Management", icon: CalendarDays },
       { to: "/hrm/payroll", label: "Payroll", icon: DollarSign },
       { to: "/hrm/documents", label: "Documents", icon: FileCheck },
