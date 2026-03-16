@@ -205,7 +205,7 @@ const ProductionPage = () => {
             <TableHead className="text-right">Qty</TableHead><TableHead className="text-right">Material Cost</TableHead>
             <TableHead className="text-right">Labor</TableHead><TableHead className="text-right">Total Cost</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead className="w-28">Actions</TableHead>
+            <TableHead className="w-56">Actions</TableHead>
           </TableRow></TableHeader>
           <TableBody>
             {loading ? <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
@@ -230,19 +230,32 @@ const ProductionPage = () => {
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-1">
-                    {!isCancelled && (status === "draft" || status === "completed") && (isAdmin || isSuperAdmin) && (
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={() => { setActionTarget(e); setActionType("approve"); setActionDialogOpen(true); }} title="Approve">
-                        <Check className="w-3.5 h-3.5" />
+                    {/* View */}
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openView(e)} title="View">
+                      <Eye className="w-3.5 h-3.5" />
+                    </Button>
+                    {/* Edit - not implemented for production yet, but show button based on permissions */}
+                    {canEditDoc(status) && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => toast({ title: "Edit not available", description: "Production editing coming soon" })} title="Edit">
+                        <Pencil className="w-3.5 h-3.5" />
                       </Button>
                     )}
-                    {!isCancelled && (
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => { setActionTarget(e); setActionType("cancel"); setActionDialogOpen(true); }} title="Cancel">
-                        <X className="w-3.5 h-3.5" />
-                      </Button>
-                    )}
+                    {/* Print */}
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openPrint(e)} title="Print">
                       <Printer className="w-3.5 h-3.5" />
                     </Button>
+                    {/* Delete */}
+                    {canDeleteDoc(status) && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setActionTarget(e); setActionType("cancel"); setActionDialogOpen(true); }} title="Delete">
+                        <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                      </Button>
+                    )}
+                    {/* Approve */}
+                    {!isCancelled && (status === "draft" || status === "completed") && (isAdmin || isSuperAdmin) && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setActionTarget(e); setActionType("approve"); setActionDialogOpen(true); }} title="Approve">
+                        <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      </Button>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>
