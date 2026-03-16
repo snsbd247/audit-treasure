@@ -352,14 +352,13 @@ const PurchasesPage = () => {
               <TableHeader><TableRow>
                 <TableHead>Purchase #</TableHead><TableHead>Date</TableHead><TableHead>Supplier</TableHead>
                 <TableHead className="text-right">Amount</TableHead><TableHead>Payment</TableHead><TableHead>Status</TableHead>
-                <TableHead className="w-32">Actions</TableHead>
+                <TableHead className="w-56">Actions</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {loading ? <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
+                {loading ? <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
                 : purchases.length === 0 ? <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">No purchases yet</TableCell></TableRow>
                 : purchases.map((p) => {
                   const statusCfg = getDocumentStatusConfig(p.status);
-                  const isLocked = (p.status === "approved" || p.status === "completed") && !isSuperAdmin;
                   const isCancelled = p.status === "cancelled";
                   return (
                   <TableRow key={p.id} className={isCancelled ? "opacity-60" : ""}>
@@ -375,29 +374,32 @@ const PurchasesPage = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        {!isCancelled && (p.status === "draft" || p.status === "completed") && (isAdmin || isSuperAdmin) && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={() => { setActionTarget(p); setActionType("approve"); setActionDialogOpen(true); }} title="Approve">
-                            <Check className="w-3.5 h-3.5" />
-                          </Button>
-                        )}
-                        {!isCancelled && !isLocked && (
+                        {/* View */}
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openView(p)} title="View">
+                          <Eye className="w-3.5 h-3.5" />
+                        </Button>
+                        {/* Edit */}
+                        {canEditDoc(p.status) && (
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(p)} title="Edit">
                             <Pencil className="w-3.5 h-3.5" />
                           </Button>
                         )}
-                        {isSuperAdmin && (p.status === "approved" || p.status === "completed") && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-amber-600" onClick={() => openEdit(p)} title="Super Admin Edit">
-                            <ShieldAlert className="w-3.5 h-3.5" />
-                          </Button>
-                        )}
-                        {!isCancelled && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => { setActionTarget(p); setActionType("cancel"); setActionDialogOpen(true); }} title="Cancel">
-                            <X className="w-3.5 h-3.5" />
-                          </Button>
-                        )}
+                        {/* Print */}
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openPrint(p)} title="Print">
                           <Printer className="w-3.5 h-3.5" />
                         </Button>
+                        {/* Delete */}
+                        {canDeleteDoc(p.status) && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setActionTarget(p); setActionType("delete"); setActionDialogOpen(true); }} title="Delete">
+                            <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                          </Button>
+                        )}
+                        {/* Approve */}
+                        {!isCancelled && (p.status === "draft" || p.status === "completed") && (isAdmin || isSuperAdmin) && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setActionTarget(p); setActionType("approve"); setActionDialogOpen(true); }} title="Approve">
+                            <Check className="w-3.5 h-3.5 text-emerald-600" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
