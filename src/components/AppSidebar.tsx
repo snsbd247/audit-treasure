@@ -160,6 +160,7 @@ const navGroups: NavGroup[] = [
       { to: "/admin/backup", label: "Backup & Restore", icon: Database },
       { to: "/admin/audit-log", label: "Activity Logs", icon: Activity },
       { to: "/admin/numbering", label: "Document Numbering", icon: ScrollText },
+      { to: "/admin/shortcuts", label: "Page Shortcuts", icon: Keyboard },
       { to: "/admin/settings", label: "General Settings", icon: CircleDot },
     ],
   },
