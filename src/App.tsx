@@ -76,6 +76,23 @@ import MyLeavePage from "./pages/portal/MyLeavePage";
 import MyPayslipsPage from "./pages/portal/MyPayslipsPage";
 import MyDocumentsPage from "./pages/portal/MyDocumentsPage";
 
+// Accounting Report Pages
+import TrialBalanceReport from "./pages/reports/accounting/TrialBalanceReport";
+import ProfitLossReport from "./pages/reports/accounting/ProfitLossReport";
+import BalanceSheetReport from "./pages/reports/accounting/BalanceSheetReport";
+import GeneralLedgerReport from "./pages/reports/accounting/GeneralLedgerReport";
+import AccountLedgerReport from "./pages/reports/accounting/AccountLedgerReport";
+import PartyLedgerReport from "./pages/reports/accounting/PartyLedgerReport";
+import CashBookReport from "./pages/reports/accounting/CashBookReport";
+import BankBookReport from "./pages/reports/accounting/BankBookReport";
+import BankReconciliationReport from "./pages/reports/accounting/BankReconciliationReport";
+import { JournalVoucherReport, PaymentVoucherReport, ReceiptVoucherReport, ContraVoucherReport } from "./pages/reports/accounting/VoucherReports";
+import AccountsReceivableReport from "./pages/reports/accounting/AccountsReceivableReport";
+import AccountsPayableReport from "./pages/reports/accounting/AccountsPayableReport";
+import { ARAgingReport, APAgingReport } from "./pages/reports/accounting/AgingReports";
+import { ExpenseAnalysisReport, IncomeAnalysisReport } from "./pages/reports/accounting/AnalysisReports";
+import FinancialSummaryDashboard from "./pages/reports/accounting/FinancialSummaryDashboard";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -117,7 +134,29 @@ const App = () => (
                 <Route path="/manufacturing/bom" element={<BOMPage />} />
                 <Route path="/manufacturing/production" element={<ProductionPage />} />
                 <Route path="/manufacturing/reports" element={<ManufacturingReports />} />
+                {/* Accounting Reports */}
                 <Route path="/reports/financial" element={<FinancialReports />} />
+                <Route path="/reports/trial-balance" element={<TrialBalanceReport />} />
+                <Route path="/reports/profit-loss" element={<ProfitLossReport />} />
+                <Route path="/reports/balance-sheet" element={<BalanceSheetReport />} />
+                <Route path="/reports/general-ledger" element={<GeneralLedgerReport />} />
+                <Route path="/reports/account-ledger" element={<AccountLedgerReport />} />
+                <Route path="/reports/party-ledger" element={<PartyLedgerReport />} />
+                <Route path="/reports/cash-book" element={<CashBookReport />} />
+                <Route path="/reports/bank-book" element={<BankBookReport />} />
+                <Route path="/reports/bank-reconciliation" element={<BankReconciliationReport />} />
+                <Route path="/reports/journal-vouchers" element={<JournalVoucherReport />} />
+                <Route path="/reports/payment-vouchers" element={<PaymentVoucherReport />} />
+                <Route path="/reports/receipt-vouchers" element={<ReceiptVoucherReport />} />
+                <Route path="/reports/contra-vouchers" element={<ContraVoucherReport />} />
+                <Route path="/reports/accounts-receivable" element={<AccountsReceivableReport />} />
+                <Route path="/reports/accounts-payable" element={<AccountsPayableReport />} />
+                <Route path="/reports/ar-aging" element={<ARAgingReport />} />
+                <Route path="/reports/ap-aging" element={<APAgingReport />} />
+                <Route path="/reports/expense-analysis" element={<ExpenseAnalysisReport />} />
+                <Route path="/reports/income-analysis" element={<IncomeAnalysisReport />} />
+                <Route path="/reports/financial-summary" element={<FinancialSummaryDashboard />} />
+                {/* Other reports */}
                 <Route path="/reports/stock-ledger" element={<StockLedger />} />
                 <Route path="/reports/stock-reports" element={<StockReportsPage />} />
                 <Route path="/reports/low-stock" element={<LowStockPage />} />
