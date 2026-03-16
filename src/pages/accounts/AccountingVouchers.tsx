@@ -339,7 +339,7 @@ const AccountingVouchers = () => {
                       <TableHead>Description</TableHead>
                       <TableHead className="text-right">Amount</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead className="w-48">Actions</TableHead>
+                      <TableHead className="w-56">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -361,40 +361,42 @@ const AccountingVouchers = () => {
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-1">
-                            {/* Print button - always visible */}
+                            {/* View - always visible */}
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openView(v)} title="View">
+                              <Eye className="w-3.5 h-3.5" />
+                            </Button>
+                            {/* Edit - based on role & status */}
+                            {canEditVoucher(v) && (
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(v)} title="Edit">
+                                <Pencil className="w-3.5 h-3.5" />
+                              </Button>
+                            )}
+                            {/* Print - always visible */}
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openPrintVoucher(v)} title="Print">
                               <Printer className="w-3.5 h-3.5" />
                             </Button>
+                            {/* Reverse - approved vouchers, super admin or admin */}
+                            {v.status === "approved" && isSuperAdmin && (
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openSuperAdminAction("reverse", v)} title="Reverse">
+                                <ArrowLeftRight className="w-3.5 h-3.5 text-primary" />
+                              </Button>
+                            )}
+                            {/* Delete - based on role & status */}
+                            {canDeleteVoucher(v) && (
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openSuperAdminAction("delete", v)} title="Delete">
+                                <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                              </Button>
+                            )}
                             {/* Admin: Approve/Reject pending */}
                             {v.status === "pending" && isAdmin && (
                               <>
-                                <Button variant="ghost" size="icon" onClick={() => handleApprove(v)} title="Approve">
-                                  <Check className="w-4 h-4 text-green-600" />
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleApprove(v)} title="Approve">
+                                  <Check className="w-3.5 h-3.5 text-emerald-600" />
                                 </Button>
-                                <Button variant="ghost" size="icon" onClick={() => handleReject(v)} title="Reject">
-                                  <X className="w-4 h-4 text-destructive" />
-                                </Button>
-                              </>
-                            )}
-                            {/* Super Admin: Actions on approved vouchers */}
-                            {v.status === "approved" && isSuperAdmin && (
-                              <>
-                                <Button variant="ghost" size="icon" onClick={() => openSuperAdminAction("reopen", v)} title="Reopen">
-                                  <RotateCcw className="w-4 h-4 text-amber-600" />
-                                </Button>
-                                <Button variant="ghost" size="icon" onClick={() => openSuperAdminAction("reverse", v)} title="Reverse">
-                                  <ArrowLeftRight className="w-4 h-4 text-blue-600" />
-                                </Button>
-                                <Button variant="ghost" size="icon" onClick={() => openSuperAdminAction("delete", v)} title="Delete">
-                                  <Trash2 className="w-4 h-4 text-destructive" />
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleReject(v)} title="Reject">
+                                  <X className="w-3.5 h-3.5 text-destructive" />
                                 </Button>
                               </>
-                            )}
-                            {/* Super Admin: Reopen rejected */}
-                            {v.status === "rejected" && isSuperAdmin && (
-                              <Button variant="ghost" size="icon" onClick={() => openSuperAdminAction("reopen", v)} title="Reopen">
-                                <RotateCcw className="w-4 h-4 text-amber-600" />
-                              </Button>
                             )}
                           </div>
                         </TableCell>
