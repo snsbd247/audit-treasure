@@ -21,6 +21,7 @@ interface Transfer { id: string; transfer_number: string; transfer_date: string;
 
 const StockTransferPage = () => {
   const { user } = useAuth();
+  const { userBranchId } = useBranch();
   const [warehouses, setWarehouses] = useState<WH[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [transfers, setTransfers] = useState<Transfer[]>([]);
