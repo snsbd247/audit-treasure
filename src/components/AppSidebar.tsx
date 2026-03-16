@@ -67,6 +67,7 @@ const navGroups: NavGroup[] = [
     label: "Inventory",
     icon: Warehouse,
     module: "inventory",
+    requiredModules: ["inventory"],
     children: [
       { to: "/inventory/items", label: "Item Master", icon: Package },
       { to: "/inventory/categories", label: "Item Categories", icon: Layers },
