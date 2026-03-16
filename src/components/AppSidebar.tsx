@@ -176,7 +176,6 @@ export const AppSidebar = () => {
       <ScrollArea className="flex-1">
         <nav className="p-2 space-y-0.5">
           <NavItem to="/" label="Dashboard" icon={LayoutDashboard} end />
-          <NavItem to="/profile" label="Profile" icon={UserCircle} />
           <div className="my-2 border-t border-sidebar-border" />
           {navGroups.map((group) => {
             if (group.adminOnly && !isAdmin) return null;

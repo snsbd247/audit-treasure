@@ -94,8 +94,7 @@ const App = () => (
                 <Route path="/reports/low-stock" element={<LowStockPage />} />
                 <Route path="/reports/sales" element={<FinancialReports />} />
                 <Route path="/reports/purchase" element={<FinancialReports />} />
-                <Route path="/transactions/income" element={<IncomePage />} />
-                <Route path="/transactions/expense" element={<ExpensePage />} />
+                <Route path="/change-password" element={<ChangePasswordPage />} />
                 <Route path="/bank/accounts" element={<BankAccountsPage />} />
                 <Route path="/bank/cashbook" element={<CashBookPage />} />
                 <Route path="/admin/users" element={<ProtectedRoute requireAdmin><UsersPage /></ProtectedRoute>} />
