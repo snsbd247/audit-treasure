@@ -172,22 +172,64 @@ const AccountingVouchers = () => {
     }
     setSaving(true);
     try {
-      await voucherApi.create({
-        voucher_type: activeTab,
-        voucher_date: formDate,
-        branch_id: formBranch || undefined,
-        financial_year_id: formFinYear || undefined,
-        description: formDesc,
-        entries: validEntries.map((e) => ({
-          account_id: e.account_id,
-          debit: e.debit,
-          credit: e.credit,
-          narration: e.narration,
-        })),
-        submit: submitForApproval,
-      });
-      toast({ title: "Voucher created successfully" });
+      if (editingVoucher) {
+        // Editing existing voucher
+        if (editingVoucher.status === "approved" && isSuperAdmin) {
+          await voucherApi.editApproved({
+            id: editingVoucher.id,
+            description: formDesc,
+            entries: validEntries.map((e) => ({
+              account_id: e.account_id,
+              debit: e.debit,
+              credit: e.credit,
+              narration: e.narration,
+            })),
+          });
+          toast({ title: "Approved voucher updated (Super Admin override)" });
+        } else {
+          // Draft/rejected edit — update via direct DB
+          await supabase.from("acc_vouchers").update({
+            voucher_date: formDate,
+            branch_id: formBranch || null,
+            financial_year_id: formFinYear || null,
+            description: formDesc,
+            total_amount: totalDebit,
+            status: submitForApproval ? "pending" : "draft",
+            updated_at: new Date().toISOString(),
+          }).eq("id", editingVoucher.id);
+          // Replace entries
+          await supabase.from("voucher_entries").delete().eq("voucher_id", editingVoucher.id);
+          await supabase.from("voucher_entries").insert(
+            validEntries.map((e, i) => ({
+              voucher_id: editingVoucher.id,
+              account_id: e.account_id,
+              debit: e.debit,
+              credit: e.credit,
+              narration: e.narration,
+              sort_order: i,
+            }))
+          );
+          toast({ title: "Voucher updated successfully" });
+        }
+      } else {
+        await voucherApi.create({
+          voucher_type: activeTab,
+          voucher_date: formDate,
+          branch_id: formBranch || undefined,
+          financial_year_id: formFinYear || undefined,
+          description: formDesc,
+          entries: validEntries.map((e) => ({
+            account_id: e.account_id,
+            debit: e.debit,
+            credit: e.credit,
+            narration: e.narration,
+          })),
+          submit: submitForApproval,
+        });
+        toast({ title: "Voucher created successfully" });
+      }
       setDialogOpen(false);
+      setEditingVoucher(null);
       fetchData();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
