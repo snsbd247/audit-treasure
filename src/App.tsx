@@ -61,6 +61,7 @@ const App = () => (
         <AuthProvider>
           <BranchProvider>
           <CurrencyProvider>
+          <ModuleProvider>
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<Login />} />
