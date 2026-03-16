@@ -45,6 +45,30 @@ const StockTransferPage = () => {
 
   // Print state
   const [printTransfer, setPrintTransfer] = useState<Transfer | null>(null);
+  const [actionDialogOpen, setActionDialogOpen] = useState(false);
+  const [actionType, setActionType] = useState<"approve" | "cancel" | null>(null);
+  const [actionTarget, setActionTarget] = useState<Transfer | null>(null);
+  const [actionReason, setActionReason] = useState("");
+
+  const handleDocAction = async () => {
+    if (!actionTarget || !actionType) return;
+    setSaving(true);
+    try {
+      if (actionType === "approve") {
+        await documentApi.approve("stock_transfer", actionTarget.id);
+        toast({ title: `Transfer ${actionTarget.transfer_number} approved` });
+      } else if (actionType === "cancel") {
+        await documentApi.cancel("stock_transfer", actionTarget.id, actionReason);
+        toast({ title: `Transfer ${actionTarget.transfer_number} cancelled` });
+      }
+      setActionDialogOpen(false);
+      setActionTarget(null);
+      setActionReason("");
+      fetchData();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally { setSaving(false); }
+  };
 
   const fetchData = async () => {
     setLoading(true);
