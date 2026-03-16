@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Download, Upload, Database, Clock, FileText, Trash2, AlertTriangle, CheckCircle, XCircle, Settings, RefreshCw } from "lucide-react";
+import { Download, Upload, Database, Clock, FileText, Trash2, AlertTriangle, CheckCircle, XCircle, Settings, RefreshCw, Cloud } from "lucide-react";
 
 interface BackupRecord {
   id: string;
@@ -61,6 +61,9 @@ const BackupPage = () => {
   const [confirmRestore, setConfirmRestore] = useState(false);
   const [restoreFile, setRestoreFile] = useState<File | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [cloudUploading, setCloudUploading] = useState(false);
+  const [cloudFiles, setCloudFiles] = useState<any[]>([]);
+  const [cloudConfigured, setCloudConfigured] = useState<boolean | null>(null);
 
   const fetchHistory = useCallback(async () => {
     setLoadingHistory(true);
@@ -85,6 +88,7 @@ const BackupPage = () => {
   useEffect(() => {
     fetchHistory();
     fetchSettings();
+    fetchCloudFiles();
   }, [fetchHistory, fetchSettings]);
 
   const handleExport = async () => {
@@ -262,6 +266,93 @@ const BackupPage = () => {
     toast({ title: "Settings saved" });
   };
 
+  const handleCloudBackup = async () => {
+    setCloudUploading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+
+      // First create a backup
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const backupRes = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/create-backup`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ format: "json", backup_type: "cloud" }),
+        }
+      );
+      const backupResult = await backupRes.json();
+      if (!backupResult.success) throw new Error(backupResult.error);
+
+      // Upload to Google Drive
+      const driveRes = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/google-drive-backup`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            action: "upload",
+            backup_content: backupResult.content,
+            backup_file_name: backupResult.file_name,
+          }),
+        }
+      );
+      const driveResult = await driveRes.json();
+      if (!driveResult.success) {
+        if (driveResult.needs_setup) {
+          setCloudConfigured(false);
+          toast({ title: "Google Drive not configured", description: driveResult.error, variant: "destructive" });
+        } else {
+          throw new Error(driveResult.error);
+        }
+        return;
+      }
+
+      setCloudConfigured(true);
+      toast({ title: "Cloud backup successful", description: `Uploaded ${driveResult.file_name} to Google Drive` });
+      fetchCloudFiles();
+    } catch (err: any) {
+      toast({ title: "Cloud backup failed", description: err.message, variant: "destructive" });
+    } finally {
+      setCloudUploading(false);
+    }
+  };
+
+  const fetchCloudFiles = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const res = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/google-drive-backup`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ action: "list" }),
+        }
+      );
+      const result = await res.json();
+      if (result.success) {
+        setCloudConfigured(true);
+        setCloudFiles(result.files || []);
+      } else if (result.needs_setup) {
+        setCloudConfigured(false);
+      }
+    } catch {
+      // silently fail
+    }
+  };
+
   const statusBadge = (status: string) => {
     switch (status) {
       case "completed":
@@ -352,7 +443,51 @@ const BackupPage = () => {
         </Card>
       </div>
 
-      {/* Schedule Settings */}
+      {/* Google Drive Cloud Backup */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2"><Cloud className="w-4 h-4" />Google Drive Backup</CardTitle>
+          <CardDescription>Upload backups to Google Drive for offsite cloud storage</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {cloudConfigured === false ? (
+            <div className="p-4 rounded-lg border border-border bg-muted/50 space-y-2">
+              <p className="text-sm font-medium text-foreground">Google Drive not configured</p>
+              <p className="text-xs text-muted-foreground">To enable cloud backup, add the following secrets in Supabase Edge Function settings:</p>
+              <ul className="text-xs text-muted-foreground list-disc pl-4 space-y-1">
+                <li><code className="bg-muted px-1 rounded">GOOGLE_CLIENT_ID</code> — From Google Cloud Console</li>
+                <li><code className="bg-muted px-1 rounded">GOOGLE_CLIENT_SECRET</code> — From Google Cloud Console</li>
+                <li><code className="bg-muted px-1 rounded">GOOGLE_REFRESH_TOKEN</code> — Generated via OAuth playground</li>
+              </ul>
+            </div>
+          ) : (
+            <>
+              <Button onClick={handleCloudBackup} disabled={cloudUploading || exporting || restoring}>
+                <Cloud className="w-4 h-4 mr-2" />{cloudUploading ? "Uploading to Drive..." : "Backup to Google Drive"}
+              </Button>
+              {cloudFiles.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground">Recent Cloud Backups:</p>
+                  {cloudFiles.slice(0, 5).map((f: any) => (
+                    <div key={f.id} className="flex items-center justify-between text-xs p-2 rounded border border-border">
+                      <span className="font-mono truncate max-w-[300px]">{f.name}</span>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <span>{f.createdTime ? new Date(f.createdTime).toLocaleDateString() : ""}</span>
+                        {f.webViewLink && (
+                          <a href={f.webViewLink} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                            View
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+
       {settings && (
         <Card>
           <CardHeader>
