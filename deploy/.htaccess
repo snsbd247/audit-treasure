@@ -1,0 +1,42 @@
+# SmartERP - Apache Configuration for cPanel
+# Place this in your public_html/erp/ directory
+
+RewriteEngine On
+RewriteBase /erp/
+
+# API requests go to PHP backend
+RewriteRule ^api/(.*)$ api/index.php [QSA,L]
+
+# Serve uploaded files
+RewriteRule ^api/uploads/(.*)$ api/uploads/$1 [L]
+
+# Serve static assets directly
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+# All other routes go to React SPA
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.html [L]
+
+# Security: deny access to sensitive files
+<FilesMatch "\.(env|sql|md|json|lock)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# Compression
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json
+</IfModule>
+
+# Caching for static assets
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType font/woff2 "access plus 1 year"
+</IfModule>
