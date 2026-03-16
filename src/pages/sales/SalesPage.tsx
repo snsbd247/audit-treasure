@@ -166,7 +166,7 @@ const SalesPage = () => {
             ))}
             <TableRow className="bg-muted/50 font-medium">
               <TableCell colSpan={4} className="text-right">Grand Total</TableCell>
-              <TableCell className="text-right tabular-nums">{grandTotal(itemList).toLocaleString()}</TableCell>
+              <TableCell className="text-right tabular-nums">{fc(grandTotal(itemList))}</TableCell>
               <TableCell />
             </TableRow>
           </TableBody>
