@@ -24,6 +24,11 @@ import ProductsPage from "./pages/inventory/ProductsPage";
 import PurchasesPage from "./pages/purchase/PurchasesPage";
 import SalesPage from "./pages/sales/SalesPage";
 import InventoryPage from "./pages/inventory/InventoryPage";
+import UnitsPage from "./pages/inventory/UnitsPage";
+import ItemCategoriesPage from "./pages/inventory/ItemCategoriesPage";
+import ItemMasterPage from "./pages/inventory/ItemMasterPage";
+import WarehousesPage from "./pages/inventory/WarehousesPage";
+import StockTransferPage from "./pages/inventory/StockTransferPage";
 import RawMaterialsPage from "./pages/manufacturing/RawMaterialsPage";
 import BOMPage from "./pages/manufacturing/BOMPage";
 import ProductionPage from "./pages/manufacturing/ProductionPage";
@@ -38,6 +43,7 @@ import ExpensePage from "./pages/transactions/ExpensePage";
 import BankAccountsPage from "./pages/bank/BankAccountsPage";
 import CashBookPage from "./pages/bank/CashBookPage";
 import LowStockPage from "./pages/reports/LowStockPage";
+import StockReportsPage from "./pages/reports/StockReportsPage";
 import NotFound from "./pages/NotFound";
 import ResetPassword from "./pages/ResetPassword";
 
@@ -69,12 +75,18 @@ const App = () => (
                 <Route path="/sales" element={<SalesPage />} />
                 <Route path="/sales/returns" element={<SalesPage />} />
                 <Route path="/inventory" element={<InventoryPage />} />
+                <Route path="/inventory/items" element={<ItemMasterPage />} />
+                <Route path="/inventory/categories" element={<ItemCategoriesPage />} />
+                <Route path="/inventory/units" element={<UnitsPage />} />
+                <Route path="/inventory/warehouses" element={<WarehousesPage />} />
+                <Route path="/inventory/transfers" element={<StockTransferPage />} />
                 <Route path="/manufacturing/materials" element={<RawMaterialsPage />} />
                 <Route path="/manufacturing/bom" element={<BOMPage />} />
                 <Route path="/manufacturing/production" element={<ProductionPage />} />
                 <Route path="/manufacturing/reports" element={<ManufacturingReports />} />
                 <Route path="/reports/financial" element={<FinancialReports />} />
                 <Route path="/reports/stock-ledger" element={<StockLedger />} />
+                <Route path="/reports/stock-reports" element={<StockReportsPage />} />
                 <Route path="/reports/low-stock" element={<LowStockPage />} />
                 <Route path="/reports/sales" element={<FinancialReports />} />
                 <Route path="/reports/purchase" element={<FinancialReports />} />
