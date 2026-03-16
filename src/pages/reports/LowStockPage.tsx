@@ -11,7 +11,7 @@ const LowStockPage = () => {
   useEffect(() => {
     (async () => {
       const [prodRes, movRes] = await Promise.all([
-        supabase.from("products").select("*").eq("status", "active"),
+        supabase.from("item_master").select("*").eq("status", "active").neq("item_type", "service"),
         supabase.from("stock_movements").select("product_id, movement_type, quantity"),
       ]);
       const movements = movRes.data || [];
@@ -19,13 +19,12 @@ const LowStockPage = () => {
       movements.forEach((m) => {
         const q = Number(m.quantity);
         if (!stockMap[m.product_id]) stockMap[m.product_id] = 0;
-        if (["purchase_in", "production_in", "sales_return_in"].includes(m.movement_type)) stockMap[m.product_id] += q;
-        else stockMap[m.product_id] -= q;
+        stockMap[m.product_id] += q;
       });
       const lowStock = (prodRes.data || [])
-        .map((p) => ({ ...p, stock: stockMap[p.id] || 0 }))
-        .filter((p) => p.stock <= p.low_stock_threshold)
-        .sort((a, b) => a.stock - b.stock);
+        .map((p: any) => ({ ...p, product_code: p.item_code, product_name: p.item_name, low_stock_threshold: p.min_stock_level, stock: stockMap[p.id] || 0 }))
+        .filter((p: any) => p.stock <= p.low_stock_threshold)
+        .sort((a: any, b: any) => a.stock - b.stock);
       setProducts(lowStock);
     })();
   }, []);

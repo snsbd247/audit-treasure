@@ -26,10 +26,10 @@ const StockLedger = () => {
   useEffect(() => {
     const init = async () => {
       const [pRes, bRes] = await Promise.all([
-        supabase.from("products").select("id, product_name, product_code").order("product_name"),
+        supabase.from("item_master").select("id, item_name, item_code").order("item_name"),
         supabase.from("branches").select("id, name"),
       ]);
-      setProducts((pRes.data || []) as Product[]);
+      setProducts((pRes.data || []).map((i: any) => ({ id: i.id, product_name: i.item_name, product_code: i.item_code })) as Product[]);
       setBranches((bRes.data || []) as Branch[]);
     };
     init();

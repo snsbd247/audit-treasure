@@ -27,16 +27,16 @@ const ManufacturingReports = () => {
     if (dateTo) prodQuery = prodQuery.lte("production_date", dateTo);
     const { data: prodData } = await prodQuery;
 
-    // Get product names
-    const { data: products } = await supabase.from("products").select("id, product_name");
-    const prodMap = new Map((products || []).map((p: any) => [p.id, p.product_name]));
+    // Get product names from item_master
+    const { data: products } = await supabase.from("item_master").select("id, item_name");
+    const prodMap = new Map((products || []).map((p: any) => [p.id, p.item_name]));
 
     setProductions((prodData || []).map((p: any) => ({ ...p, product_name: prodMap.get(p.product_id) || "—" })));
 
     // Material consumption
     const { data: matData } = await supabase.from("production_materials").select("*, production_entries!inner(production_date, production_number)");
-    const { data: mats } = await supabase.from("raw_materials").select("id, material_name, material_code");
-    const matMap = new Map((mats || []).map((m: any) => [m.id, m]));
+    const { data: mats } = await supabase.from("item_master").select("id, item_name, item_code").eq("item_type", "raw_material");
+    const matMap = new Map((mats || []).map((m: any) => [m.id, { material_name: m.item_name, material_code: m.item_code }]));
 
     setConsumptions((matData || []).map((c: any) => ({
       ...c,
