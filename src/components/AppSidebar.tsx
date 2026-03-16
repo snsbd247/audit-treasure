@@ -18,6 +18,7 @@ interface NavGroup {
   label: string;
   icon: any;
   module?: string; // maps to role_permissions.module for access control
+  requiredModules?: ModuleKey[]; // all must be enabled for group to show
   children: { to: string; label: string; icon: any; end?: boolean }[];
   adminOnly?: boolean;
 }
