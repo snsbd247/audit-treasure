@@ -24,10 +24,7 @@ const Login = () => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const { data: email, error: lookupError } = await supabase
-        .rpc("get_email_by_username", { _username: username });
-
-      if (lookupError) throw lookupError;
+      const email = await getEmailByUsername(username);
       if (!email) {
         throw new Error("Username not found.");
       }
