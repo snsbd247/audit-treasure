@@ -190,7 +190,7 @@ const ProductionPage = () => {
                       })}
                       <TableRow className="bg-muted/50 font-medium">
                         <TableCell colSpan={3} className="text-right">Raw Material Cost</TableCell>
-                        <TableCell className="text-right tabular-nums">{rawMaterialCost.toLocaleString()}</TableCell>
+                        <TableCell className="text-right tabular-nums">{fc(rawMaterialCost)}</TableCell>
                       </TableRow>
                     </TableBody>
                   </Table>
