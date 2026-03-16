@@ -88,6 +88,7 @@ const BackupPage = () => {
   useEffect(() => {
     fetchHistory();
     fetchSettings();
+    fetchCloudFiles();
   }, [fetchHistory, fetchSettings]);
 
   const handleExport = async () => {
