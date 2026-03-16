@@ -37,6 +37,15 @@ const navGroups: NavGroup[] = [
       { to: "/accounts/vouchers?type=payment", label: "Payment Voucher", icon: CreditCard },
       { to: "/accounts/vouchers?type=receipt", label: "Receipt Voucher", icon: Receipt },
       { to: "/accounts/vouchers?type=contra", label: "Contra Voucher", icon: ArrowLeftRight },
+      { to: "/reports/trial-balance", label: "Trial Balance", icon: FileText },
+      { to: "/reports/profit-loss", label: "Profit & Loss", icon: TrendingUp },
+      { to: "/reports/balance-sheet", label: "Balance Sheet", icon: FileText },
+      { to: "/reports/general-ledger", label: "General Ledger", icon: BookOpen },
+      { to: "/reports/account-ledger", label: "Account Ledger", icon: ScrollText },
+      { to: "/reports/journal-vouchers", label: "Journal Report", icon: FileText },
+      { to: "/reports/payment-vouchers", label: "Payment Report", icon: CreditCard },
+      { to: "/reports/receipt-vouchers", label: "Receipt Report", icon: Receipt },
+      { to: "/reports/contra-vouchers", label: "Contra Report", icon: ArrowLeftRight },
     ],
   },
   {
@@ -47,8 +56,10 @@ const navGroups: NavGroup[] = [
     children: [
       { to: "/sales", label: "Sales Invoice", icon: Receipt },
       { to: "/sales/returns", label: "Sales Return", icon: ArrowLeftRight },
-      { to: "/reports/sales", label: "Sales Report", icon: BarChart3 },
       { to: "/customers", label: "Customers", icon: UserCheck },
+      { to: "/reports/accounts-receivable", label: "Accounts Receivable", icon: UserCheck },
+      { to: "/reports/ar-aging", label: "AR Aging", icon: Clock },
+      { to: "/reports/income-analysis", label: "Income Analysis", icon: TrendingUp },
     ],
   },
   {
@@ -60,7 +71,9 @@ const navGroups: NavGroup[] = [
       { to: "/purchase", label: "Purchase Entry", icon: ShoppingCart },
       { to: "/purchase/returns", label: "Purchase Return", icon: ArrowLeftRight },
       { to: "/suppliers", label: "Suppliers", icon: Truck },
-      { to: "/reports/purchase", label: "Purchase Report", icon: BarChart3 },
+      { to: "/reports/accounts-payable", label: "Accounts Payable", icon: Truck },
+      { to: "/reports/ap-aging", label: "AP Aging", icon: Clock },
+      { to: "/reports/expense-analysis", label: "Expense Analysis", icon: FileText },
     ],
   },
   {
@@ -100,6 +113,9 @@ const navGroups: NavGroup[] = [
     children: [
       { to: "/bank/accounts", label: "Bank Accounts", icon: Landmark },
       { to: "/bank/cashbook", label: "Cash Book", icon: PiggyBank },
+      { to: "/reports/cash-book", label: "Cash Book Report", icon: FileText },
+      { to: "/reports/bank-book", label: "Bank Book Report", icon: Landmark },
+      { to: "/reports/bank-reconciliation", label: "Bank Reconciliation", icon: ArrowLeftRight },
     ],
   },
   {
@@ -145,22 +161,7 @@ const navGroups: NavGroup[] = [
     children: [
       { to: "/reports/financial", label: "All Reports", icon: BarChart3 },
       { to: "/reports/financial-summary", label: "Financial Summary", icon: Gauge },
-      { to: "/reports/trial-balance", label: "Trial Balance", icon: FileText },
-      { to: "/reports/profit-loss", label: "Profit & Loss", icon: TrendingUp },
-      { to: "/reports/balance-sheet", label: "Balance Sheet", icon: FileText },
-      { to: "/reports/general-ledger", label: "General Ledger", icon: BookOpen },
-      { to: "/reports/account-ledger", label: "Account Ledger", icon: ScrollText },
       { to: "/reports/party-ledger", label: "Party Ledger", icon: Users },
-      { to: "/reports/cash-book", label: "Cash Book", icon: FileText },
-      { to: "/reports/bank-book", label: "Bank Book", icon: Landmark },
-      { to: "/reports/accounts-receivable", label: "Accounts Receivable", icon: UserCheck },
-      { to: "/reports/accounts-payable", label: "Accounts Payable", icon: Truck },
-      { to: "/reports/ar-aging", label: "AR Aging", icon: Clock },
-      { to: "/reports/ap-aging", label: "AP Aging", icon: Clock },
-      { to: "/reports/expense-analysis", label: "Expense Analysis", icon: FileText },
-      { to: "/reports/income-analysis", label: "Income Analysis", icon: TrendingUp },
-      { to: "/reports/stock-ledger", label: "Stock Ledger", icon: ScrollText },
-      { to: "/manufacturing/reports", label: "Production Report", icon: Factory },
     ],
   },
   {
@@ -181,6 +182,32 @@ const navGroups: NavGroup[] = [
   },
 ];
 
+const routeModuleMap: Record<string, ModuleKey[]> = {
+  "/manufacturing/reports": ["manufacturing"],
+  "/reports/stock-ledger": ["inventory"],
+  "/inventory/warehouses": ["multi_warehouse"],
+  "/reports/trial-balance": ["accounts"],
+  "/reports/profit-loss": ["accounts"],
+  "/reports/balance-sheet": ["accounts"],
+  "/reports/general-ledger": ["accounts"],
+  "/reports/account-ledger": ["accounts"],
+  "/reports/journal-vouchers": ["accounts"],
+  "/reports/payment-vouchers": ["accounts"],
+  "/reports/receipt-vouchers": ["accounts"],
+  "/reports/contra-vouchers": ["accounts"],
+  "/reports/accounts-receivable": ["sales"],
+  "/reports/ar-aging": ["sales"],
+  "/reports/income-analysis": ["sales"],
+  "/reports/accounts-payable": ["purchase"],
+  "/reports/ap-aging": ["purchase"],
+  "/reports/expense-analysis": ["purchase"],
+  "/reports/cash-book": ["bank"],
+  "/reports/bank-book": ["bank"],
+  "/reports/bank-reconciliation": ["bank"],
+  "/reports/stock-reports": ["inventory"],
+  "/reports/low-stock": ["inventory"],
+};
+
 const NavItem = ({ to, label, icon: Icon, end }: { to: string; label: string; icon: any; end?: boolean }) => (
   <NavLink
     to={to}
@@ -192,12 +219,6 @@ const NavItem = ({ to, label, icon: Icon, end }: { to: string; label: string; ic
     <span className="truncate">{label}</span>
   </NavLink>
 );
-
-const routeModuleMap: Record<string, ModuleKey[]> = {
-  "/manufacturing/reports": ["manufacturing"],
-  "/reports/stock-ledger": ["inventory"],
-  "/inventory/warehouses": ["multi_warehouse"],
-};
 
 const CollapsibleGroup = ({ group, isModuleEnabled }: { group: NavGroup; isModuleEnabled: (key: ModuleKey) => boolean }) => {
   const [open, setOpen] = useState(false);
