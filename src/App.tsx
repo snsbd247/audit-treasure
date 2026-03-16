@@ -48,6 +48,25 @@ import StockAdjustmentPage from "./pages/inventory/StockAdjustmentPage";
 import NotFound from "./pages/NotFound";
 import ResetPassword from "./pages/ResetPassword";
 
+// HRM Pages
+import EmployeesPage from "./pages/hrm/EmployeesPage";
+import DepartmentsPage from "./pages/hrm/DepartmentsPage";
+import DesignationsPage from "./pages/hrm/DesignationsPage";
+import AttendancePage from "./pages/hrm/AttendancePage";
+import LeavePage from "./pages/hrm/LeavePage";
+import PayrollPage from "./pages/hrm/PayrollPage";
+import DocumentsPage from "./pages/hrm/DocumentsPage";
+import IdCardsPage from "./pages/hrm/IdCardsPage";
+import HrReportsPage from "./pages/hrm/HrReportsPage";
+import EmployeeVerifyPage from "./pages/hrm/EmployeeVerifyPage";
+
+// Employee Portal Pages
+import MyProfilePage from "./pages/portal/MyProfilePage";
+import MyAttendancePage from "./pages/portal/MyAttendancePage";
+import MyLeavePage from "./pages/portal/MyLeavePage";
+import MyPayslipsPage from "./pages/portal/MyPayslipsPage";
+import MyDocumentsPage from "./pages/portal/MyDocumentsPage";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -64,6 +83,7 @@ const App = () => (
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/employee/verify/:code" element={<EmployeeVerifyPage />} />
               <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/vouchers" element={<VouchersPage />} />
@@ -97,6 +117,23 @@ const App = () => (
                 <Route path="/change-password" element={<ChangePasswordPage />} />
                 <Route path="/bank/accounts" element={<BankAccountsPage />} />
                 <Route path="/bank/cashbook" element={<CashBookPage />} />
+                {/* HRM Routes */}
+                <Route path="/hrm/employees" element={<EmployeesPage />} />
+                <Route path="/hrm/departments" element={<DepartmentsPage />} />
+                <Route path="/hrm/designations" element={<DesignationsPage />} />
+                <Route path="/hrm/attendance" element={<AttendancePage />} />
+                <Route path="/hrm/leave" element={<LeavePage />} />
+                <Route path="/hrm/payroll" element={<PayrollPage />} />
+                <Route path="/hrm/documents" element={<DocumentsPage />} />
+                <Route path="/hrm/id-cards" element={<IdCardsPage />} />
+                <Route path="/hrm/reports" element={<HrReportsPage />} />
+                {/* Employee Portal Routes */}
+                <Route path="/portal/profile" element={<MyProfilePage />} />
+                <Route path="/portal/attendance" element={<MyAttendancePage />} />
+                <Route path="/portal/leave" element={<MyLeavePage />} />
+                <Route path="/portal/payslips" element={<MyPayslipsPage />} />
+                <Route path="/portal/documents" element={<MyDocumentsPage />} />
+                {/* Admin Routes */}
                 <Route path="/admin/users" element={<ProtectedRoute requireAdmin><UsersPage /></ProtectedRoute>} />
                 <Route path="/admin/roles" element={<ProtectedRoute requireAdmin><RolesPage /></ProtectedRoute>} />
                 <Route path="/admin/branches" element={<ProtectedRoute requireAdmin><BranchesPage /></ProtectedRoute>} />

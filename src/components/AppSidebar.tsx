@@ -9,6 +9,7 @@ import {
   ScrollText, Database, Users, Shield, Building2, LogOut,
   CreditCard, Landmark, PiggyBank, TrendingUp,
   ArrowLeftRight, Calendar, Activity, Menu, X, CircleDot, Truck, UserCheck,
+  Briefcase, Clock, CalendarDays, DollarSign, FileCheck, BadgeCheck, User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -17,8 +18,8 @@ import { cn } from "@/lib/utils";
 interface NavGroup {
   label: string;
   icon: any;
-  module?: string; // maps to role_permissions.module for access control
-  requiredModules?: ModuleKey[]; // all must be enabled for group to show
+  module?: string;
+  requiredModules?: ModuleKey[];
   children: { to: string; label: string; icon: any; end?: boolean }[];
   adminOnly?: boolean;
 }
@@ -96,6 +97,36 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
+    label: "HRM",
+    icon: Users,
+    module: "hrm",
+    requiredModules: ["hrm"],
+    children: [
+      { to: "/hrm/employees", label: "Employees", icon: Users },
+      { to: "/hrm/departments", label: "Departments", icon: Building2 },
+      { to: "/hrm/designations", label: "Designations", icon: Briefcase },
+      { to: "/hrm/attendance", label: "Attendance", icon: Clock },
+      { to: "/hrm/leave", label: "Leave Management", icon: CalendarDays },
+      { to: "/hrm/payroll", label: "Payroll", icon: DollarSign },
+      { to: "/hrm/documents", label: "Documents", icon: FileCheck },
+      { to: "/hrm/id-cards", label: "Employee ID Cards", icon: BadgeCheck },
+      { to: "/hrm/reports", label: "HR Reports", icon: BarChart3 },
+    ],
+  },
+  {
+    label: "Employee Portal",
+    icon: User,
+    module: "hrm",
+    requiredModules: ["hrm"],
+    children: [
+      { to: "/portal/profile", label: "My Profile", icon: User },
+      { to: "/portal/attendance", label: "My Attendance", icon: Clock },
+      { to: "/portal/leave", label: "My Leave", icon: CalendarDays },
+      { to: "/portal/payslips", label: "My Payslips", icon: DollarSign },
+      { to: "/portal/documents", label: "My Documents", icon: FileText },
+    ],
+  },
+  {
     label: "Reports",
     icon: BarChart3,
     module: "reports",
@@ -134,7 +165,6 @@ const NavItem = ({ to, label, icon: Icon, end }: { to: string; label: string; ic
   </NavLink>
 );
 
-// Map routes to required modules for child-level filtering
 const routeModuleMap: Record<string, ModuleKey[]> = {
   "/manufacturing/reports": ["manufacturing"],
   "/reports/stock-ledger": ["inventory"],
@@ -205,9 +235,7 @@ export const AppSidebar = () => {
           <div className="my-2 border-t border-sidebar-border" />
           {navGroups.map((group) => {
             if (group.adminOnly && !isAdmin) return null;
-            // Check module enable/disable
             if (group.requiredModules && group.requiredModules.some((m) => !isModuleEnabled(m))) return null;
-            // Staff users: check module-level view permission
             if (!isAdmin && group.module && !hasPermission(group.module, "can_view")) return null;
             return <CollapsibleGroup key={group.label} group={group} isModuleEnabled={isModuleEnabled} />;
           })}
