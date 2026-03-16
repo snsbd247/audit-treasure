@@ -233,7 +233,7 @@ export default function DocumentsPage() {
   const getEmpName = (id: string) => { const e = employees.find(e => e.id === id); return e ? `${e.first_name} ${e.last_name}` : "-"; };
 
   return (
-    <div className="space-y-6">
+    <div className="p-4 lg:p-6 space-y-6 max-w-[1600px] mx-auto">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Employee Documents</h1>
         <p className="text-muted-foreground">Generate official HR documents with company letterhead</p>

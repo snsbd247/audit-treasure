@@ -137,7 +137,7 @@ export default function MyDocumentsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="p-4 lg:p-6 space-y-6 max-w-[1600px] mx-auto">
       <div><h1 className="text-2xl font-bold text-foreground">My Documents</h1><p className="text-muted-foreground">View and generate your employment documents</p></div>
 
       <Tabs defaultValue="saved">
