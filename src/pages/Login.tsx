@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { getEmailByUsername } from "@/lib/db-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,10 +25,7 @@ const Login = () => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const { data: email, error: lookupError } = await supabase
-        .rpc("get_email_by_username", { _username: username });
-
-      if (lookupError) throw lookupError;
+      const email = await getEmailByUsername(username);
       if (!email) {
         throw new Error("Username not found.");
       }

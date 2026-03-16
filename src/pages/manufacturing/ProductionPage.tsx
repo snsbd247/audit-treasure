@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { nextNumber } from "@/lib/db-utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -98,7 +99,7 @@ const ProductionPage = () => {
     if (!formProduct || matRows.length === 0) { toast({ title: "Select product and BOM", variant: "destructive" }); return; }
     setSaving(true);
     try {
-      const { data: numData } = await supabase.rpc("next_number", { seq_id: "production" });
+      const numData = await nextNumber("production");
       const { data, error } = await supabase.from("production_entries").insert({
         production_number: numData as string,
         production_date: formDate, product_id: formProduct, bom_id: formBom || null,

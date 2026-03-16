@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { nextNumber } from "@/lib/db-utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -100,7 +101,7 @@ const PurchasesPage = () => {
     if (validItems.length === 0) { toast({ title: "Add at least one item", variant: "destructive" }); return; }
     setSaving(true);
     try {
-      const { data: numData } = await supabase.rpc("next_number", { seq_id: "purchase" });
+      const numData = await nextNumber("purchase");
       const { data, error } = await supabase.from("purchases").insert({
         purchase_number: numData as string,
         purchase_date: formDate, supplier_id: formSupplier || null, branch_id: formBranch || null,
@@ -131,7 +132,7 @@ const PurchasesPage = () => {
     if (validItems.length === 0) { toast({ title: "Add at least one item", variant: "destructive" }); return; }
     setSaving(true);
     try {
-      const { data: numData } = await supabase.rpc("next_number", { seq_id: "purchase_return" });
+      const numData = await nextNumber("purchase_return");
       const { data, error } = await supabase.from("purchase_returns").insert({
         return_number: numData as string,
         return_date: retDate, supplier_id: retSupplier || null, branch_id: retBranch || null,
