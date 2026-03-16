@@ -18,6 +18,7 @@ serve(async (req) => {
     const GOOGLE_CLIENT_ID = Deno.env.get("GOOGLE_CLIENT_ID");
     const GOOGLE_CLIENT_SECRET = Deno.env.get("GOOGLE_CLIENT_SECRET");
     const GOOGLE_REFRESH_TOKEN = Deno.env.get("GOOGLE_REFRESH_TOKEN");
+    const GOOGLE_DRIVE_FOLDER_ID = Deno.env.get("GOOGLE_DRIVE_FOLDER_ID");
 
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
       throw new Error("Missing Supabase configuration");
@@ -72,42 +73,52 @@ serve(async (req) => {
     const accessToken = tokenData.access_token;
 
     if (action === "upload") {
-      // Upload backup to Google Drive
       if (!backup_content || !backup_file_name) {
         throw new Error("Missing backup_content or backup_file_name");
       }
 
-      // Check/create ERP Backups folder
-      const folderName = "ERP Backups";
-      const searchRes = await fetch(
-        `https://www.googleapis.com/drive/v3/files?q=name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false&fields=files(id,name)`,
-        { headers: { Authorization: `Bearer ${accessToken}` } }
-      );
-      const searchData = await searchRes.json();
+      // Determine target folder
       let folderId: string;
 
-      if (searchData.files && searchData.files.length > 0) {
-        folderId = searchData.files[0].id;
+      if (GOOGLE_DRIVE_FOLDER_ID && GOOGLE_DRIVE_FOLDER_ID.trim()) {
+        // Use configured folder ID directly
+        folderId = GOOGLE_DRIVE_FOLDER_ID.trim();
       } else {
-        // Create folder
-        const createRes = await fetch("https://www.googleapis.com/drive/v3/files", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            name: folderName,
-            mimeType: "application/vnd.google-apps.folder",
-          }),
-        });
-        const createData = await createRes.json();
-        folderId = createData.id;
+        // Fallback: find or create "ERP Backups" folder in root
+        const folderName = "ERP Backups";
+        const searchRes = await fetch(
+          `https://www.googleapis.com/drive/v3/files?q=name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false&fields=files(id,name)`,
+          { headers: { Authorization: `Bearer ${accessToken}` } }
+        );
+        const searchData = await searchRes.json();
+
+        if (searchData.files && searchData.files.length > 0) {
+          folderId = searchData.files[0].id;
+        } else {
+          const createRes = await fetch("https://www.googleapis.com/drive/v3/files", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              name: folderName,
+              mimeType: "application/vnd.google-apps.folder",
+            }),
+          });
+          const createData = await createRes.json();
+          folderId = createData.id;
+        }
       }
+
+      // Generate backup filename with timestamp
+      const now = new Date();
+      const ts = `${now.getFullYear()}_${String(now.getMonth() + 1).padStart(2, "0")}_${String(now.getDate()).padStart(2, "0")}_${String(now.getHours()).padStart(2, "0")}_${String(now.getMinutes()).padStart(2, "0")}`;
+      const fileName = `erp_backup_${ts}.sql`;
 
       // Upload file using multipart
       const metadata = JSON.stringify({
-        name: backup_file_name,
+        name: fileName,
         parents: [folderId],
       });
 
@@ -147,31 +158,64 @@ serve(async (req) => {
         user_name: user.email,
         module: "Backup",
         action: "Cloud Backup",
-        details: `Uploaded ${backup_file_name} to Google Drive (${uploadData.id})`,
+        details: `Uploaded ${fileName} to Google Drive folder ${folderId} (file ID: ${uploadData.id})`,
         record_id: uploadData.id,
+      });
+
+      // Store backup history
+      await supabase.from("backup_history").insert({
+        file_name: fileName,
+        backup_type: "cloud",
+        format: "sql",
+        status: "completed",
+        storage_path: `gdrive://${uploadData.id}`,
+        created_by: user.id,
+        file_size: typeof backup_content === "string" ? backup_content.length : JSON.stringify(backup_content).length,
       });
 
       return new Response(
         JSON.stringify({
           success: true,
           file_id: uploadData.id,
-          file_name: uploadData.name,
+          file_name: fileName,
           web_link: uploadData.webViewLink,
+          folder_id: folderId,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     if (action === "list") {
-      // List backups from Google Drive
+      // List backups — search in configured folder or all
+      let query = "name contains 'erp_backup' and trashed=false";
+      if (GOOGLE_DRIVE_FOLDER_ID && GOOGLE_DRIVE_FOLDER_ID.trim()) {
+        query += ` and '${GOOGLE_DRIVE_FOLDER_ID.trim()}' in parents`;
+      }
+
       const listRes = await fetch(
-        `https://www.googleapis.com/drive/v3/files?q=name contains 'backup' and trashed=false&orderBy=createdTime desc&pageSize=20&fields=files(id,name,size,createdTime,webViewLink)`,
+        `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&orderBy=createdTime desc&pageSize=20&fields=files(id,name,size,createdTime,webViewLink)`,
         { headers: { Authorization: `Bearer ${accessToken}` } }
       );
       const listData = await listRes.json();
 
       return new Response(
-        JSON.stringify({ success: true, files: listData.files || [] }),
+        JSON.stringify({
+          success: true,
+          files: listData.files || [],
+          folder_id: GOOGLE_DRIVE_FOLDER_ID || null,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (action === "check_config") {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          configured: true,
+          has_folder_id: !!(GOOGLE_DRIVE_FOLDER_ID && GOOGLE_DRIVE_FOLDER_ID.trim()),
+          folder_id: GOOGLE_DRIVE_FOLDER_ID || null,
+        }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
