@@ -44,7 +44,8 @@ type SuperAdminAction = "delete" | "reopen" | "reverse" | null;
 const AccountingVouchers = () => {
   const { user, profile, isAdmin, isSuperAdmin, hasPermission } = useAuth();
   const { toast } = useToast();
-  const canEdit = hasPermission("accounts", "can_edit") || isSuperAdmin;
+  const userCanEdit = hasPermission("accounts", "can_edit") || isSuperAdmin;
+  const userCanDelete = hasPermission("accounts", "can_delete") || isSuperAdmin;
   const { fc } = useCurrency();
   const [activeTab, setActiveTab] = useState("journal");
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
@@ -54,6 +55,11 @@ const AccountingVouchers = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editingVoucher, setEditingVoucher] = useState<Voucher | null>(null);
+
+  // View dialog state
+  const [viewVoucher, setViewVoucher] = useState<Voucher | null>(null);
+  const [viewEntries, setViewEntries] = useState<any[]>([]);
 
   // Form state
   const [formDate, setFormDate] = useState(new Date().toISOString().slice(0, 10));
