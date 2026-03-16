@@ -163,12 +163,18 @@ const PurchasesPage = () => {
   const handleSaveReturn = async () => {
     const validItems = retItems.filter((i) => i.product_id && i.quantity > 0);
     if (validItems.length === 0) { toast({ title: "Add at least one item", variant: "destructive" }); return; }
+
+    const fyResult = await validateFinancialYear(retDate);
+    if (!fyResult.valid) { toast({ title: "Financial Year Error", description: fyResult.error, variant: "destructive" }); return; }
+
+    const branchId = retBranch || userBranchId || null;
+
     setSaving(true);
     try {
       const numData = await nextNumber("purchase_return");
       const { data, error } = await supabase.from("purchase_returns").insert({
         return_number: numData as string,
-        return_date: retDate, supplier_id: retSupplier || null, branch_id: retBranch || null,
+        return_date: retDate, supplier_id: retSupplier || null, branch_id: branchId,
         total_amount: grandTotal(validItems), reason: retReason, created_by: user?.id,
       }).select().single();
       if (error) throw error;
@@ -177,7 +183,7 @@ const PurchasesPage = () => {
       await supabase.from("purchase_return_items").insert(rows);
 
       const movements = validItems.map((i) => ({
-        product_id: i.product_id, branch_id: retBranch || null,
+        product_id: i.product_id, branch_id: branchId,
         movement_type: "purchase_return" as const, reference_type: "purchase_return", reference_id: (data as any).id, quantity: -i.quantity,
       }));
       await supabase.from("stock_movements").insert(movements);
