@@ -221,7 +221,7 @@ export type Database = {
             foreignKeyName: "bill_of_materials_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
-            referencedRelation: "products"
+            referencedRelation: "item_master"
             referencedColumns: ["id"]
           },
         ]
@@ -260,7 +260,7 @@ export type Database = {
             foreignKeyName: "bom_items_material_id_fkey"
             columns: ["material_id"]
             isOneToOne: false
-            referencedRelation: "raw_materials"
+            referencedRelation: "item_master"
             referencedColumns: ["id"]
           },
         ]
@@ -534,10 +534,12 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          is_stock_item: boolean
           item_code: string
           item_name: string
           item_type: string
           min_stock_level: number
+          opening_stock: number
           selling_price: number
           status: string
           unit_id: string | null
@@ -549,10 +551,12 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          is_stock_item?: boolean
           item_code: string
           item_name: string
           item_type?: string
           min_stock_level?: number
+          opening_stock?: number
           selling_price?: number
           status?: string
           unit_id?: string | null
@@ -564,10 +568,12 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          is_stock_item?: boolean
           item_code?: string
           item_name?: string
           item_type?: string
           min_stock_level?: number
+          opening_stock?: number
           selling_price?: number
           status?: string
           unit_id?: string | null
@@ -730,7 +736,7 @@ export type Database = {
             foreignKeyName: "production_entries_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
-            referencedRelation: "products"
+            referencedRelation: "item_master"
             referencedColumns: ["id"]
           },
         ]
@@ -762,7 +768,7 @@ export type Database = {
             foreignKeyName: "production_materials_material_id_fkey"
             columns: ["material_id"]
             isOneToOne: false
-            referencedRelation: "raw_materials"
+            referencedRelation: "item_master"
             referencedColumns: ["id"]
           },
           {
@@ -898,7 +904,7 @@ export type Database = {
             foreignKeyName: "purchase_items_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
-            referencedRelation: "products"
+            referencedRelation: "item_master"
             referencedColumns: ["id"]
           },
           {
@@ -940,7 +946,7 @@ export type Database = {
             foreignKeyName: "purchase_return_items_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
-            referencedRelation: "products"
+            referencedRelation: "item_master"
             referencedColumns: ["id"]
           },
           {
@@ -1188,7 +1194,7 @@ export type Database = {
             foreignKeyName: "sales_invoice_items_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
-            referencedRelation: "products"
+            referencedRelation: "item_master"
             referencedColumns: ["id"]
           },
           {
@@ -1290,7 +1296,7 @@ export type Database = {
             foreignKeyName: "sales_return_items_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
-            referencedRelation: "products"
+            referencedRelation: "item_master"
             referencedColumns: ["id"]
           },
           {
@@ -1422,7 +1428,7 @@ export type Database = {
             foreignKeyName: "stock_movements_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
-            referencedRelation: "products"
+            referencedRelation: "item_master"
             referencedColumns: ["id"]
           },
           {
