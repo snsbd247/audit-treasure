@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBranch } from "@/contexts/BranchContext";
 import { createSalesInvoice, createSalesReturn } from "@/lib/transaction-service";
+import { logEditAudit } from "@/lib/audit-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,8 +13,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Receipt, Trash2, RotateCcw } from "lucide-react";
+import { Plus, Receipt, Trash2, RotateCcw, Pencil, Printer } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { PrintLayout } from "@/components/PrintLayout";
 
 interface Product { id: string; product_name: string; product_code: string; selling_price: number; }
 interface Customer { id: string; name: string; }
@@ -22,7 +24,8 @@ interface ItemRow { id: string; product_id: string; quantity: number; price: num
 
 interface SalesInvoice {
   id: string; invoice_number: string; invoice_date: string; customer_id: string | null;
-  total_amount: number; discount: number; net_amount: number; customer_name?: string;
+  total_amount: number; discount: number; net_amount: number; status: string; notes: string | null;
+  customer_name?: string; branch_id?: string | null;
 }
 interface SalesReturnRow {
   id: string; return_number: string; return_date: string; customer_id: string | null;
@@ -30,7 +33,7 @@ interface SalesReturnRow {
 }
 
 const SalesPage = () => {
-  const { user, hasPermission } = useAuth();
+  const { user, profile, hasPermission, isSuperAdmin } = useAuth();
   const { userBranchId } = useBranch();
   const { toast } = useToast();
   const { fc } = useCurrency();
@@ -45,6 +48,7 @@ const SalesPage = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [returnDialogOpen, setReturnDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editingInvoice, setEditingInvoice] = useState<SalesInvoice | null>(null);
 
   const [formDate, setFormDate] = useState(new Date().toISOString().slice(0, 10));
   const [formCustomer, setFormCustomer] = useState("");
@@ -62,6 +66,13 @@ const SalesPage = () => {
   const [custDialogOpen, setCustDialogOpen] = useState(false);
   const [custName, setCustName] = useState("");
   const [custPhone, setCustPhone] = useState("");
+
+  // Print state
+  const [printInvoice, setPrintInvoice] = useState<SalesInvoice | null>(null);
+  const [printItems, setPrintItems] = useState<any[]>([]);
+
+  const canEdit = hasPermission("sales", "can_edit") || isSuperAdmin;
+  const canAdd = hasPermission("sales", "can_add") || isSuperAdmin;
 
   const fetchData = async () => {
     setLoading(true);
@@ -98,15 +109,109 @@ const SalesPage = () => {
 
   const grandTotal = (list: ItemRow[]) => list.reduce((s, i) => s + i.total, 0);
 
+  const openCreate = () => {
+    setEditingInvoice(null);
+    setFormDate(new Date().toISOString().slice(0, 10)); setFormCustomer(""); setFormBranch(""); setFormDiscount("0"); setFormNotes("");
+    setItems([{ id: "1", product_id: "", quantity: 0, price: 0, discount: 0, total: 0 }]);
+    setDialogOpen(true);
+  };
+
+  const openEdit = async (inv: SalesInvoice) => {
+    setEditingInvoice(inv);
+    setFormDate(inv.invoice_date);
+    setFormCustomer(inv.customer_id || "");
+    setFormBranch(inv.branch_id || "");
+    setFormDiscount(String(inv.discount));
+    setFormNotes(inv.notes || "");
+    // Load line items
+    const { data } = await supabase.from("sales_invoice_items").select("*").eq("sales_invoice_id", inv.id);
+    if (data && data.length > 0) {
+      setItems(data.map((d: any, i: number) => ({
+        id: String(i + 1), product_id: d.product_id, quantity: d.quantity, price: d.price, discount: d.discount, total: d.total,
+      })));
+    } else {
+      setItems([{ id: "1", product_id: "", quantity: 0, price: 0, discount: 0, total: 0 }]);
+    }
+    setDialogOpen(true);
+  };
+
+  const openPrint = async (inv: SalesInvoice) => {
+    const { data } = await supabase.from("sales_invoice_items").select("*").eq("sales_invoice_id", inv.id);
+    const enriched = (data || []).map((d: any) => {
+      const prod = products.find((p) => p.id === d.product_id);
+      return { ...d, product_name: prod?.product_name || "—", product_code: prod?.product_code || "" };
+    });
+    setPrintItems(enriched);
+    setPrintInvoice(inv);
+  };
+
   const handleSaveInvoice = async () => {
     const validItems = items.filter((i) => i.product_id && i.quantity > 0);
     if (validItems.length === 0) { toast({ title: "Add at least one item", variant: "destructive" }); return; }
 
     setSaving(true);
     try {
-      const ctx = { date: formDate, branchId: formBranch || userBranchId || null, userId: user?.id };
-      const result = await createSalesInvoice(ctx, formCustomer || null, parseFloat(formDiscount) || 0, formNotes, validItems);
-      toast({ title: `Invoice ${result.invoiceNumber} created` });
+      if (editingInvoice) {
+        // Edit mode - update header
+        const oldValues = {
+          invoice_date: editingInvoice.invoice_date,
+          customer_id: editingInvoice.customer_id,
+          discount: editingInvoice.discount,
+          notes: editingInvoice.notes,
+          total_amount: editingInvoice.total_amount,
+        };
+        const total = grandTotal(validItems);
+        const disc = parseFloat(formDiscount) || 0;
+        const net = total - disc;
+        const newValues = {
+          invoice_date: formDate,
+          customer_id: formCustomer || null,
+          discount: disc,
+          notes: formNotes || null,
+          total_amount: total,
+        };
+
+        const { error } = await supabase.from("sales_invoices").update({
+          invoice_date: formDate,
+          customer_id: formCustomer || null,
+          branch_id: formBranch || null,
+          discount: disc,
+          notes: formNotes || null,
+          total_amount: total,
+          net_amount: net,
+        }).eq("id", editingInvoice.id);
+        if (error) throw error;
+
+        // Replace line items
+        await supabase.from("sales_invoice_items").delete().eq("sales_invoice_id", editingInvoice.id);
+        await supabase.from("sales_invoice_items").insert(
+          validItems.map((i) => ({
+            sales_invoice_id: editingInvoice.id,
+            product_id: i.product_id,
+            quantity: i.quantity,
+            price: i.price,
+            discount: i.discount,
+            total: i.total,
+          }))
+        );
+
+        // Audit log
+        await logEditAudit({
+          userId: user?.id,
+          userName: profile?.name,
+          module: "Sales",
+          action: editingInvoice.status === "approved" ? "Edit (Approved Document)" : "Edit",
+          recordId: editingInvoice.id,
+          oldValues,
+          newValues,
+        });
+
+        toast({ title: `Invoice ${editingInvoice.invoice_number} updated` });
+      } else {
+        const ctx = { date: formDate, branchId: formBranch || userBranchId || null, userId: user?.id };
+        const result = await createSalesInvoice(ctx, formCustomer || null, parseFloat(formDiscount) || 0, formNotes, validItems);
+        toast({ title: `Invoice ${result.invoiceNumber} created` });
+      }
       setDialogOpen(false); fetchData();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -116,7 +221,6 @@ const SalesPage = () => {
   const handleSaveReturn = async () => {
     const validItems = retItems.filter((i) => i.product_id && i.quantity > 0);
     if (validItems.length === 0) { toast({ title: "Add at least one item", variant: "destructive" }); return; }
-
     setSaving(true);
     try {
       const ctx = { date: retDate, branchId: retBranch || userBranchId || null, userId: user?.id };
@@ -175,6 +279,8 @@ const SalesPage = () => {
     </Card>
   );
 
+  const branchMap = new Map(branches.map((b) => [b.id, b.name]));
+
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
@@ -183,16 +289,14 @@ const SalesPage = () => {
           <h1 className="text-xl font-semibold text-foreground">Sales</h1>
         </div>
         <div className="flex gap-2">
-          {hasPermission("Sales", "can_add") && (
-            <Button variant="outline" size="sm" onClick={() => setCustDialogOpen(true)}>Add Customer</Button>
-          )}
-          {hasPermission("Sales", "can_add") && (
+          {canAdd && <Button variant="outline" size="sm" onClick={() => setCustDialogOpen(true)}>Add Customer</Button>}
+          {canAdd && (
             <Button variant="outline" size="sm" onClick={() => { setReturnDialogOpen(true); setRetItems([{ id: "1", product_id: "", quantity: 0, price: 0, discount: 0, total: 0 }]); }}>
               <RotateCcw className="w-4 h-4 mr-1" />Sales Return
             </Button>
           )}
-          {hasPermission("Sales", "can_add") && (
-            <Button size="sm" onClick={() => { setDialogOpen(true); setItems([{ id: "1", product_id: "", quantity: 0, price: 0, discount: 0, total: 0 }]); }}>
+          {canAdd && (
+            <Button size="sm" onClick={openCreate}>
               <Plus className="w-4 h-4 mr-1" />New Invoice
             </Button>
           )}
@@ -211,10 +315,11 @@ const SalesPage = () => {
               <TableHeader><TableRow>
                 <TableHead>Invoice #</TableHead><TableHead>Date</TableHead><TableHead>Customer</TableHead>
                 <TableHead className="text-right">Total</TableHead><TableHead className="text-right">Discount</TableHead><TableHead className="text-right">Net</TableHead>
+                <TableHead className="w-24">Actions</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {loading ? <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
-                : invoices.length === 0 ? <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">No invoices yet</TableCell></TableRow>
+                {loading ? <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
+                : invoices.length === 0 ? <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">No invoices yet</TableCell></TableRow>
                 : invoices.map((inv) => (
                   <TableRow key={inv.id}>
                     <TableCell className="font-geist-mono text-xs font-medium">{inv.invoice_number}</TableCell>
@@ -223,6 +328,18 @@ const SalesPage = () => {
                     <TableCell className="text-right tabular-nums">{fc(inv.total_amount)}</TableCell>
                     <TableCell className="text-right tabular-nums">{fc(inv.discount)}</TableCell>
                     <TableCell className="text-right tabular-nums font-medium">{fc(inv.net_amount)}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        {canEdit && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(inv)} title="Edit">
+                            <Pencil className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openPrint(inv)} title="Print">
+                          <Printer className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -254,10 +371,10 @@ const SalesPage = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Invoice Dialog */}
+      {/* Invoice Dialog (Create/Edit) */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>New Sales Invoice</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editingInvoice ? `Edit Invoice ${editingInvoice.invoice_number}` : "New Sales Invoice"}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2"><Label>Date</Label><Input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)} /></div>
@@ -279,7 +396,7 @@ const SalesPage = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSaveInvoice} disabled={saving}>{saving ? "Saving..." : "Save Invoice"}</Button>
+            <Button onClick={handleSaveInvoice} disabled={saving}>{saving ? "Saving..." : editingInvoice ? "Update Invoice" : "Save Invoice"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -322,6 +439,60 @@ const SalesPage = () => {
           <DialogFooter><Button variant="outline" onClick={() => setCustDialogOpen(false)}>Cancel</Button><Button onClick={handleAddCustomer}>Add</Button></DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Print Preview */}
+      {printInvoice && (
+        <PrintLayout
+          open={!!printInvoice}
+          onClose={() => setPrintInvoice(null)}
+          title="Sales Invoice"
+          docNumber={printInvoice.invoice_number}
+          docDate={printInvoice.invoice_date}
+          branch={printInvoice.branch_id ? branchMap.get(printInvoice.branch_id) : undefined}
+          partyLabel="Customer"
+          partyName={printInvoice.customer_name}
+          notes={printInvoice.notes || undefined}
+        >
+          <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "16px" }}>
+            <thead>
+              <tr>
+                <th style={{ background: "#f0f0f0", fontWeight: 600, textAlign: "left", padding: "8px 10px", border: "1px solid #ddd", fontSize: "11px" }}>#</th>
+                <th style={{ background: "#f0f0f0", fontWeight: 600, textAlign: "left", padding: "8px 10px", border: "1px solid #ddd", fontSize: "11px" }}>Product</th>
+                <th style={{ background: "#f0f0f0", fontWeight: 600, textAlign: "right", padding: "8px 10px", border: "1px solid #ddd", fontSize: "11px" }}>Qty</th>
+                <th style={{ background: "#f0f0f0", fontWeight: 600, textAlign: "right", padding: "8px 10px", border: "1px solid #ddd", fontSize: "11px" }}>Price</th>
+                <th style={{ background: "#f0f0f0", fontWeight: 600, textAlign: "right", padding: "8px 10px", border: "1px solid #ddd", fontSize: "11px" }}>Discount</th>
+                <th style={{ background: "#f0f0f0", fontWeight: 600, textAlign: "right", padding: "8px 10px", border: "1px solid #ddd", fontSize: "11px" }}>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {printItems.map((item: any, idx: number) => (
+                <tr key={idx}>
+                  <td style={{ padding: "6px 10px", border: "1px solid #ddd" }}>{idx + 1}</td>
+                  <td style={{ padding: "6px 10px", border: "1px solid #ddd" }}>{item.product_code} — {item.product_name}</td>
+                  <td style={{ padding: "6px 10px", border: "1px solid #ddd", textAlign: "right" }}>{item.quantity}</td>
+                  <td style={{ padding: "6px 10px", border: "1px solid #ddd", textAlign: "right" }}>{fc(item.price)}</td>
+                  <td style={{ padding: "6px 10px", border: "1px solid #ddd", textAlign: "right" }}>{fc(item.discount)}</td>
+                  <td style={{ padding: "6px 10px", border: "1px solid #ddd", textAlign: "right", fontWeight: 600 }}>{fc(item.total)}</td>
+                </tr>
+              ))}
+              <tr style={{ background: "#f0f0f0", fontWeight: 700 }}>
+                <td colSpan={5} style={{ padding: "8px 10px", border: "1px solid #ddd", textAlign: "right" }}>Subtotal</td>
+                <td style={{ padding: "8px 10px", border: "1px solid #ddd", textAlign: "right" }}>{fc(printInvoice.total_amount)}</td>
+              </tr>
+              {printInvoice.discount > 0 && (
+                <tr>
+                  <td colSpan={5} style={{ padding: "6px 10px", border: "1px solid #ddd", textAlign: "right" }}>Discount</td>
+                  <td style={{ padding: "6px 10px", border: "1px solid #ddd", textAlign: "right" }}>({fc(printInvoice.discount)})</td>
+                </tr>
+              )}
+              <tr style={{ background: "#f0f0f0", fontWeight: 700 }}>
+                <td colSpan={5} style={{ padding: "8px 10px", border: "1px solid #ddd", textAlign: "right" }}>Net Amount</td>
+                <td style={{ padding: "8px 10px", border: "1px solid #ddd", textAlign: "right" }}>{fc(printInvoice.net_amount)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </PrintLayout>
+      )}
     </div>
   );
 };

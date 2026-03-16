@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { voucherApi } from "@/lib/voucher-api";
+import { logEditAudit } from "@/lib/audit-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,8 +18,9 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Check, X, FileText, Trash2, RotateCcw, Pencil, ArrowLeftRight, Lock } from "lucide-react";
+import { Plus, Check, X, FileText, Trash2, RotateCcw, Pencil, ArrowLeftRight, Lock, Printer } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { PrintLayout } from "@/components/PrintLayout";
 
 const VOUCHER_TYPES = [
   { id: "journal", label: "Journal Voucher", prefix: "JV" },
@@ -40,8 +42,9 @@ interface Voucher {
 type SuperAdminAction = "delete" | "reopen" | "reverse" | null;
 
 const AccountingVouchers = () => {
-  const { user, isAdmin, isSuperAdmin } = useAuth();
+  const { user, profile, isAdmin, isSuperAdmin, hasPermission } = useAuth();
   const { toast } = useToast();
+  const canEdit = hasPermission("accounts", "can_edit") || isSuperAdmin;
   const { fc } = useCurrency();
   const [activeTab, setActiveTab] = useState("journal");
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
@@ -61,6 +64,10 @@ const AccountingVouchers = () => {
     { id: "1", account_id: "", debit: 0, credit: 0, narration: "" },
     { id: "2", account_id: "", debit: 0, credit: 0, narration: "" },
   ]);
+
+  // Print state
+  const [printVoucher, setPrintVoucher] = useState<Voucher | null>(null);
+  const [printEntries, setPrintEntries] = useState<any[]>([]);
 
   // Super admin action state
   const [superAdminAction, setSuperAdminAction] = useState<SuperAdminAction>(null);
@@ -198,7 +205,12 @@ const AccountingVouchers = () => {
     }
   };
 
-  const statusBadge = (status: string) => {
+  const openPrintVoucher = async (v: Voucher) => {
+    const { data } = await supabase.from("voucher_entries").select("*, chart_of_accounts:account_id(account_name, account_code)").eq("voucher_id", v.id).order("sort_order");
+    setPrintEntries((data || []).map((e: any) => ({ ...e, account_name: e.chart_of_accounts?.account_name || "—", account_code: e.chart_of_accounts?.account_code || "" })));
+    setPrintVoucher(v);
+  };
+
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       draft: "outline", pending: "secondary", approved: "default", rejected: "destructive",
     };
