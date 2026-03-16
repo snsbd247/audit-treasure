@@ -560,6 +560,44 @@ export type Database = {
         }
         Relationships: []
       }
+      employee_documents: {
+        Row: {
+          created_at: string
+          document_html: string | null
+          document_title: string
+          document_type: string
+          employee_id: string
+          generated_by: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          document_html?: string | null
+          document_title: string
+          document_type: string
+          employee_id: string
+          generated_by?: string | null
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          document_html?: string | null
+          document_title?: string
+          document_type?: string
+          employee_id?: string
+          generated_by?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_documents_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employees: {
         Row: {
           address: string | null

@@ -6,10 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
-import { CreditCard, Printer, QrCode } from "lucide-react";
+import { CreditCard, Printer } from "lucide-react";
 
-interface Employee { id: string; employee_code: string; first_name: string; last_name: string; department_id: string | null; designation_id: string | null; joining_date: string; photo_url: string | null; status: string; }
+interface Employee {
+  id: string; employee_code: string; first_name: string; last_name: string;
+  department_id: string | null; designation_id: string | null; joining_date: string;
+  photo_url: string | null; status: string;
+}
 interface Dept { id: string; name: string; }
 interface Desig { id: string; name: string; }
 
@@ -37,50 +40,72 @@ export default function IdCardsPage() {
   const deptName = emp ? departments.find(d => d.id === emp.department_id)?.name || "-" : "";
   const desigName = emp ? designations.find(d => d.id === emp.designation_id)?.name || "-" : "";
   const companyName = settings?.company_name || "Company";
+  const companyAddress = settings?.address || "";
+  const companyLogo = settings?.company_logo_url || "";
   const verifyUrl = emp ? `${window.location.origin}/employee/verify/${emp.employee_code}` : "";
-  const qrUrl = emp ? `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(verifyUrl)}` : "";
+  const qrUrl = emp ? `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(verifyUrl)}` : "";
 
   const handlePrint = () => {
     const win = window.open("", "_blank");
     if (!win || !emp) return;
-    win.document.write(`<html><head><title>ID Card</title><style>
-      body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f0f0f0;}
-      .card{width:340px;border-radius:12px;overflow:hidden;background:#fff;box-shadow:0 4px 20px rgba(0,0,0,0.15);}
-      .header{background:#1a365d;color:#fff;padding:16px;text-align:center;}
-      .header h3{margin:0;font-size:16px;}
-      .header p{margin:4px 0 0;font-size:11px;opacity:0.8;}
-      .body{padding:20px;text-align:center;}
-      .photo{width:80px;height:80px;border-radius:50%;background:#e2e8f0;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:28px;color:#64748b;border:3px solid #1a365d;}
-      .name{font-size:18px;font-weight:bold;margin:0;}
-      .code{font-size:12px;color:#64748b;margin:4px 0 12px;}
-      .info{text-align:left;font-size:13px;line-height:2;}
-      .info span{color:#64748b;}
-      .qr{text-align:center;padding:12px;border-top:1px solid #e2e8f0;}
-      .qr img{width:100px;height:100px;}
-      .qr p{font-size:10px;color:#94a3b8;margin:6px 0 0;}
+    const photoHtml = emp.photo_url
+      ? `<img src="${emp.photo_url}" class="photo" />`
+      : `<div class="photo-placeholder">${emp.first_name[0]}${emp.last_name[0]}</div>`;
+    const logoHtml = companyLogo
+      ? `<img src="${companyLogo}" style="height:30px;margin-bottom:6px;" />`
+      : "";
+
+    win.document.write(`<html><head><title>ID Card - ${emp.employee_code}</title><style>
+      @page { size: 86mm 54mm; margin: 0; }
+      body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: #f5f5f5; }
+      .card { width: 360px; border-radius: 14px; overflow: hidden; background: #fff; box-shadow: 0 8px 30px rgba(0,0,0,0.12); }
+      .header { background: linear-gradient(135deg, #1a365d, #2563eb); color: #fff; padding: 18px 20px; text-align: center; }
+      .header h3 { margin: 0; font-size: 17px; font-weight: 700; letter-spacing: 1px; }
+      .header p { margin: 5px 0 0; font-size: 10px; opacity: 0.75; letter-spacing: 0.5px; text-transform: uppercase; }
+      .body { padding: 22px 20px 16px; text-align: center; }
+      .photo { width: 85px; height: 85px; border-radius: 50%; object-fit: cover; margin: 0 auto 14px; border: 3px solid #1a365d; display: block; }
+      .photo-placeholder { width: 85px; height: 85px; border-radius: 50%; background: #e2e8f0; margin: 0 auto 14px; display: flex; align-items: center; justify-content: center; font-size: 30px; color: #475569; border: 3px solid #1a365d; font-weight: bold; }
+      .name { font-size: 19px; font-weight: 700; margin: 0; color: #1a1a1a; }
+      .code { font-size: 12px; color: #64748b; margin: 4px 0 14px; font-family: monospace; letter-spacing: 1px; }
+      .info { text-align: left; font-size: 13px; line-height: 2.2; padding: 0 8px; }
+      .info .row { display: flex; justify-content: space-between; border-bottom: 1px dotted #e2e8f0; }
+      .info .label { color: #64748b; }
+      .info .value { font-weight: 600; color: #1e293b; }
+      .qr-section { text-align: center; padding: 14px; border-top: 2px solid #f1f5f9; background: #fafbfc; }
+      .qr-section img { width: 90px; height: 90px; }
+      .qr-section p { font-size: 9px; color: #94a3b8; margin: 6px 0 0; }
+      .verify-url { font-size: 8px; color: #cbd5e1; word-break: break-all; }
     </style></head><body>
       <div class="card">
-        <div class="header"><h3>${companyName}</h3><p>Employee Identity Card</p></div>
+        <div class="header">${logoHtml}<h3>${companyName}</h3><p>Employee Identity Card</p></div>
         <div class="body">
-          <div class="photo">${emp.first_name[0]}${emp.last_name[0]}</div>
+          ${photoHtml}
           <p class="name">${emp.first_name} ${emp.last_name}</p>
           <p class="code">${emp.employee_code}</p>
           <div class="info">
-            <div><span>Department:</span> ${deptName}</div>
-            <div><span>Designation:</span> ${desigName}</div>
-            <div><span>Joined:</span> ${emp.joining_date}</div>
+            <div class="row"><span class="label">Department</span><span class="value">${deptName}</span></div>
+            <div class="row"><span class="label">Designation</span><span class="value">${desigName}</span></div>
+            <div class="row"><span class="label">Joined</span><span class="value">${emp.joining_date}</span></div>
+            <div class="row" style="border:none"><span class="label">Status</span><span class="value" style="color:${emp.status === "active" ? "#16a34a" : "#dc2626"};text-transform:capitalize">${emp.status}</span></div>
           </div>
         </div>
-        <div class="qr"><img src="${qrUrl}" /><p>Scan to verify</p></div>
+        <div class="qr-section">
+          <img src="${qrUrl}" alt="QR Code" />
+          <p>Scan QR code to verify employee</p>
+          <p class="verify-url">${verifyUrl}</p>
+        </div>
       </div>
     </body></html>`);
     win.document.close();
-    setTimeout(() => win.print(), 500);
+    setTimeout(() => win.print(), 600);
   };
 
   return (
     <div className="space-y-6">
-      <div><h1 className="text-2xl font-bold text-foreground">Employee ID Cards</h1><p className="text-muted-foreground">Generate and print employee ID cards with QR verification</p></div>
+      <div>
+        <h1 className="text-2xl font-bold text-foreground">Employee ID Cards</h1>
+        <p className="text-muted-foreground">Generate and print employee ID cards with QR verification</p>
+      </div>
 
       <Card>
         <CardHeader><CardTitle className="flex items-center gap-2"><CreditCard className="w-5 h-5" />ID Card Generator</CardTitle></CardHeader>
@@ -98,27 +123,32 @@ export default function IdCardsPage() {
 
           {emp && (
             <div className="flex justify-center">
-              <div className="w-[340px] rounded-xl overflow-hidden border shadow-lg">
-                <div className="bg-primary text-primary-foreground p-4 text-center">
-                  <h3 className="font-bold text-lg">{companyName}</h3>
-                  <p className="text-xs opacity-80">Employee Identity Card</p>
+              <div className="w-[360px] rounded-xl overflow-hidden border shadow-lg">
+                <div className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground p-5 text-center">
+                  {companyLogo && <img src={companyLogo} alt="Logo" className="h-8 mx-auto mb-2" />}
+                  <h3 className="font-bold text-lg tracking-wide">{companyName}</h3>
+                  <p className="text-[10px] uppercase tracking-widest opacity-75 mt-1">Employee Identity Card</p>
                 </div>
-                <div className="p-5 text-center bg-card">
-                  <div className="w-20 h-20 rounded-full bg-muted mx-auto mb-3 flex items-center justify-center text-2xl font-bold text-muted-foreground border-[3px] border-primary">
-                    {emp.first_name[0]}{emp.last_name[0]}
-                  </div>
+                <div className="p-6 text-center bg-card">
+                  {emp.photo_url ? (
+                    <img src={emp.photo_url} alt="Photo" className="w-[85px] h-[85px] rounded-full object-cover mx-auto mb-3 border-[3px] border-primary" />
+                  ) : (
+                    <div className="w-[85px] h-[85px] rounded-full bg-muted mx-auto mb-3 flex items-center justify-center text-2xl font-bold text-muted-foreground border-[3px] border-primary">
+                      {emp.first_name[0]}{emp.last_name[0]}
+                    </div>
+                  )}
                   <p className="text-lg font-bold text-foreground">{emp.first_name} {emp.last_name}</p>
-                  <p className="text-xs text-muted-foreground mb-3">{emp.employee_code}</p>
-                  <div className="text-left text-sm space-y-1.5">
-                    <div className="flex justify-between"><span className="text-muted-foreground">Department</span><span className="font-medium">{deptName}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Designation</span><span className="font-medium">{desigName}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Joined</span><span className="font-medium">{emp.joining_date}</span></div>
+                  <p className="text-xs text-muted-foreground font-mono tracking-wider mb-4">{emp.employee_code}</p>
+                  <div className="text-left text-sm space-y-2">
+                    <div className="flex justify-between border-b border-dashed border-border pb-1"><span className="text-muted-foreground">Department</span><span className="font-semibold">{deptName}</span></div>
+                    <div className="flex justify-between border-b border-dashed border-border pb-1"><span className="text-muted-foreground">Designation</span><span className="font-semibold">{desigName}</span></div>
+                    <div className="flex justify-between border-b border-dashed border-border pb-1"><span className="text-muted-foreground">Joined</span><span className="font-semibold">{emp.joining_date}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">Status</span><Badge variant={emp.status === "active" ? "default" : "secondary"} className="capitalize">{emp.status}</Badge></div>
                   </div>
                 </div>
-                <div className="border-t p-3 text-center bg-card">
-                  <img src={qrUrl} alt="QR Code" className="w-24 h-24 mx-auto" />
-                  <p className="text-[10px] text-muted-foreground mt-1">Scan to verify employee</p>
+                <div className="border-t p-4 text-center bg-muted/30">
+                  <img src={qrUrl} alt="QR Code" className="w-[90px] h-[90px] mx-auto" />
+                  <p className="text-[10px] text-muted-foreground mt-2">Scan QR code to verify employee</p>
                 </div>
               </div>
             </div>
