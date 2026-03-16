@@ -13,7 +13,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, ArrowRightLeft } from "lucide-react";
+import { Plus, ArrowRightLeft, Printer } from "lucide-react";
+import { PrintLayout } from "@/components/PrintLayout";
 
 interface WH { id: string; warehouse_code: string; warehouse_name: string; branch_id: string | null; }
 interface Item { id: string; item_code: string; item_name: string; }
@@ -36,6 +37,9 @@ const StockTransferPage = () => {
   const [qty, setQty] = useState("1");
   const [notes, setNotes] = useState("");
 
+  // Print state
+  const [printTransfer, setPrintTransfer] = useState<Transfer | null>(null);
+
   const fetchData = async () => {
     setLoading(true);
     const [wRes, iRes, tRes] = await Promise.all([
@@ -53,6 +57,7 @@ const StockTransferPage = () => {
 
   const whMap = new Map(warehouses.map((w) => [w.id, w.warehouse_name]));
   const itemMap = new Map(items.map((i) => [i.id, `${i.item_code} — ${i.item_name}`]));
+  const itemNameMap = new Map(items.map((i) => [i.id, i.item_name]));
 
   const handleTransfer = async () => {
     if (!fromWH || !toWH || !itemId || fromWH === toWH) {
@@ -88,10 +93,11 @@ const StockTransferPage = () => {
             <TableHead>Transfer #</TableHead><TableHead>Date</TableHead><TableHead>Item</TableHead>
             <TableHead>From</TableHead><TableHead>To</TableHead>
             <TableHead className="text-right">Qty</TableHead><TableHead>Status</TableHead>
+            <TableHead className="w-16">Actions</TableHead>
           </TableRow></TableHeader>
           <TableBody>
-            {loading ? <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
-            : transfers.length === 0 ? <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">No transfers yet</TableCell></TableRow>
+            {loading ? <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
+            : transfers.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">No transfers yet</TableCell></TableRow>
             : transfers.map((t) => (
               <TableRow key={t.id}>
                 <TableCell className="font-mono text-xs">{t.transfer_number}</TableCell>
@@ -101,6 +107,11 @@ const StockTransferPage = () => {
                 <TableCell>{whMap.get(t.to_warehouse_id) || "—"}</TableCell>
                 <TableCell className="text-right tabular-nums">{t.quantity}</TableCell>
                 <TableCell><Badge variant="default">{t.status}</Badge></TableCell>
+                <TableCell>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setPrintTransfer(t)} title="Print">
+                    <Printer className="w-3.5 h-3.5" />
+                  </Button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -137,6 +148,43 @@ const StockTransferPage = () => {
           <DialogFooter><Button onClick={handleTransfer} disabled={saving}>{saving ? "Processing..." : "Transfer"}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Print Preview */}
+      {printTransfer && (
+        <PrintLayout
+          open={!!printTransfer}
+          onClose={() => setPrintTransfer(null)}
+          title="Stock Transfer"
+          docNumber={printTransfer.transfer_number}
+          docDate={printTransfer.transfer_date}
+          notes={printTransfer.notes || undefined}
+        >
+          <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "16px" }}>
+            <tbody>
+              <tr>
+                <td style={{ padding: "8px 12px", border: "1px solid #ddd", fontWeight: 600, width: "30%", background: "#f0f0f0" }}>Item</td>
+                <td style={{ padding: "8px 12px", border: "1px solid #ddd" }}>{itemMap.get(printTransfer.item_id) || "—"}</td>
+              </tr>
+              <tr>
+                <td style={{ padding: "8px 12px", border: "1px solid #ddd", fontWeight: 600, background: "#f0f0f0" }}>From Warehouse</td>
+                <td style={{ padding: "8px 12px", border: "1px solid #ddd" }}>{whMap.get(printTransfer.from_warehouse_id) || "—"}</td>
+              </tr>
+              <tr>
+                <td style={{ padding: "8px 12px", border: "1px solid #ddd", fontWeight: 600, background: "#f0f0f0" }}>To Warehouse</td>
+                <td style={{ padding: "8px 12px", border: "1px solid #ddd" }}>{whMap.get(printTransfer.to_warehouse_id) || "—"}</td>
+              </tr>
+              <tr>
+                <td style={{ padding: "8px 12px", border: "1px solid #ddd", fontWeight: 600, background: "#f0f0f0" }}>Quantity</td>
+                <td style={{ padding: "8px 12px", border: "1px solid #ddd", fontVariantNumeric: "tabular-nums" }}>{printTransfer.quantity}</td>
+              </tr>
+              <tr>
+                <td style={{ padding: "8px 12px", border: "1px solid #ddd", fontWeight: 600, background: "#f0f0f0" }}>Status</td>
+                <td style={{ padding: "8px 12px", border: "1px solid #ddd", textTransform: "capitalize" }}>{printTransfer.status}</td>
+              </tr>
+            </tbody>
+          </table>
+        </PrintLayout>
+      )}
     </div>
   );
 };
