@@ -80,6 +80,116 @@ export type Database = {
           },
         ]
       }
+      audit_log: {
+        Row: {
+          action: string
+          created_at: string
+          details: string | null
+          id: string
+          ip_address: string | null
+          module: string
+          record_id: string | null
+          user_id: string | null
+          user_name: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: string | null
+          id?: string
+          ip_address?: string | null
+          module: string
+          record_id?: string | null
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: string | null
+          id?: string
+          ip_address?: string | null
+          module?: string
+          record_id?: string | null
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Relationships: []
+      }
+      bill_of_materials: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          product_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          product_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          product_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bill_of_materials_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bom_items: {
+        Row: {
+          bom_id: string
+          id: string
+          material_id: string
+          quantity: number
+          unit: string
+        }
+        Insert: {
+          bom_id: string
+          id?: string
+          material_id: string
+          quantity?: number
+          unit?: string
+        }
+        Update: {
+          bom_id?: string
+          id?: string
+          material_id?: string
+          quantity?: number
+          unit?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bom_items_bom_id_fkey"
+            columns: ["bom_id"]
+            isOneToOne: false
+            referencedRelation: "bill_of_materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bom_items_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "raw_materials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       branches: {
         Row: {
           address: string | null
@@ -276,6 +386,121 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      production_entries: {
+        Row: {
+          bom_id: string | null
+          branch_id: string | null
+          created_at: string
+          created_by: string | null
+          electricity_cost: number
+          id: string
+          labor_cost: number
+          notes: string | null
+          product_id: string
+          production_date: string
+          production_number: string
+          quantity: number
+          raw_material_cost: number
+          status: string
+          total_cost: number
+        }
+        Insert: {
+          bom_id?: string | null
+          branch_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          electricity_cost?: number
+          id?: string
+          labor_cost?: number
+          notes?: string | null
+          product_id: string
+          production_date?: string
+          production_number: string
+          quantity?: number
+          raw_material_cost?: number
+          status?: string
+          total_cost?: number
+        }
+        Update: {
+          bom_id?: string | null
+          branch_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          electricity_cost?: number
+          id?: string
+          labor_cost?: number
+          notes?: string | null
+          product_id?: string
+          production_date?: string
+          production_number?: string
+          quantity?: number
+          raw_material_cost?: number
+          status?: string
+          total_cost?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_entries_bom_id_fkey"
+            columns: ["bom_id"]
+            isOneToOne: false
+            referencedRelation: "bill_of_materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_entries_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_entries_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_materials: {
+        Row: {
+          cost: number
+          id: string
+          material_id: string
+          production_id: string
+          quantity: number
+        }
+        Insert: {
+          cost?: number
+          id?: string
+          material_id: string
+          production_id: string
+          quantity?: number
+        }
+        Update: {
+          cost?: number
+          id?: string
+          material_id?: string
+          production_id?: string
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_materials_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "raw_materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_materials_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "production_entries"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       products: {
         Row: {
@@ -566,6 +791,50 @@ export type Database = {
           },
           {
             foreignKeyName: "purchases_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      raw_materials: {
+        Row: {
+          cost_price: number
+          created_at: string
+          id: string
+          material_code: string
+          material_name: string
+          status: string
+          supplier_id: string | null
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          cost_price?: number
+          created_at?: string
+          id?: string
+          material_code: string
+          material_name: string
+          status?: string
+          supplier_id?: string | null
+          unit?: string
+          updated_at?: string
+        }
+        Update: {
+          cost_price?: number
+          created_at?: string
+          id?: string
+          material_code?: string
+          material_name?: string
+          status?: string
+          supplier_id?: string | null
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "raw_materials_supplier_id_fkey"
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
