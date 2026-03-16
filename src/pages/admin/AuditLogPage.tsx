@@ -20,8 +20,8 @@ const AuditLogPage = () => {
   const fetchLogs = async () => {
     setLoading(true);
     let query = supabase.from("audit_log").select("*").order("created_at", { ascending: false }).limit(200);
-    if (filterModule) query = query.eq("module", filterModule);
-    if (filterAction) query = query.eq("action", filterAction);
+    if (filterModule && filterModule !== "__all__") query = query.eq("module", filterModule);
+    if (filterAction && filterAction !== "__all__") query = query.eq("action", filterAction);
     if (filterFrom) query = query.gte("created_at", filterFrom);
     if (filterTo) query = query.lte("created_at", filterTo + "T23:59:59");
     const { data } = await query;
