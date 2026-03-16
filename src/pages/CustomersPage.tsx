@@ -1,13 +1,22 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/contexts/AuthContext";
+import { logEditAudit } from "@/lib/audit-utils";
+import { documentApi } from "@/lib/document-api";
+import { getDocumentStatusConfig } from "@/hooks/useDocumentRules";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Pencil, Check, X, Lock, ShieldAlert } from "lucide-react";
 
 interface Customer {
   id: string;
@@ -19,11 +28,21 @@ interface Customer {
 }
 
 const CustomersPage = () => {
+  const { user, profile, hasPermission, isSuperAdmin, isAdmin } = useAuth();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [form, setForm] = useState({ name: "", email: "", phone: "", address: "" });
+  const [saving, setSaving] = useState(false);
   const { toast } = useToast();
+
+  const canEdit = hasPermission("sales", "can_edit") || isSuperAdmin;
+  const canAdd = hasPermission("sales", "can_add") || isSuperAdmin;
+
+  const [actionDialogOpen, setActionDialogOpen] = useState(false);
+  const [actionType, setActionType] = useState<"approve" | "cancel" | null>(null);
+  const [actionTarget, setActionTarget] = useState<Customer | null>(null);
 
   useEffect(() => { load(); }, []);
 
@@ -32,13 +51,74 @@ const CustomersPage = () => {
     setCustomers(data || []);
   };
 
-  const save = async () => {
-    const { error } = await supabase.from("customers").insert({ ...form });
-    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
-    toast({ title: "Customer added" });
-    setOpen(false);
+  const openCreate = () => {
+    setEditingCustomer(null);
     setForm({ name: "", email: "", phone: "", address: "" });
-    load();
+    setOpen(true);
+  };
+
+  const openEdit = (c: Customer) => {
+    const isApproved = c.status === "approved";
+    if (isApproved && !isSuperAdmin) {
+      toast({ title: "Locked", description: "Only Super Admin can edit approved customers", variant: "destructive" });
+      return;
+    }
+    if (c.status === "cancelled") {
+      toast({ title: "Locked", description: "Cancelled records cannot be edited", variant: "destructive" });
+      return;
+    }
+    setEditingCustomer(c);
+    setForm({ name: c.name, email: c.email || "", phone: c.phone || "", address: c.address || "" });
+    setOpen(true);
+  };
+
+  const save = async () => {
+    if (!form.name.trim()) return;
+    setSaving(true);
+    try {
+      if (editingCustomer) {
+        const isApprovedEdit = editingCustomer.status === "approved";
+        if (isApprovedEdit && isSuperAdmin) {
+          await documentApi.editApproved("customer", editingCustomer.id, {
+            name: form.name, email: form.email || null, phone: form.phone || null, address: form.address || null,
+          });
+        } else {
+          const oldValues = { name: editingCustomer.name, email: editingCustomer.email, phone: editingCustomer.phone, address: editingCustomer.address };
+          const newValues = { name: form.name, email: form.email || null, phone: form.phone || null, address: form.address || null };
+          const { error } = await supabase.from("customers").update(newValues).eq("id", editingCustomer.id);
+          if (error) throw error;
+          await logEditAudit({ userId: user?.id, userName: profile?.name, module: "Sales", action: "Edit Customer", recordId: editingCustomer.id, oldValues, newValues });
+        }
+        toast({ title: "Customer updated" });
+      } else {
+        const { error } = await supabase.from("customers").insert({ ...form, status: "active" });
+        if (error) throw error;
+        toast({ title: "Customer added" });
+      }
+      setOpen(false);
+      load();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally { setSaving(false); }
+  };
+
+  const handleDocAction = async () => {
+    if (!actionTarget || !actionType) return;
+    setSaving(true);
+    try {
+      if (actionType === "approve") {
+        await documentApi.approve("customer", actionTarget.id);
+        toast({ title: `Customer ${actionTarget.name} approved` });
+      } else if (actionType === "cancel") {
+        await documentApi.cancel("customer", actionTarget.id);
+        toast({ title: `Customer ${actionTarget.name} cancelled` });
+      }
+      setActionDialogOpen(false);
+      setActionTarget(null);
+      load();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally { setSaving(false); }
   };
 
   const filtered = customers.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()));
@@ -47,21 +127,7 @@ const CustomersPage = () => {
     <div className="p-4 lg:p-6 max-w-[1200px] mx-auto space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-foreground">Customers</h1>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm"><Plus className="w-4 h-4 mr-1" />Add Customer</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>New Customer</DialogTitle></DialogHeader>
-            <div className="space-y-3">
-              <div><Label>Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
-              <div><Label>Email</Label><Input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
-              <div><Label>Phone</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
-              <div><Label>Address</Label><Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
-              <Button onClick={save} className="w-full">Save</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        {canAdd && <Button size="sm" onClick={openCreate}><Plus className="w-4 h-4 mr-1" />Add Customer</Button>}
       </div>
       <div className="relative max-w-xs">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -76,22 +142,93 @@ const CustomersPage = () => {
                 <TableHead>Email</TableHead>
                 <TableHead>Phone</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead className="w-32">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((c) => (
-                <TableRow key={c.id}>
-                  <TableCell className="font-medium">{c.name}</TableCell>
-                  <TableCell>{c.email || "—"}</TableCell>
-                  <TableCell>{c.phone || "—"}</TableCell>
-                  <TableCell><span className="text-xs bg-success/10 text-success px-2 py-0.5 rounded-full">{c.status}</span></TableCell>
-                </TableRow>
-              ))}
-              {filtered.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">No customers found</TableCell></TableRow>}
+              {filtered.map((c) => {
+                const statusCfg = getDocumentStatusConfig(c.status);
+                const isLocked = c.status === "approved" && !isSuperAdmin;
+                const isCancelled = c.status === "cancelled";
+                return (
+                  <TableRow key={c.id} className={isCancelled ? "opacity-60" : ""}>
+                    <TableCell className="font-medium">{c.name}</TableCell>
+                    <TableCell>{c.email || "—"}</TableCell>
+                    <TableCell>{c.phone || "—"}</TableCell>
+                    <TableCell>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusCfg.className}`}>
+                        {statusCfg.label}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        {(c.status === "active" || c.status === "draft") && (isAdmin || isSuperAdmin) && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={() => { setActionTarget(c); setActionType("approve"); setActionDialogOpen(true); }} title="Approve">
+                            <Check className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                        {!isCancelled && !isLocked && canEdit && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(c)} title="Edit">
+                            <Pencil className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                        {isSuperAdmin && c.status === "approved" && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-amber-600" onClick={() => openEdit(c)} title="Super Admin Edit">
+                            <ShieldAlert className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                        {!isCancelled && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => { setActionTarget(c); setActionType("cancel"); setActionDialogOpen(true); }} title="Cancel">
+                            <X className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+              {filtered.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No customers found</TableCell></TableRow>}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
+
+      {/* Create/Edit Dialog */}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{editingCustomer ? "Edit Customer" : "New Customer"}</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div><Label>Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
+            <div><Label>Email</Label><Input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
+            <div><Label>Phone</Label><Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
+            <div><Label>Address</Label><Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button onClick={save} disabled={saving}>{saving ? "Saving..." : editingCustomer ? "Update" : "Save"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Action Dialog */}
+      <AlertDialog open={actionDialogOpen} onOpenChange={setActionDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{actionType === "approve" ? "Approve Customer" : "Cancel Customer"}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {actionType === "approve"
+                ? `Approve customer "${actionTarget?.name}"? This will lock editing for normal users.`
+                : `Cancel customer "${actionTarget?.name}"? This record will be deactivated.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDocAction} disabled={saving}>
+              {saving ? "Processing..." : actionType === "approve" ? "Approve" : "Deactivate"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

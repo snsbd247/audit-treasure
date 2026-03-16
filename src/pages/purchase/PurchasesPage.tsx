@@ -35,7 +35,7 @@ interface Purchase {
 }
 interface PurchaseReturn {
   id: string; return_number: string; return_date: string; supplier_id: string | null;
-  total_amount: number; reason: string | null; supplier_name?: string;
+  total_amount: number; reason: string | null; supplier_name?: string; status: string;
 }
 
 const PurchasesPage = () => {
@@ -387,18 +387,44 @@ const PurchasesPage = () => {
               <TableHeader><TableRow>
                 <TableHead>Return #</TableHead><TableHead>Date</TableHead><TableHead>Supplier</TableHead>
                 <TableHead className="text-right">Amount</TableHead><TableHead>Reason</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="w-28">Actions</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {returns.length === 0 ? <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">No returns yet</TableCell></TableRow>
-                : returns.map((r) => (
-                  <TableRow key={r.id}>
+                {returns.length === 0 ? <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">No returns yet</TableCell></TableRow>
+                : returns.map((r) => {
+                  const sCfg = getDocumentStatusConfig(r.status || "draft");
+                  const rCancelled = r.status === "cancelled";
+                  return (
+                  <TableRow key={r.id} className={rCancelled ? "opacity-60" : ""}>
                     <TableCell className="font-geist-mono text-xs font-medium">{r.return_number}</TableCell>
                     <TableCell>{r.return_date}</TableCell>
                     <TableCell>{r.supplier_name || "—"}</TableCell>
                     <TableCell className="text-right tabular-nums font-medium">{fc(r.total_amount)}</TableCell>
                     <TableCell className="text-muted-foreground">{r.reason || "—"}</TableCell>
+                    <TableCell>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${sCfg.className}`}>{sCfg.label}</span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        {!rCancelled && (r.status === "draft" || r.status === "completed") && (isAdmin || isSuperAdmin) && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={async () => {
+                            try { await documentApi.approve("purchase_return", r.id); toast({ title: "Return approved" }); fetchData(); } catch (e: any) { toast({ title: "Error", description: e.message, variant: "destructive" }); }
+                          }} title="Approve"><Check className="w-3.5 h-3.5" /></Button>
+                        )}
+                        {isSuperAdmin && r.status === "approved" && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-amber-600" title="Super Admin Edit"><ShieldAlert className="w-3.5 h-3.5" /></Button>
+                        )}
+                        {!rCancelled && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={async () => {
+                            try { await documentApi.cancel("purchase_return", r.id); toast({ title: "Return cancelled" }); fetchData(); } catch (e: any) { toast({ title: "Error", description: e.message, variant: "destructive" }); }
+                          }} title="Cancel"><X className="w-3.5 h-3.5" /></Button>
+                        )}
+                      </div>
+                    </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent></Card>

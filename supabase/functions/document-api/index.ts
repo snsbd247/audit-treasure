@@ -95,6 +95,24 @@ const DOC_CONFIG: Record<string, {
     hasStock: true,
     stockMovementType: "purchase",
   },
+  sales_return: {
+    table: "sales_returns",
+    itemsTable: "sales_return_items",
+    itemsFk: "sales_return_id",
+    numberField: "return_number",
+    module: "sales",
+    hasStock: true,
+    stockMovementType: "sales_return",
+  },
+  purchase_return: {
+    table: "purchase_returns",
+    itemsTable: "purchase_return_items",
+    itemsFk: "purchase_return_id",
+    numberField: "return_number",
+    module: "purchase",
+    hasStock: true,
+    stockMovementType: "purchase_return",
+  },
   production: {
     table: "production_entries",
     itemsTable: "production_materials",
@@ -110,6 +128,26 @@ const DOC_CONFIG: Record<string, {
     module: "inventory",
     hasStock: true,
     stockMovementType: "transfer",
+  },
+  acc_voucher: {
+    table: "acc_vouchers",
+    itemsTable: "voucher_entries",
+    itemsFk: "voucher_id",
+    numberField: "voucher_number",
+    module: "accounts",
+    hasStock: false,
+  },
+  customer: {
+    table: "customers",
+    numberField: "name",
+    module: "sales",
+    hasStock: false,
+  },
+  supplier: {
+    table: "suppliers",
+    numberField: "name",
+    module: "purchase",
+    hasStock: false,
   },
 };
 
@@ -149,7 +187,7 @@ Deno.serve(async (req) => {
   const { action, doc_type } = body;
 
   const config = DOC_CONFIG[doc_type];
-  if (!config && action !== "check_permission") {
+  if (!config) {
     return err(`Unknown document type: ${doc_type}`);
   }
 
@@ -162,8 +200,8 @@ Deno.serve(async (req) => {
 
         const { data: doc } = await admin.from(config.table).select("*").eq("id", id).single();
         if (!doc) return err("Document not found", 404);
-        if (doc.status !== "draft" && doc.status !== "pending") {
-          return err("Only draft or pending documents can be approved");
+        if (doc.status !== "draft" && doc.status !== "pending" && doc.status !== "completed") {
+          return err("Only draft/pending/completed documents can be approved");
         }
 
         const { error } = await admin
@@ -196,7 +234,6 @@ Deno.serve(async (req) => {
         const { data: doc } = await admin.from(config.table).select("*").eq("id", id).single();
         if (!doc) return err("Document not found", 404);
 
-        // Only Super Admin can cancel approved documents
         if (doc.status === "approved" && !isSuperAdmin(roles)) {
           return err("Only Super Admin can cancel approved documents", 403);
         }
@@ -212,14 +249,12 @@ Deno.serve(async (req) => {
 
         // Reverse stock movements if cancelling an approved document with stock impact
         if (doc.status === "approved" && config.hasStock) {
-          // Reverse stock movements tied to this document
           const { data: movements } = await admin
             .from("stock_movements")
             .select("*")
             .eq("reference_id", id);
 
           if (movements && movements.length > 0) {
-            // Insert reversal movements
             const reversals = movements.map((m: any) => ({
               product_id: m.product_id,
               branch_id: m.branch_id,
@@ -232,9 +267,7 @@ Deno.serve(async (req) => {
             }));
             await admin.from("stock_movements").insert(reversals);
 
-            // Update warehouse stock for transfers
             if (doc_type === "stock_transfer") {
-              // Reverse warehouse stock
               const { data: whStock1 } = await admin
                 .from("warehouse_stock")
                 .select("*")
@@ -260,7 +293,7 @@ Deno.serve(async (req) => {
             }
           }
 
-          // Reverse accounting entries (cancel related vouchers)
+          // Reverse accounting entries
           const docNumber = doc[config.numberField];
           const { data: relatedVouchers } = await admin
             .from("acc_vouchers")
@@ -332,7 +365,7 @@ Deno.serve(async (req) => {
             if (error) return err(error.message, 500);
           }
 
-          // Recalculate total if applicable
+          // Recalculate totals
           if (doc_type === "sales_invoice") {
             const total = new_items.reduce((s: number, i: any) => s + (i.total || 0), 0);
             const disc = updates?.discount ?? oldDoc.discount ?? 0;
@@ -340,17 +373,18 @@ Deno.serve(async (req) => {
               total_amount: total,
               net_amount: total - disc,
             }).eq("id", id);
-          } else if (doc_type === "purchase") {
+          } else if (doc_type === "purchase" || doc_type === "sales_return" || doc_type === "purchase_return") {
             const total = new_items.reduce((s: number, i: any) => s + (i.total || 0), 0);
             await admin.from(config.table).update({ total_amount: total }).eq("id", id);
+          } else if (doc_type === "acc_voucher") {
+            const totalDebit = new_items.reduce((s: number, i: any) => s + (i.debit || 0), 0);
+            await admin.from(config.table).update({ total_amount: totalDebit }).eq("id", id);
           }
 
           // Reverse old stock movements and create new ones
           if (config.hasStock) {
-            // Delete old movements for this reference
             await admin.from("stock_movements").delete().eq("reference_id", id);
 
-            // Recreate stock movements based on new items
             if (doc_type === "sales_invoice") {
               const movements = new_items.map((i: any) => ({
                 product_id: i.product_id,
@@ -371,6 +405,26 @@ Deno.serve(async (req) => {
                 quantity: i.quantity || 0,
               }));
               await admin.from("stock_movements").insert(movements);
+            } else if (doc_type === "sales_return") {
+              const movements = new_items.map((i: any) => ({
+                product_id: i.product_id,
+                branch_id: oldDoc.branch_id,
+                movement_type: "sales_return",
+                reference_type: "sales_return",
+                reference_id: id,
+                quantity: i.quantity || 0,
+              }));
+              await admin.from("stock_movements").insert(movements);
+            } else if (doc_type === "purchase_return") {
+              const movements = new_items.map((i: any) => ({
+                product_id: i.product_id,
+                branch_id: oldDoc.branch_id,
+                movement_type: "purchase_return",
+                reference_type: "purchase_return",
+                reference_id: id,
+                quantity: -(i.quantity || 0),
+              }));
+              await admin.from("stock_movements").insert(movements);
             }
 
             // Recalculate accounting entries
@@ -382,14 +436,12 @@ Deno.serve(async (req) => {
 
             if (relatedVouchers) {
               for (const v of relatedVouchers) {
-                // Update voucher amounts
                 const newTotal = doc_type === "sales_invoice"
                   ? new_items.reduce((s: number, i: any) => s + (i.total || 0), 0) - (updates?.discount ?? oldDoc.discount ?? 0)
                   : new_items.reduce((s: number, i: any) => s + (i.total || 0), 0);
 
                 await admin.from("acc_vouchers").update({ total_amount: newTotal }).eq("id", v.id);
 
-                // Update voucher entries
                 const { data: entries } = await admin
                   .from("voucher_entries")
                   .select("*")
@@ -397,11 +449,9 @@ Deno.serve(async (req) => {
                   .order("sort_order");
 
                 if (entries && entries.length >= 2) {
-                  // Update debit entry
                   await admin.from("voucher_entries").update({
                     debit: newTotal, credit: 0,
                   }).eq("id", entries[0].id);
-                  // Update credit entry
                   await admin.from("voucher_entries").update({
                     debit: 0, credit: newTotal,
                   }).eq("id", entries[1].id);
@@ -449,17 +499,21 @@ Deno.serve(async (req) => {
         }
 
         // Reverse stock movements
-        await admin.from("stock_movements").delete().eq("reference_id", id);
+        if (config.hasStock) {
+          await admin.from("stock_movements").delete().eq("reference_id", id);
+        }
 
         // Cancel related vouchers
         const docNumber = doc[config.numberField];
-        const { data: relatedVouchers } = await admin
-          .from("acc_vouchers")
-          .select("id")
-          .like("description", `%${docNumber}%`);
-        if (relatedVouchers) {
-          for (const v of relatedVouchers) {
-            await admin.from("acc_vouchers").update({ status: "cancelled" }).eq("id", v.id);
+        if (doc_type !== "acc_voucher") {
+          const { data: relatedVouchers } = await admin
+            .from("acc_vouchers")
+            .select("id")
+            .like("description", `%${docNumber}%`);
+          if (relatedVouchers) {
+            for (const v of relatedVouchers) {
+              await admin.from("acc_vouchers").update({ status: "cancelled" }).eq("id", v.id);
+            }
           }
         }
 

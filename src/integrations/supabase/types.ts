@@ -935,6 +935,7 @@ export type Database = {
           reason: string | null
           return_date: string
           return_number: string
+          status: string
           supplier_id: string | null
           total_amount: number
         }
@@ -947,6 +948,7 @@ export type Database = {
           reason?: string | null
           return_date?: string
           return_number: string
+          status?: string
           supplier_id?: string | null
           total_amount?: number
         }
@@ -959,6 +961,7 @@ export type Database = {
           reason?: string | null
           return_date?: string
           return_number?: string
+          status?: string
           supplier_id?: string | null
           total_amount?: number
         }
@@ -1283,6 +1286,7 @@ export type Database = {
           return_date: string
           return_number: string
           sales_invoice_id: string | null
+          status: string
           total_amount: number
         }
         Insert: {
@@ -1295,6 +1299,7 @@ export type Database = {
           return_date?: string
           return_number: string
           sales_invoice_id?: string | null
+          status?: string
           total_amount?: number
         }
         Update: {
@@ -1307,6 +1312,7 @@ export type Database = {
           return_date?: string
           return_number?: string
           sales_invoice_id?: string | null
+          status?: string
           total_amount?: number
         }
         Relationships: [
