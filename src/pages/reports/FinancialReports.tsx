@@ -130,6 +130,7 @@ const FinancialReports = () => {
 
   return (
     <div className="p-6 space-y-4">
+      <ReportHeader reportTitle="Financial Reports" />
       <div className="flex items-center gap-2"><FileText className="w-5 h-5 text-primary" /><h1 className="text-xl font-semibold text-foreground">Financial Reports</h1></div>
 
       <Tabs value={tab} onValueChange={setTab}>
