@@ -27,7 +27,7 @@ interface SalesReturn {
 }
 
 const SalesPage = () => {
-  const { user } = useAuth();
+  const { user, hasPermission } = useAuth();
   const { toast } = useToast();
   const [tab, setTab] = useState("invoices");
   const [invoices, setInvoices] = useState<SalesInvoice[]>([]);
