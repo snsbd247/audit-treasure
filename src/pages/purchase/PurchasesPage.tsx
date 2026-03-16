@@ -329,19 +329,43 @@ const PurchasesPage = () => {
               </TableRow></TableHeader>
               <TableBody>
                 {loading ? <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
-                : purchases.length === 0 ? <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">No purchases yet</TableCell></TableRow>
-                : purchases.map((p) => (
-                  <TableRow key={p.id}>
+                : purchases.length === 0 ? <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">No purchases yet</TableCell></TableRow>
+                : purchases.map((p) => {
+                  const statusCfg = getDocumentStatusConfig(p.status);
+                  const isLocked = (p.status === "approved" || p.status === "completed") && !isSuperAdmin;
+                  const isCancelled = p.status === "cancelled";
+                  return (
+                  <TableRow key={p.id} className={isCancelled ? "opacity-60" : ""}>
                     <TableCell className="font-geist-mono text-xs font-medium">{p.purchase_number}</TableCell>
                     <TableCell>{p.purchase_date}</TableCell>
                     <TableCell>{p.supplier_name || "—"}</TableCell>
                     <TableCell className="text-right tabular-nums font-medium">{fc(p.total_amount)}</TableCell>
                     <TableCell className="capitalize">{p.payment_method}</TableCell>
                     <TableCell>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusCfg.className}`}>
+                        {statusCfg.label}
+                      </span>
+                    </TableCell>
+                    <TableCell>
                       <div className="flex gap-1">
-                        {canEdit && (
+                        {!isCancelled && (p.status === "draft" || p.status === "completed") && (isAdmin || isSuperAdmin) && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={() => { setActionTarget(p); setActionType("approve"); setActionDialogOpen(true); }} title="Approve">
+                            <Check className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                        {!isCancelled && !isLocked && (
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(p)} title="Edit">
                             <Pencil className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                        {isSuperAdmin && (p.status === "approved" || p.status === "completed") && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-amber-600" onClick={() => openEdit(p)} title="Super Admin Edit">
+                            <ShieldAlert className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                        {!isCancelled && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => { setActionTarget(p); setActionType("cancel"); setActionDialogOpen(true); }} title="Cancel">
+                            <X className="w-3.5 h-3.5" />
                           </Button>
                         )}
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openPrint(p)} title="Print">
@@ -350,7 +374,8 @@ const PurchasesPage = () => {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent></Card>
