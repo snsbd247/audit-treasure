@@ -22,6 +22,7 @@ interface Product {
 
 const ProductsPage = () => {
   const { hasPermission } = useAuth();
+  const { fc } = useCurrency();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
