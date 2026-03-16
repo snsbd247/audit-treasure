@@ -98,7 +98,7 @@ const SalesPage = () => {
     if (validItems.length === 0) { toast({ title: "Add at least one item", variant: "destructive" }); return; }
     setSaving(true);
     try {
-      const { data: numData } = await supabase.rpc("next_number", { seq_id: "sales" });
+      const numData = await nextNumber("sales");
       const totalAmt = grandTotal(validItems);
       const disc = parseFloat(formDiscount) || 0;
       const { data, error } = await supabase.from("sales_invoices").insert({
