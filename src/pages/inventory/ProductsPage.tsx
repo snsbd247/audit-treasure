@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +20,7 @@ interface Product {
 }
 
 const ProductsPage = () => {
+  const { hasPermission } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -110,8 +112,12 @@ const ProductsPage = () => {
           <h1 className="text-xl font-semibold text-foreground">Products</h1>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => setCatDialogOpen(true)}>Add Category</Button>
-          <Button size="sm" onClick={openCreate}><Plus className="w-4 h-4 mr-1" />Add Product</Button>
+          {hasPermission("Inventory", "can_add") && (
+            <Button variant="outline" size="sm" onClick={() => setCatDialogOpen(true)}>Add Category</Button>
+          )}
+          {hasPermission("Inventory", "can_add") && (
+            <Button size="sm" onClick={openCreate}><Plus className="w-4 h-4 mr-1" />Add Product</Button>
+          )}
         </div>
       </div>
 
@@ -144,7 +150,11 @@ const ProductsPage = () => {
                   <TableCell className="text-right tabular-nums">{p.cost_price.toLocaleString()}</TableCell>
                   <TableCell className="text-right tabular-nums font-medium">{p.selling_price.toLocaleString()}</TableCell>
                   <TableCell><Badge variant={p.status === "active" ? "default" : "secondary"}>{p.status}</Badge></TableCell>
-                  <TableCell><Button variant="ghost" size="icon" onClick={() => openEdit(p)}><Pencil className="w-4 h-4" /></Button></TableCell>
+                  <TableCell>
+                    {hasPermission("Inventory", "can_edit") && (
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(p)}><Pencil className="w-4 h-4" /></Button>
+                    )}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

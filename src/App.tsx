@@ -38,6 +38,7 @@ import BankAccountsPage from "./pages/bank/BankAccountsPage";
 import CashBookPage from "./pages/bank/CashBookPage";
 import LowStockPage from "./pages/reports/LowStockPage";
 import NotFound from "./pages/NotFound";
+import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
 
@@ -52,6 +53,7 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<Login />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/vouchers" element={<VouchersPage />} />
