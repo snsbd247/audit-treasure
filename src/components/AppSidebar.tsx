@@ -79,14 +79,6 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
-    label: "Transactions",
-    icon: DollarSign,
-    children: [
-      { to: "/transactions/income", label: "Income", icon: TrendingUp },
-      { to: "/transactions/expense", label: "Expense", icon: TrendingDown },
-    ],
-  },
-  {
     label: "Bank & Cash",
     icon: Landmark,
     children: [
