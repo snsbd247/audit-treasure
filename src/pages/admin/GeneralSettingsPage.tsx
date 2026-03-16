@@ -136,6 +136,7 @@ const GeneralSettingsPage = () => {
           <TabsTrigger value="company"><Building2 className="w-3.5 h-3.5 mr-1" />Company</TabsTrigger>
           <TabsTrigger value="currency"><DollarSign className="w-3.5 h-3.5 mr-1" />Currency</TabsTrigger>
           <TabsTrigger value="defaults"><Sliders className="w-3.5 h-3.5 mr-1" />Defaults</TabsTrigger>
+          {isSuperAdmin && <TabsTrigger value="modules"><Puzzle className="w-3.5 h-3.5 mr-1" />Modules</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="company">
