@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Landmark } from "lucide-react";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 const BankAccountsPage = () => {
   const [accounts, setAccounts] = useState<any[]>([]);
