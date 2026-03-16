@@ -32,6 +32,7 @@ const LowStockPage = () => {
 
   return (
     <div className="p-4 lg:p-6 max-w-[1200px] mx-auto space-y-4">
+      <ReportHeader reportTitle="Low Stock Alert Report" />
       <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
         <AlertTriangle className="w-5 h-5 text-warning" />Low Stock Alerts
       </h1>
