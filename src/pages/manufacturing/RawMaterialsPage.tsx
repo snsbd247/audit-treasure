@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Layers } from "lucide-react";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface Supplier { id: string; name: string; }
 interface RawMaterial {
