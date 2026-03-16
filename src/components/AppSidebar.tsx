@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 interface NavGroup {
   label: string;
   icon: any;
+  module?: string; // maps to role_permissions.module for access control
   children: { to: string; label: string; icon: any; end?: boolean }[];
   adminOnly?: boolean;
 }
@@ -24,6 +25,7 @@ const navGroups: NavGroup[] = [
   {
     label: "Accounts",
     icon: BookOpen,
+    module: "accounts",
     children: [
       { to: "/accounts/chart", label: "Chart of Accounts", icon: BookOpen },
       { to: "/accounts/vouchers?type=journal", label: "Journal Voucher", icon: FileText },
@@ -37,6 +39,7 @@ const navGroups: NavGroup[] = [
   {
     label: "Sales",
     icon: TrendingUp,
+    module: "sales",
     children: [
       { to: "/sales", label: "Sales Invoice", icon: Receipt },
       { to: "/sales/returns", label: "Sales Return", icon: ArrowLeftRight },
@@ -46,6 +49,7 @@ const navGroups: NavGroup[] = [
   {
     label: "Purchase",
     icon: ShoppingCart,
+    module: "purchase",
     children: [
       { to: "/purchase", label: "Purchase Entry", icon: ShoppingCart },
       { to: "/purchase/returns", label: "Purchase Return", icon: ArrowLeftRight },
@@ -55,6 +59,7 @@ const navGroups: NavGroup[] = [
   {
     label: "Manufacturing",
     icon: Factory,
+    module: "manufacturing",
     children: [
       { to: "/products", label: "Products", icon: Package },
       { to: "/manufacturing/materials", label: "Raw Materials", icon: Layers },
@@ -65,6 +70,7 @@ const navGroups: NavGroup[] = [
   {
     label: "Inventory",
     icon: Warehouse,
+    module: "inventory",
     children: [
       { to: "/inventory/items", label: "Item Master", icon: Package },
       { to: "/inventory/categories", label: "Item Categories", icon: Layers },
@@ -81,6 +87,7 @@ const navGroups: NavGroup[] = [
   {
     label: "Bank & Cash",
     icon: Landmark,
+    module: "bank",
     children: [
       { to: "/bank/accounts", label: "Bank Accounts", icon: Landmark },
       { to: "/bank/cashbook", label: "Cash Book", icon: PiggyBank },
@@ -89,6 +96,7 @@ const navGroups: NavGroup[] = [
   {
     label: "Reports",
     icon: BarChart3,
+    module: "reports",
     children: [
       { to: "/reports/financial", label: "Financial Reports", icon: FileText },
       { to: "/reports/stock-ledger", label: "Stock Ledger", icon: ScrollText },
@@ -152,7 +160,7 @@ const CollapsibleGroup = ({ group }: { group: NavGroup }) => {
 };
 
 export const AppSidebar = () => {
-  const { isAdmin, signOut, profile } = useAuth();
+  const { isAdmin, signOut, profile, hasPermission } = useAuth();
   const isMobile = useIsMobile();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -179,6 +187,8 @@ export const AppSidebar = () => {
           <div className="my-2 border-t border-sidebar-border" />
           {navGroups.map((group) => {
             if (group.adminOnly && !isAdmin) return null;
+            // Staff users: check module-level view permission
+            if (!isAdmin && group.module && !hasPermission(group.module, "can_view")) return null;
             return <CollapsibleGroup key={group.label} group={group} />;
           })}
         </nav>
