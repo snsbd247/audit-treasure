@@ -23,7 +23,6 @@ import GeneralSettingsPage from "./pages/admin/GeneralSettingsPage";
 import DocumentNumberingPage from "./pages/admin/DocumentNumberingPage";
 import ChartOfAccounts from "./pages/accounts/ChartOfAccounts";
 import AccountingVouchers from "./pages/accounts/AccountingVouchers";
-import ProductsPage from "./pages/inventory/ProductsPage";
 import PurchasesPage from "./pages/purchase/PurchasesPage";
 import SalesPage from "./pages/sales/SalesPage";
 import InventoryPage from "./pages/inventory/InventoryPage";
