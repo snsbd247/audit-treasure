@@ -33,6 +33,7 @@ const SalesPage = () => {
   const { user, hasPermission } = useAuth();
   const { userBranchId } = useBranch();
   const { toast } = useToast();
+  const { fc } = useCurrency();
   const [tab, setTab] = useState("invoices");
   const [invoices, setInvoices] = useState<SalesInvoice[]>([]);
   const [returns, setReturns] = useState<SalesReturnRow[]>([]);
