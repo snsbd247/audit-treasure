@@ -30,6 +30,7 @@ const navGroups: NavGroup[] = [
     label: "Accounts",
     icon: BookOpen,
     module: "accounts",
+    requiredModules: ["accounts"],
     children: [
       { to: "/accounts/chart", label: "Chart of Accounts", icon: BookOpen },
       { to: "/accounts/vouchers?type=journal", label: "Journal Voucher", icon: FileText },
