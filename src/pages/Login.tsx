@@ -7,18 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { LogIn, UserPlus, Building2, Eye, EyeOff } from "lucide-react";
+import { LogIn, Building2, Eye, EyeOff } from "lucide-react";
 
 const Login = () => {
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [loginUsername, setLoginUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
   const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const { signIn, signUp } = useAuth();
+  const { signIn } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -26,29 +22,22 @@ const Login = () => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      if (isSignUp) {
-        const { error } = await signUp(email, password, { name, username });
-        if (error) throw error;
-        toast({ title: "Account created", description: "Check your email for verification or sign in directly." });
-      } else {
-        // Look up email by username
-        const { data: profile, error: lookupError } = await supabase
-          .from("profiles")
-          .select("email")
-          .eq("username", loginUsername)
-          .maybeSingle();
+      const { data: profile, error: lookupError } = await supabase
+        .from("profiles")
+        .select("email")
+        .eq("username", username)
+        .maybeSingle();
 
-        if (lookupError) throw lookupError;
-        if (!profile || !profile.email) {
-          throw new Error("Username not found. Please check and try again.");
-        }
-
-        const { error } = await signIn(profile.email, password);
-        if (error) throw error;
-        navigate("/");
+      if (lookupError) throw lookupError;
+      if (!profile || !profile.email) {
+        throw new Error("Username not found.");
       }
+
+      const { error } = await signIn(profile.email, password);
+      if (error) throw error;
+      navigate("/");
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: "Login Failed", description: err.message, variant: "destructive" });
     } finally {
       setSubmitting(false);
     }
@@ -56,7 +45,6 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex bg-background">
-      {/* Left branding panel */}
       <div className="hidden lg:flex lg:w-1/2 bg-primary relative items-center justify-center p-12">
         <div className="absolute inset-0 bg-gradient-to-br from-primary to-primary/80" />
         <div className="relative z-10 text-center space-y-6 max-w-md">
@@ -80,43 +68,21 @@ const Login = () => {
         </div>
       </div>
 
-      {/* Right login form */}
       <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
         <Card className="w-full max-w-md shadow-elevated border-border/50">
           <CardHeader className="text-center pb-2">
             <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-3 lg:hidden">
               <Building2 className="w-5 h-5 text-primary" />
             </div>
-            <CardTitle className="text-xl font-bold text-foreground">
-              {isSignUp ? "Create Account" : "Welcome Back"}
-            </CardTitle>
-            <CardDescription className="text-sm">
-              {isSignUp ? "Fill in your details to create a new account" : "Sign in with your username and password"}
-            </CardDescription>
+            <CardTitle className="text-xl font-bold text-foreground">Welcome Back</CardTitle>
+            <CardDescription className="text-sm">Sign in with your username and password</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              {isSignUp ? (
-                <>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="name" className="text-xs font-medium">Full Name</Label>
-                    <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="John Doe" required className="h-10" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="username" className="text-xs font-medium">Username</Label>
-                    <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="johndoe" required className="h-10" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="email" className="text-xs font-medium">Email Address</Label>
-                    <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="user@company.com" required className="h-10" />
-                  </div>
-                </>
-              ) : (
-                <div className="space-y-1.5">
-                  <Label htmlFor="loginUsername" className="text-xs font-medium">Username</Label>
-                  <Input id="loginUsername" value={loginUsername} onChange={(e) => setLoginUsername(e.target.value)} placeholder="Enter your username" required className="h-10" />
-                </div>
-              )}
+              <div className="space-y-1.5">
+                <Label htmlFor="username" className="text-xs font-medium">Username</Label>
+                <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Enter your username" required className="h-10" />
+              </div>
               <div className="space-y-1.5">
                 <Label htmlFor="password" className="text-xs font-medium">Password</Label>
                 <div className="relative">
@@ -140,18 +106,9 @@ const Login = () => {
                 </div>
               </div>
               <Button type="submit" className="w-full h-10" disabled={submitting}>
-                {submitting ? "Please wait..." : isSignUp ? (
-                  <><UserPlus className="w-4 h-4 mr-2" />Create Account</>
-                ) : (
-                  <><LogIn className="w-4 h-4 mr-2" />Sign In</>
-                )}
+                {submitting ? "Please wait..." : <><LogIn className="w-4 h-4 mr-2" />Sign In</>}
               </Button>
             </form>
-            <div className="mt-4 text-center">
-              <button type="button" className="text-xs text-primary hover:underline" onClick={() => setIsSignUp(!isSignUp)}>
-                {isSignUp ? "Already have an account? Sign in" : "Don't have an account? Sign up"}
-              </button>
-            </div>
           </CardContent>
         </Card>
       </div>
