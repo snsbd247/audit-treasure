@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Download, Upload, Database, Clock, FileText, Trash2, AlertTriangle, CheckCircle, XCircle, Settings, RefreshCw, Cloud, Eye, EyeOff, Save } from "lucide-react";
+import { Download, Upload, Database, Clock, FileText, Trash2, AlertTriangle, CheckCircle, XCircle, Settings, RefreshCw, Cloud, Eye, EyeOff, Save, Wifi, WifiOff, Shield } from "lucide-react";
 
 interface BackupRecord {
   id: string; file_name: string; file_size: number; backup_type: string; format: string;
@@ -24,6 +24,10 @@ interface BackupRecord {
 interface BackupSettings {
   auto_backup_enabled: boolean; schedule_interval: string; retention_days: number;
   last_auto_backup_at: string | null;
+}
+
+interface GDriveSettingInfo {
+  masked: string; is_encrypted: boolean; has_value: boolean;
 }
 
 function formatFileSize(bytes: number): string {
@@ -38,6 +42,13 @@ function formatDate(d: string): string {
     hour: "numeric", minute: "2-digit", hour12: true,
   });
 }
+
+const GDRIVE_FIELDS = [
+  { key: "google_client_id", label: "Google Client ID", desc: "From Google Cloud Console → Credentials", sensitive: false },
+  { key: "google_client_secret", label: "Google Client Secret", desc: "From Google Cloud Console → Credentials", sensitive: true },
+  { key: "google_refresh_token", label: "Google Refresh Token", desc: "Generated via OAuth 2.0 Playground", sensitive: true },
+  { key: "google_drive_folder_id", label: "Google Drive Folder ID", desc: "Optional — Target folder ID in Google Drive", sensitive: false },
+];
 
 const BackupPage = () => {
   const { toast } = useToast();
@@ -56,14 +67,22 @@ const BackupPage = () => {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [cloudUploading, setCloudUploading] = useState(false);
   const [cloudFiles, setCloudFiles] = useState<any[]>([]);
-  const [cloudConfigured, setCloudConfigured] = useState<boolean | null>(null);
-  const [cloudFolderId, setCloudFolderId] = useState<string | null>(null);
 
-  // Google Drive credential fields — masked
-  const [showClientId, setShowClientId] = useState(false);
-  const [showClientSecret, setShowClientSecret] = useState(false);
-  const [showRefreshToken, setShowRefreshToken] = useState(false);
-  const [showFolderId, setShowFolderId] = useState(false);
+  // Google Drive settings state
+  const [gdriveInfo, setGdriveInfo] = useState<Record<string, GDriveSettingInfo>>({});
+  const [gdriveValues, setGdriveValues] = useState<Record<string, string>>({});
+  const [gdriveVisible, setGdriveVisible] = useState<Record<string, boolean>>({});
+  const [savingGdrive, setSavingGdrive] = useState(false);
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<{ ok: boolean; message: string } | null>(null);
+
+  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+
+  const getSession = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error("Not authenticated");
+    return session;
+  };
 
   const fetchHistory = useCallback(async () => {
     setLoadingHistory(true);
@@ -77,19 +96,31 @@ const BackupPage = () => {
     if (data) setSettings(data as any as BackupSettings);
   }, []);
 
+  const fetchGdriveSettings = useCallback(async () => {
+    try {
+      const session = await getSession();
+      const res = await fetch(`https://${projectId}.supabase.co/functions/v1/backup-settings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ action: "get" }),
+      });
+      const result = await res.json();
+      if (result.success) setGdriveInfo(result.settings);
+    } catch { /* silently fail */ }
+  }, [projectId]);
+
   useEffect(() => {
     fetchHistory();
     fetchSettings();
+    fetchGdriveSettings();
     fetchCloudFiles();
-  }, [fetchHistory, fetchSettings]);
+  }, [fetchHistory, fetchSettings, fetchGdriveSettings]);
 
   const handleExport = async () => {
     setExporting(true); setProgress(10);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
+      const session = await getSession();
       setProgress(30);
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const res = await fetch(`https://${projectId}.supabase.co/functions/v1/create-backup`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
@@ -123,8 +154,7 @@ const BackupPage = () => {
     if (!restoreFile) return;
     setConfirmRestore(false); setRestoring(true); setProgress(10);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
+      const session = await getSession();
       const text = await restoreFile.text();
       const format = restoreFile.name.endsWith(".sql") ? "sql" : "json";
       if (format === "sql") {
@@ -133,7 +163,6 @@ const BackupPage = () => {
       }
       let parsed; try { parsed = JSON.parse(text); } catch { throw new Error("Invalid JSON file"); }
       setProgress(30);
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const res = await fetch(`https://${projectId}.supabase.co/functions/v1/restore-backup`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
@@ -174,7 +203,7 @@ const BackupPage = () => {
     toast({ title: "Backup deleted" });
   };
 
-  const saveSettings = async (updates: Partial<BackupSettings>) => {
+  const saveScheduleSettings = async (updates: Partial<BackupSettings>) => {
     setSavingSettings(true);
     const newSettings = { ...settings, ...updates, updated_by: user?.id, updated_at: new Date().toISOString() };
     await supabase.from("backup_settings").update(newSettings as any).eq("id", "default");
@@ -185,11 +214,7 @@ const BackupPage = () => {
   const handleCloudBackup = async () => {
     setCloudUploading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-
-      // Create backup
+      const session = await getSession();
       const backupRes = await fetch(`https://${projectId}.supabase.co/functions/v1/create-backup`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
@@ -198,7 +223,6 @@ const BackupPage = () => {
       const backupResult = await backupRes.json();
       if (!backupResult.success) throw new Error(backupResult.error);
 
-      // Upload to Google Drive
       const driveRes = await fetch(`https://${projectId}.supabase.co/functions/v1/google-drive-backup`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
@@ -206,11 +230,12 @@ const BackupPage = () => {
       });
       const driveResult = await driveRes.json();
       if (!driveResult.success) {
-        if (driveResult.needs_setup) { setCloudConfigured(false); toast({ title: "Google Drive not configured", description: driveResult.error, variant: "destructive" }); }
-        else throw new Error(driveResult.error);
+        if (driveResult.needs_setup) {
+          toast({ title: "Google Drive not configured", description: "Go to the Settings tab to configure Google Drive credentials.", variant: "destructive" });
+          setActiveTab("settings");
+        } else throw new Error(driveResult.error);
         return;
       }
-      setCloudConfigured(true);
       toast({ title: "Cloud backup successful", description: `Uploaded ${driveResult.file_name} to Google Drive` });
       fetchCloudFiles(); fetchHistory();
     } catch (err: any) {
@@ -220,21 +245,54 @@ const BackupPage = () => {
 
   const fetchCloudFiles = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const session = await getSession();
       const res = await fetch(`https://${projectId}.supabase.co/functions/v1/google-drive-backup`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({ action: "list" }),
       });
       const result = await res.json();
-      if (result.success) {
-        setCloudConfigured(true);
-        setCloudFiles(result.files || []);
-        setCloudFolderId(result.folder_id || null);
-      } else if (result.needs_setup) { setCloudConfigured(false); }
+      if (result.success) setCloudFiles(result.files || []);
     } catch { /* silently fail */ }
+  };
+
+  const handleSaveGdriveSettings = async () => {
+    const nonEmptyValues = Object.fromEntries(Object.entries(gdriveValues).filter(([, v]) => v !== ""));
+    if (Object.keys(nonEmptyValues).length === 0) {
+      toast({ title: "No changes", description: "Enter values to save.", variant: "destructive" }); return;
+    }
+    setSavingGdrive(true);
+    try {
+      const session = await getSession();
+      const res = await fetch(`https://${projectId}.supabase.co/functions/v1/backup-settings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ action: "save", settings: nonEmptyValues }),
+      });
+      const result = await res.json();
+      if (!result.success) throw new Error(result.error);
+      toast({ title: "Credentials saved", description: "Google Drive credentials have been encrypted and stored securely." });
+      setGdriveValues({});
+      fetchGdriveSettings();
+    } catch (err: any) {
+      toast({ title: "Save failed", description: err.message, variant: "destructive" });
+    } finally { setSavingGdrive(false); }
+  };
+
+  const handleTestConnection = async () => {
+    setTestingConnection(true); setConnectionStatus(null);
+    try {
+      const session = await getSession();
+      const res = await fetch(`https://${projectId}.supabase.co/functions/v1/backup-settings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ action: "test" }),
+      });
+      const result = await res.json();
+      setConnectionStatus({ ok: result.success, message: result.success ? result.message : result.error });
+    } catch (err: any) {
+      setConnectionStatus({ ok: false, message: err.message });
+    } finally { setTestingConnection(false); }
   };
 
   const statusBadge = (status: string) => {
@@ -276,6 +334,7 @@ const BackupPage = () => {
         <TabsList>
           <TabsTrigger value="local">Local Backup</TabsTrigger>
           <TabsTrigger value="cloud">Google Drive</TabsTrigger>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
           <TabsTrigger value="schedule">Schedule</TabsTrigger>
         </TabsList>
@@ -334,102 +393,124 @@ const BackupPage = () => {
               <CardDescription>Upload backups to Google Drive for offsite cloud storage</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {cloudConfigured === false ? (
-                <div className="p-4 rounded-lg border border-border bg-muted/50 space-y-3">
-                  <p className="text-sm font-medium text-foreground">Google Drive not configured</p>
-                  <p className="text-xs text-muted-foreground">
-                    Add the following secrets in{" "}
-                    <a href={`https://supabase.com/dashboard/project/${import.meta.env.VITE_SUPABASE_PROJECT_ID}/settings/functions`}
-                      target="_blank" rel="noopener noreferrer" className="text-primary underline">
-                      Supabase Edge Function settings
-                    </a>:
-                  </p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {[
-                      { key: "GOOGLE_CLIENT_ID", desc: "From Google Cloud Console → Credentials" },
-                      { key: "GOOGLE_CLIENT_SECRET", desc: "From Google Cloud Console → Credentials" },
-                      { key: "GOOGLE_REFRESH_TOKEN", desc: "Generated via OAuth 2.0 Playground" },
-                      { key: "GOOGLE_DRIVE_FOLDER_ID", desc: "Optional — Target folder ID in Google Drive" },
-                    ].map(({ key, desc }) => (
-                      <div key={key} className="p-2 rounded border border-border bg-background">
-                        <code className="text-xs font-semibold text-primary">{key}</code>
-                        <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>
+              <div className="flex items-center gap-3">
+                <Button onClick={handleCloudBackup} disabled={cloudUploading || exporting || restoring}>
+                  <Cloud className="w-4 h-4 mr-2" />{cloudUploading ? "Uploading to Drive..." : "Backup to Google Drive"}
+                </Button>
+                <Button variant="outline" onClick={() => setActiveTab("settings")}>
+                  <Settings className="w-4 h-4 mr-2" />Configure
+                </Button>
+              </div>
+
+              {cloudFiles.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground">Recent Cloud Backups:</p>
+                  {cloudFiles.slice(0, 8).map((f: any) => (
+                    <div key={f.id} className="flex items-center justify-between text-xs p-2 rounded border border-border">
+                      <span className="font-mono truncate max-w-[300px]">{f.name}</span>
+                      <div className="flex items-center gap-3 text-muted-foreground">
+                        {f.size && <span>{formatFileSize(Number(f.size))}</span>}
+                        <span>{f.createdTime ? new Date(f.createdTime).toLocaleDateString() : ""}</span>
+                        {f.webViewLink && (
+                          <a href={f.webViewLink} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">View</a>
+                        )}
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ))}
                 </div>
-              ) : (
-                <>
-                  <div className="flex items-center gap-3">
-                    <Button onClick={handleCloudBackup} disabled={cloudUploading || exporting || restoring}>
-                      <Cloud className="w-4 h-4 mr-2" />{cloudUploading ? "Uploading to Drive..." : "Backup to Google Drive"}
-                    </Button>
-                    {cloudFolderId && (
-                      <Badge variant="outline" className="text-xs">
-                        Folder: {cloudFolderId.slice(0, 12)}...
-                      </Badge>
-                    )}
-                  </div>
-
-                  {cloudFiles.length > 0 && (
-                    <div className="space-y-2">
-                      <p className="text-xs font-medium text-muted-foreground">Recent Cloud Backups:</p>
-                      {cloudFiles.slice(0, 8).map((f: any) => (
-                        <div key={f.id} className="flex items-center justify-between text-xs p-2 rounded border border-border">
-                          <span className="font-mono truncate max-w-[300px]">{f.name}</span>
-                          <div className="flex items-center gap-3 text-muted-foreground">
-                            {f.size && <span>{formatFileSize(Number(f.size))}</span>}
-                            <span>{f.createdTime ? new Date(f.createdTime).toLocaleDateString() : ""}</span>
-                            {f.webViewLink && (
-                              <a href={f.webViewLink} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">View</a>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </>
               )}
-            </CardContent>
-          </Card>
-
-          {/* Google Drive Configuration Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2"><Settings className="w-4 h-4" />Google Drive Configuration</CardTitle>
-              <CardDescription>Credentials are stored as Supabase Edge Function secrets</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="text-sm text-muted-foreground space-y-2">
-                <p>Google Drive credentials are securely stored as Edge Function secrets and are never exposed to the client.</p>
-                <p>To update credentials, visit{" "}
-                  <a href={`https://supabase.com/dashboard/project/${import.meta.env.VITE_SUPABASE_PROJECT_ID}/settings/functions`}
-                    target="_blank" rel="noopener noreferrer" className="text-primary underline">
-                    Edge Function Settings
-                  </a>.
-                </p>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {[
-                  { key: "GOOGLE_CLIENT_ID", desc: "OAuth 2.0 Client ID" },
-                  { key: "GOOGLE_CLIENT_SECRET", desc: "OAuth 2.0 Client Secret" },
-                  { key: "GOOGLE_REFRESH_TOKEN", desc: "OAuth 2.0 Refresh Token" },
-                  { key: "GOOGLE_DRIVE_FOLDER_ID", desc: "Target Folder ID (optional)" },
-                ].map(({ key, desc }) => (
-                  <div key={key} className="flex items-center justify-between p-3 rounded-lg border border-border">
-                    <div>
-                      <code className="text-xs font-semibold">{key}</code>
-                      <p className="text-xs text-muted-foreground">{desc}</p>
-                    </div>
-                    <Badge variant="outline" className="text-xs">Secret</Badge>
-                  </div>
-                ))}
-              </div>
 
               <div className="p-3 rounded-lg bg-muted/50 border border-border text-xs text-muted-foreground space-y-1">
                 <p><strong>Backup File Format:</strong> <code>erp_backup_YYYY_MM_DD_HH_MM.sql</code></p>
                 <p><strong>Example:</strong> <code>erp_backup_2026_03_17_14_30.sql</code></p>
-                <p><strong>Folder:</strong> If GOOGLE_DRIVE_FOLDER_ID is set, uploads go to that folder. Otherwise, an "ERP Backups" folder is auto-created.</p>
+                <p><strong>Folder:</strong> If Folder ID is configured, uploads go to that folder. Otherwise, an "ERP Backups" folder is auto-created.</p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Settings Tab — Google Drive Credentials */}
+        <TabsContent value="settings" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2"><Shield className="w-4 h-4" />Google Drive Credentials</CardTitle>
+              <CardDescription>Credentials are encrypted and stored securely in the database. They are never exposed to the frontend.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 gap-4">
+                {GDRIVE_FIELDS.map(({ key, label, desc, sensitive }) => {
+                  const info = gdriveInfo[key];
+                  const isVisible = gdriveVisible[key] || false;
+                  const currentValue = gdriveValues[key] ?? "";
+
+                  return (
+                    <div key={key} className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">{label}</Label>
+                        <div className="flex items-center gap-2">
+                          {info?.has_value && (
+                            <Badge variant="outline" className="text-xs text-green-600 border-green-600/30">
+                              <CheckCircle className="w-3 h-3 mr-1" />Configured
+                            </Badge>
+                          )}
+                          {info?.is_encrypted && (
+                            <Badge variant="secondary" className="text-xs">
+                              <Shield className="w-3 h-3 mr-1" />Encrypted
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground">{desc}</p>
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <Input
+                            type={sensitive && !isVisible ? "password" : "text"}
+                            placeholder={info?.has_value ? info.masked : `Enter ${label}`}
+                            value={currentValue}
+                            onChange={(e) => setGdriveValues((prev) => ({ ...prev, [key]: e.target.value }))}
+                            className="pr-10"
+                          />
+                          {sensitive && (
+                            <button
+                              type="button"
+                              onClick={() => setGdriveVisible((prev) => ({ ...prev, [key]: !prev[key] }))}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            >
+                              {isVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center gap-3 pt-2 border-t border-border">
+                <Button onClick={handleSaveGdriveSettings} disabled={savingGdrive}>
+                  <Save className="w-4 h-4 mr-2" />{savingGdrive ? "Saving..." : "Save Credentials"}
+                </Button>
+                <Button variant="outline" onClick={handleTestConnection} disabled={testingConnection}>
+                  {testingConnection ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Wifi className="w-4 h-4 mr-2" />}
+                  {testingConnection ? "Testing..." : "Test Connection"}
+                </Button>
+              </div>
+
+              {connectionStatus && (
+                <div className={`p-3 rounded-lg border text-sm flex items-start gap-2 ${
+                  connectionStatus.ok
+                    ? "bg-green-50 border-green-200 text-green-800 dark:bg-green-950/30 dark:border-green-800 dark:text-green-300"
+                    : "bg-destructive/10 border-destructive/20 text-destructive"
+                }`}>
+                  {connectionStatus.ok ? <Wifi className="w-4 h-4 mt-0.5 shrink-0" /> : <WifiOff className="w-4 h-4 mt-0.5 shrink-0" />}
+                  <span>{connectionStatus.message}</span>
+                </div>
+              )}
+
+              <div className="p-3 rounded-lg bg-muted/50 border border-border text-xs text-muted-foreground space-y-1">
+                <p><strong>Security:</strong> Client Secret and Refresh Token are encrypted with AES-GCM before storage.</p>
+                <p><strong>Decryption:</strong> Values are only decrypted server-side when performing backups.</p>
+                <p><strong>Audit:</strong> All credential changes are logged to the audit trail.</p>
               </div>
             </CardContent>
           </Card>
@@ -502,14 +583,14 @@ const BackupPage = () => {
               <CardContent>
                 <div className="flex flex-wrap gap-6 items-end">
                   <div className="flex items-center gap-3">
-                    <Switch checked={settings.auto_backup_enabled} onCheckedChange={(v) => saveSettings({ auto_backup_enabled: v })} disabled={savingSettings} />
+                    <Switch checked={settings.auto_backup_enabled} onCheckedChange={(v) => saveScheduleSettings({ auto_backup_enabled: v })} disabled={savingSettings} />
                     <Label className="text-sm">Enable automatic backups</Label>
                   </div>
                   {settings.auto_backup_enabled && (
                     <>
                       <div className="space-y-1">
                         <Label className="text-xs text-muted-foreground">Interval</Label>
-                        <Select value={settings.schedule_interval} onValueChange={(v) => saveSettings({ schedule_interval: v })}>
+                        <Select value={settings.schedule_interval} onValueChange={(v) => saveScheduleSettings({ schedule_interval: v })}>
                           <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="hourly">Hourly</SelectItem>
@@ -520,7 +601,7 @@ const BackupPage = () => {
                       </div>
                       <div className="space-y-1">
                         <Label className="text-xs text-muted-foreground">Retention (days)</Label>
-                        <Select value={String(settings.retention_days)} onValueChange={(v) => saveSettings({ retention_days: Number(v) })}>
+                        <Select value={String(settings.retention_days)} onValueChange={(v) => saveScheduleSettings({ retention_days: Number(v) })}>
                           <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="7">7</SelectItem>
