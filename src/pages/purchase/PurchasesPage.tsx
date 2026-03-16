@@ -417,7 +417,7 @@ const PurchasesPage = () => {
                 <TableHead>Return #</TableHead><TableHead>Date</TableHead><TableHead>Supplier</TableHead>
                 <TableHead className="text-right">Amount</TableHead><TableHead>Reason</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="w-28">Actions</TableHead>
+                <TableHead className="w-44">Actions</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {returns.length === 0 ? <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">No returns yet</TableCell></TableRow>
@@ -436,18 +436,15 @@ const PurchasesPage = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        {!rCancelled && (r.status === "draft" || r.status === "completed") && (isAdmin || isSuperAdmin) && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={async () => {
-                            try { await documentApi.approve("purchase_return", r.id); toast({ title: "Return approved" }); fetchData(); } catch (e: any) { toast({ title: "Error", description: e.message, variant: "destructive" }); }
-                          }} title="Approve"><Check className="w-3.5 h-3.5" /></Button>
-                        )}
-                        {isSuperAdmin && r.status === "approved" && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-amber-600" title="Super Admin Edit"><ShieldAlert className="w-3.5 h-3.5" /></Button>
-                        )}
-                        {!rCancelled && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={async () => {
+                        {canDeleteDoc(r.status) && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={async () => {
                             try { await documentApi.cancel("purchase_return", r.id); toast({ title: "Return cancelled" }); fetchData(); } catch (e: any) { toast({ title: "Error", description: e.message, variant: "destructive" }); }
-                          }} title="Cancel"><X className="w-3.5 h-3.5" /></Button>
+                          }} title="Delete"><Trash2 className="w-3.5 h-3.5 text-destructive" /></Button>
+                        )}
+                        {!rCancelled && (r.status === "draft" || r.status === "completed") && (isAdmin || isSuperAdmin) && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={async () => {
+                            try { await documentApi.approve("purchase_return", r.id); toast({ title: "Return approved" }); fetchData(); } catch (e: any) { toast({ title: "Error", description: e.message, variant: "destructive" }); }
+                          }} title="Approve"><Check className="w-3.5 h-3.5 text-emerald-600" /></Button>
                         )}
                       </div>
                     </TableCell>
