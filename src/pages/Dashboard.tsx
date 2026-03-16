@@ -37,6 +37,7 @@ const CHART_COLORS = [
 const Dashboard = () => {
   const { profile, roles, isSuperAdmin } = useAuth();
   const navigate = useNavigate();
+  const { fc } = useCurrency();
   const [stats, setStats] = useState<Stats>({
     totalSales: 0, totalPurchases: 0, totalIncome: 0, totalExpenses: 0,
     cashBalance: 0, bankBalance: 0, totalReceivable: 0, totalPayable: 0,
