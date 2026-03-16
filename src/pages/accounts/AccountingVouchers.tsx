@@ -211,6 +211,7 @@ const AccountingVouchers = () => {
     setPrintVoucher(v);
   };
 
+  const statusBadge = (status: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       draft: "outline", pending: "secondary", approved: "default", rejected: "destructive",
     };
