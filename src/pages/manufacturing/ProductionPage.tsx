@@ -118,15 +118,15 @@ const ProductionPage = () => {
     setLoading(true);
     const [eRes, pRes, bRes, mRes, bomRes] = await Promise.all([
       supabase.from("production_entries").select("*").order("created_at", { ascending: false }),
-      supabase.from("products").select("id, product_name, product_code").eq("status", "active"),
+      supabase.from("item_master").select("id, item_name, item_code").eq("status", "active").in("item_type", ["product", "finished_goods"]),
       supabase.from("branches").select("id, name").eq("status", "active"),
-      supabase.from("raw_materials").select("*").eq("status", "active"),
+      supabase.from("item_master").select("id, item_name, item_code, cost_price, item_type").eq("status", "active").eq("item_type", "raw_material"),
       supabase.from("bill_of_materials").select("*"),
     ]);
-    const prods = (pRes.data || []) as Product[];
+    const prods = (pRes.data || []).map((i: any) => ({ id: i.id, product_name: i.item_name, product_code: i.item_code })) as Product[];
     setProducts(prods);
     setBranches((bRes.data || []) as Branch[]);
-    setMaterials((mRes.data || []) as RawMaterial[]);
+    setMaterials((mRes.data || []).map((i: any) => ({ id: i.id, material_name: i.item_name, material_code: i.item_code, unit: "pcs", cost_price: i.cost_price })) as RawMaterial[]);
     setBoms((bomRes.data || []) as BOM[]);
     setEntries((eRes.data || []).map((e: any) => ({ ...e, product_name: prods.find((p) => p.id === e.product_id)?.product_name })));
     setLoading(false);
