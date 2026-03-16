@@ -197,8 +197,8 @@ const FinancialReports = () => {
                 ))}
                 <TableRow className="bg-muted/50 font-bold">
                   <TableCell colSpan={3} className="text-right">Total</TableCell>
-                  <TableCell className="text-right tabular-nums">{trialData.filter((t) => t.balance > 0).reduce((s, t) => s + t.balance, 0).toLocaleString()}</TableCell>
-                  <TableCell className="text-right tabular-nums">{trialData.filter((t) => t.balance < 0).reduce((s, t) => s + Math.abs(t.balance), 0).toLocaleString()}</TableCell>
+                  <TableCell className="text-right tabular-nums">{fc(trialData.filter((t) => t.balance > 0).reduce((s, t) => s + t.balance, 0))}</TableCell>
+                  <TableCell className="text-right tabular-nums">{fc(trialData.filter((t) => t.balance < 0).reduce((s, t) => s + Math.abs(t.balance), 0))}</TableCell>
                 </TableRow>
               </TableBody>
             </Table>
