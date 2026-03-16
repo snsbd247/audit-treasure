@@ -47,10 +47,10 @@ const AuditLogPage = () => {
       <div className="flex gap-4 items-end flex-wrap">
         <div className="space-y-2 w-44"><Label>Module</Label>
           <Select value={filterModule} onValueChange={setFilterModule}><SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
-            <SelectContent><SelectItem value="">All</SelectItem>{MODULES.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent></Select></div>
+            <SelectContent><SelectItem value="__all__">All</SelectItem>{MODULES.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent></Select></div>
         <div className="space-y-2 w-36"><Label>Action</Label>
           <Select value={filterAction} onValueChange={setFilterAction}><SelectTrigger><SelectValue placeholder="All" /></SelectTrigger>
-            <SelectContent><SelectItem value="">All</SelectItem>{ACTIONS.map((a) => <SelectItem key={a} value={a} className="capitalize">{a}</SelectItem>)}</SelectContent></Select></div>
+            <SelectContent><SelectItem value="__all__">All</SelectItem>{ACTIONS.map((a) => <SelectItem key={a} value={a} className="capitalize">{a}</SelectItem>)}</SelectContent></Select></div>
         <div className="space-y-2"><Label>From</Label><Input type="date" value={filterFrom} onChange={(e) => setFilterFrom(e.target.value)} /></div>
         <div className="space-y-2"><Label>To</Label><Input type="date" value={filterTo} onChange={(e) => setFilterTo(e.target.value)} /></div>
         <Button size="sm" onClick={fetchLogs}><Search className="w-4 h-4 mr-1" />Filter</Button>
