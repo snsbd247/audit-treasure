@@ -45,28 +45,67 @@ export default function PayrollPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const getStructure = (empId: string): SalaryStructure | undefined => {
-    return structures.find(s => s.employee_id === empId);
-  };
+  const getStructure = (empId: string): SalaryStructure | undefined => structures.find(s => s.employee_id === empId);
 
   const generatePayroll = async () => {
     setGenerating(true);
     let count = 0;
+
+    // Calculate total working days in the month
+    const daysInMonth = new Date(selYear, selMonth, 0).getDate();
+    // Exclude weekends (simple: count weekdays)
+    let totalWorkingDays = 0;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const day = new Date(selYear, selMonth - 1, d).getDay();
+      if (day !== 0 && day !== 6) totalWorkingDays++;
+    }
+
     for (const emp of employees) {
       const existing = payroll.find(p => p.employee_id === emp.id);
       if (existing) continue;
+
       const struct = getStructure(emp.id);
       const basic = struct?.basic_salary ?? emp.salary;
       const allowances = struct?.allowances ?? 0;
-      const deductions = struct?.deductions ?? 0;
-      const net = basic + allowances - deductions;
+      const baseDeductions = struct?.deductions ?? 0;
+
+      // Fetch attendance for the month
+      const startDate = `${selYear}-${String(selMonth).padStart(2, "0")}-01`;
+      const endDate = `${selYear}-${String(selMonth).padStart(2, "0")}-${String(daysInMonth).padStart(2, "0")}`;
+
+      const { data: attendance } = await supabase.from("attendance" as any)
+        .select("status")
+        .eq("employee_id", emp.id)
+        .gte("date", startDate)
+        .lte("date", endDate);
+
+      const att = (attendance || []) as any[];
+      const presentDays = att.filter(a => a.status === "present" || a.status === "late").length;
+      const absentDays = totalWorkingDays - presentDays - att.filter(a => a.status === "leave").length;
+
+      // Fetch approved overtime
+      const { data: overtime } = await supabase.from("overtime_records" as any)
+        .select("hours")
+        .eq("employee_id", emp.id)
+        .eq("status", "approved")
+        .gte("date", startDate)
+        .lte("date", endDate);
+
+      const totalOvertimeHours = (overtime || []).reduce((s: number, o: any) => s + Number(o.hours), 0);
+      const dailySalary = basic / totalWorkingDays;
+      const overtimePay = (dailySalary / 8) * 1.5 * totalOvertimeHours; // 1.5x overtime rate
+      const absentDeduction = Math.max(0, absentDays) * dailySalary;
+
+      const net = basic + allowances + overtimePay - baseDeductions - absentDeduction;
+
       const { error } = await supabase.from("payroll" as any).insert({
         employee_id: emp.id, month: selMonth, year: selYear,
-        basic_salary: basic, allowances, deductions, net_salary: net,
+        basic_salary: basic, allowances: allowances + overtimePay,
+        deductions: baseDeductions + absentDeduction, net_salary: Math.max(0, net),
       });
       if (!error) count++;
     }
-    toast.success(`Generated payroll for ${count} employees`);
+    toast.success(`Generated attendance-based payroll for ${count} employees`);
     setGenerating(false);
     fetchData();
   };
@@ -90,7 +129,7 @@ export default function PayrollPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div><h1 className="text-2xl font-bold text-foreground">Payroll</h1><p className="text-muted-foreground">Salary structures and payroll generation</p></div>
+        <div><h1 className="text-2xl font-bold text-foreground">Payroll</h1><p className="text-muted-foreground">Attendance-based salary calculation with overtime</p></div>
       </div>
 
       <Tabs defaultValue="payroll">
@@ -112,8 +151,11 @@ export default function PayrollPage() {
               </div>
             </CardHeader>
             <CardContent>
+              <p className="text-xs text-muted-foreground mb-3 p-2 bg-muted/50 rounded">
+                Formula: Net = Basic + Allowances + Overtime(1.5x) − Base Deductions − (Absent Days × Daily Salary)
+              </p>
               <Table>
-                <TableHeader><TableRow><TableHead>Employee</TableHead><TableHead className="text-right">Basic</TableHead><TableHead className="text-right">Allowances</TableHead><TableHead className="text-right">Deductions</TableHead><TableHead className="text-right">Net Salary</TableHead><TableHead>Status</TableHead>{isAdmin && <TableHead className="text-right">Actions</TableHead>}</TableRow></TableHeader>
+                <TableHeader><TableRow><TableHead>Employee</TableHead><TableHead className="text-right">Basic</TableHead><TableHead className="text-right">Allowances + OT</TableHead><TableHead className="text-right">Deductions</TableHead><TableHead className="text-right">Net Salary</TableHead><TableHead>Status</TableHead>{isAdmin && <TableHead className="text-right">Actions</TableHead>}</TableRow></TableHeader>
                 <TableBody>
                   {payroll.map(p => (
                     <TableRow key={p.id}>
