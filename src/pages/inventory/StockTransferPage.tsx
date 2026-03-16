@@ -128,22 +128,42 @@ const StockTransferPage = () => {
           <TableBody>
             {loading ? <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
             : transfers.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">No transfers yet</TableCell></TableRow>
-            : transfers.map((t) => (
-              <TableRow key={t.id}>
+            : transfers.map((t) => {
+              const statusCfg = getDocumentStatusConfig(t.status);
+              const isCancelled = t.status === "cancelled";
+              return (
+              <TableRow key={t.id} className={isCancelled ? "opacity-60" : ""}>
                 <TableCell className="font-mono text-xs">{t.transfer_number}</TableCell>
                 <TableCell>{t.transfer_date}</TableCell>
                 <TableCell className="font-medium">{itemMap.get(t.item_id) || "—"}</TableCell>
                 <TableCell>{whMap.get(t.from_warehouse_id) || "—"}</TableCell>
                 <TableCell>{whMap.get(t.to_warehouse_id) || "—"}</TableCell>
                 <TableCell className="text-right tabular-nums">{t.quantity}</TableCell>
-                <TableCell><Badge variant="default">{t.status}</Badge></TableCell>
                 <TableCell>
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setPrintTransfer(t)} title="Print">
-                    <Printer className="w-3.5 h-3.5" />
-                  </Button>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusCfg.className}`}>
+                    {statusCfg.label}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-1">
+                    {!isCancelled && (t.status === "draft" || t.status === "completed") && (isAdmin || isSuperAdmin) && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={() => { setActionTarget(t); setActionType("approve"); setActionDialogOpen(true); }} title="Approve">
+                        <Check className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                    {!isCancelled && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => { setActionTarget(t); setActionType("cancel"); setActionDialogOpen(true); }} title="Cancel">
+                        <X className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setPrintTransfer(t)} title="Print">
+                      <Printer className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
-            ))}
+              );
+            })}
           </TableBody>
         </Table>
       </CardContent></Card>
