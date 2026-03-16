@@ -187,6 +187,8 @@ export const AppSidebar = () => {
           <div className="my-2 border-t border-sidebar-border" />
           {navGroups.map((group) => {
             if (group.adminOnly && !isAdmin) return null;
+            // Staff users: check module-level view permission
+            if (!isAdmin && group.module && !hasPermission(group.module, "can_view")) return null;
             return <CollapsibleGroup key={group.label} group={group} />;
           })}
         </nav>
