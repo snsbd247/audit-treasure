@@ -34,7 +34,7 @@ interface ProdEntry {
 }
 
 const ProductionPage = () => {
-  const { user } = useAuth();
+  const { user, isSuperAdmin, isAdmin } = useAuth();
   const { userBranchId } = useBranch();
   const { toast } = useToast();
   const { fc } = useCurrency();
