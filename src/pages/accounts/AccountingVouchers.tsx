@@ -516,9 +516,15 @@ const AccountingVouchers = () => {
             <Button variant="outline" size="sm" onClick={addEntry}><Plus className="w-4 h-4 mr-1" />Add Entry</Button>
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button variant="secondary" onClick={() => handleSave(false)} disabled={saving || !isBalanced}>Save as Draft</Button>
-            <Button onClick={() => handleSave(true)} disabled={saving || !isBalanced}>Submit for Approval</Button>
+            <Button variant="outline" onClick={() => { setDialogOpen(false); setEditingVoucher(null); }}>Cancel</Button>
+            {editingVoucher?.status === "approved" ? (
+              <Button onClick={() => handleSave(false)} disabled={saving || !isBalanced}>Save Changes</Button>
+            ) : (
+              <>
+                <Button variant="secondary" onClick={() => handleSave(false)} disabled={saving || !isBalanced}>Save as Draft</Button>
+                <Button onClick={() => handleSave(true)} disabled={saving || !isBalanced}>Submit for Approval</Button>
+              </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
