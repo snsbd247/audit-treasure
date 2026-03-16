@@ -14,14 +14,24 @@ interface Profile {
   status: string;
 }
 
+interface Permission {
+  module: string;
+  can_view: boolean;
+  can_add: boolean;
+  can_edit: boolean;
+  can_delete: boolean;
+}
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   profile: Profile | null;
   roles: AppRole[];
+  permissions: Permission[];
   loading: boolean;
   isAdmin: boolean;
   isSuperAdmin: boolean;
+  hasPermission: (module: string, action: "can_view" | "can_add" | "can_edit" | "can_delete") => boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, meta?: Record<string, string>) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -35,6 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
+  const [permissions, setPermissions] = useState<Permission[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = useCallback(async (userId: string) => {
@@ -44,6 +55,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ]);
     if (profileRes.data) setProfile(profileRes.data as Profile);
     if (rolesRes.data) setRoles(rolesRes.data.map((r: any) => r.role as AppRole));
+
+    // Fetch custom role permissions
+    const { data: customRoleLinks } = await supabase
+      .from("user_custom_roles")
+      .select("custom_role_id")
+      .eq("user_id", userId);
+
+    if (customRoleLinks && customRoleLinks.length > 0) {
+      const roleIds = customRoleLinks.map((r: any) => r.custom_role_id);
+      const { data: perms } = await supabase
+        .from("role_permissions")
+        .select("*")
+        .in("custom_role_id", roleIds);
+      if (perms) {
+        // Merge permissions across roles (OR logic - if any role grants, it's granted)
+        const merged: Record<string, Permission> = {};
+        perms.forEach((p: any) => {
+          if (!merged[p.module]) {
+            merged[p.module] = { module: p.module, can_view: false, can_add: false, can_edit: false, can_delete: false };
+          }
+          if (p.can_view) merged[p.module].can_view = true;
+          if (p.can_add) merged[p.module].can_add = true;
+          if (p.can_edit) merged[p.module].can_edit = true;
+          if (p.can_delete) merged[p.module].can_delete = true;
+        });
+        setPermissions(Object.values(merged));
+      }
+    } else {
+      setPermissions([]);
+    }
   }, []);
 
   const refreshProfile = useCallback(async () => {
@@ -59,6 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setProfile(null);
         setRoles([]);
+        setPermissions([]);
       }
       setLoading(false);
     });
@@ -94,8 +136,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAdmin = roles.includes("admin") || roles.includes("super_admin");
   const isSuperAdmin = roles.includes("super_admin");
 
+  const hasPermission = useCallback((module: string, action: "can_view" | "can_add" | "can_edit" | "can_delete") => {
+    // Super admin and admin have all permissions
+    if (isAdmin) return true;
+    const perm = permissions.find((p) => p.module === module);
+    return perm ? perm[action] : false;
+  }, [isAdmin, permissions]);
+
   return (
-    <AuthContext.Provider value={{ user, session, profile, roles, loading, isAdmin, isSuperAdmin, signIn, signUp, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{
+      user, session, profile, roles, permissions, loading,
+      isAdmin, isSuperAdmin, hasPermission,
+      signIn, signUp, signOut, refreshProfile,
+    }}>
       {children}
     </AuthContext.Provider>
   );
