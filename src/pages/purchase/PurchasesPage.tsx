@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, ShoppingCart, Trash2, RotateCcw, Pencil, Printer, Check, X, Lock, ShieldAlert } from "lucide-react";
+import { Plus, ShoppingCart, Trash2, RotateCcw, Pencil, Printer, Check, X, Lock, ShieldAlert, Eye } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { PrintLayout } from "@/components/PrintLayout";
 import { getDocumentStatusConfig } from "@/hooks/useDocumentRules";
@@ -77,10 +77,37 @@ const PurchasesPage = () => {
 
   const canEdit = hasPermission("purchase", "can_edit") || isSuperAdmin;
   const canAdd = hasPermission("purchase", "can_add") || isSuperAdmin;
+  const userCanDelete = hasPermission("purchase", "can_delete") || isSuperAdmin;
   const [actionDialogOpen, setActionDialogOpen] = useState(false);
   const [actionType, setActionType] = useState<"approve" | "cancel" | "delete" | null>(null);
   const [actionTarget, setActionTarget] = useState<Purchase | null>(null);
   const [actionReason, setActionReason] = useState("");
+
+  // View dialog
+  const [viewPurchase, setViewPurchase] = useState<Purchase | null>(null);
+  const [viewItems, setViewItems] = useState<any[]>([]);
+
+  const openView = async (p: Purchase) => {
+    const { data } = await supabase.from("purchase_items").select("*").eq("purchase_id", p.id);
+    const enriched = (data || []).map((d: any) => {
+      const prod = products.find((pr) => pr.id === d.product_id);
+      return { ...d, product_name: prod?.product_name || "—", product_code: prod?.product_code || "" };
+    });
+    setViewItems(enriched);
+    setViewPurchase(p);
+  };
+
+  const canEditDoc = (status: string) => {
+    if (status === "cancelled") return false;
+    if (status === "approved" || status === "completed") return isSuperAdmin;
+    return canEdit;
+  };
+
+  const canDeleteDoc = (status: string) => {
+    if (status === "cancelled") return false;
+    if (status === "approved" || status === "completed") return isSuperAdmin;
+    return userCanDelete;
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -325,14 +352,13 @@ const PurchasesPage = () => {
               <TableHeader><TableRow>
                 <TableHead>Purchase #</TableHead><TableHead>Date</TableHead><TableHead>Supplier</TableHead>
                 <TableHead className="text-right">Amount</TableHead><TableHead>Payment</TableHead><TableHead>Status</TableHead>
-                <TableHead className="w-32">Actions</TableHead>
+                <TableHead className="w-56">Actions</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {loading ? <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
+                {loading ? <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
                 : purchases.length === 0 ? <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">No purchases yet</TableCell></TableRow>
                 : purchases.map((p) => {
                   const statusCfg = getDocumentStatusConfig(p.status);
-                  const isLocked = (p.status === "approved" || p.status === "completed") && !isSuperAdmin;
                   const isCancelled = p.status === "cancelled";
                   return (
                   <TableRow key={p.id} className={isCancelled ? "opacity-60" : ""}>
@@ -348,29 +374,32 @@ const PurchasesPage = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        {!isCancelled && (p.status === "draft" || p.status === "completed") && (isAdmin || isSuperAdmin) && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={() => { setActionTarget(p); setActionType("approve"); setActionDialogOpen(true); }} title="Approve">
-                            <Check className="w-3.5 h-3.5" />
-                          </Button>
-                        )}
-                        {!isCancelled && !isLocked && (
+                        {/* View */}
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openView(p)} title="View">
+                          <Eye className="w-3.5 h-3.5" />
+                        </Button>
+                        {/* Edit */}
+                        {canEditDoc(p.status) && (
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(p)} title="Edit">
                             <Pencil className="w-3.5 h-3.5" />
                           </Button>
                         )}
-                        {isSuperAdmin && (p.status === "approved" || p.status === "completed") && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-amber-600" onClick={() => openEdit(p)} title="Super Admin Edit">
-                            <ShieldAlert className="w-3.5 h-3.5" />
-                          </Button>
-                        )}
-                        {!isCancelled && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => { setActionTarget(p); setActionType("cancel"); setActionDialogOpen(true); }} title="Cancel">
-                            <X className="w-3.5 h-3.5" />
-                          </Button>
-                        )}
+                        {/* Print */}
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openPrint(p)} title="Print">
                           <Printer className="w-3.5 h-3.5" />
                         </Button>
+                        {/* Delete */}
+                        {canDeleteDoc(p.status) && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setActionTarget(p); setActionType("delete"); setActionDialogOpen(true); }} title="Delete">
+                            <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                          </Button>
+                        )}
+                        {/* Approve */}
+                        {!isCancelled && (p.status === "draft" || p.status === "completed") && (isAdmin || isSuperAdmin) && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setActionTarget(p); setActionType("approve"); setActionDialogOpen(true); }} title="Approve">
+                            <Check className="w-3.5 h-3.5 text-emerald-600" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -388,7 +417,7 @@ const PurchasesPage = () => {
                 <TableHead>Return #</TableHead><TableHead>Date</TableHead><TableHead>Supplier</TableHead>
                 <TableHead className="text-right">Amount</TableHead><TableHead>Reason</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="w-28">Actions</TableHead>
+                <TableHead className="w-44">Actions</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {returns.length === 0 ? <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">No returns yet</TableCell></TableRow>
@@ -407,18 +436,15 @@ const PurchasesPage = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        {!rCancelled && (r.status === "draft" || r.status === "completed") && (isAdmin || isSuperAdmin) && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={async () => {
-                            try { await documentApi.approve("purchase_return", r.id); toast({ title: "Return approved" }); fetchData(); } catch (e: any) { toast({ title: "Error", description: e.message, variant: "destructive" }); }
-                          }} title="Approve"><Check className="w-3.5 h-3.5" /></Button>
-                        )}
-                        {isSuperAdmin && r.status === "approved" && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-amber-600" title="Super Admin Edit"><ShieldAlert className="w-3.5 h-3.5" /></Button>
-                        )}
-                        {!rCancelled && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={async () => {
+                        {canDeleteDoc(r.status) && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={async () => {
                             try { await documentApi.cancel("purchase_return", r.id); toast({ title: "Return cancelled" }); fetchData(); } catch (e: any) { toast({ title: "Error", description: e.message, variant: "destructive" }); }
-                          }} title="Cancel"><X className="w-3.5 h-3.5" /></Button>
+                          }} title="Delete"><Trash2 className="w-3.5 h-3.5 text-destructive" /></Button>
+                        )}
+                        {!rCancelled && (r.status === "draft" || r.status === "completed") && (isAdmin || isSuperAdmin) && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={async () => {
+                            try { await documentApi.approve("purchase_return", r.id); toast({ title: "Return approved" }); fetchData(); } catch (e: any) { toast({ title: "Error", description: e.message, variant: "destructive" }); }
+                          }} title="Approve"><Check className="w-3.5 h-3.5 text-emerald-600" /></Button>
                         )}
                       </div>
                     </TableCell>
@@ -573,6 +599,47 @@ const PurchasesPage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {/* View Purchase Dialog */}
+      <Dialog open={!!viewPurchase} onOpenChange={() => setViewPurchase(null)}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Purchase {viewPurchase?.purchase_number}</DialogTitle>
+          </DialogHeader>
+          {viewPurchase && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-4 text-sm">
+                <div><span className="text-muted-foreground">Date:</span> <span className="font-medium">{viewPurchase.purchase_date}</span></div>
+                <div><span className="text-muted-foreground">Supplier:</span> <span className="font-medium">{viewPurchase.supplier_name || "—"}</span></div>
+                <div><span className="text-muted-foreground">Status:</span> <span className="font-medium capitalize">{viewPurchase.status}</span></div>
+              </div>
+              <Table>
+                <TableHeader><TableRow>
+                  <TableHead>#</TableHead><TableHead>Product</TableHead><TableHead className="text-right">Qty</TableHead>
+                  <TableHead className="text-right">Unit Price</TableHead><TableHead className="text-right">Total</TableHead>
+                </TableRow></TableHeader>
+                <TableBody>
+                  {viewItems.map((item: any, i: number) => (
+                    <TableRow key={i}>
+                      <TableCell>{i + 1}</TableCell>
+                      <TableCell>{item.product_code} — {item.product_name}</TableCell>
+                      <TableCell className="text-right tabular-nums">{item.quantity}</TableCell>
+                      <TableCell className="text-right tabular-nums">{fc(item.unit_price)}</TableCell>
+                      <TableCell className="text-right tabular-nums font-medium">{fc(item.total)}</TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow className="bg-muted/50 font-bold">
+                    <TableCell colSpan={4} className="text-right">Total</TableCell>
+                    <TableCell className="text-right tabular-nums">{fc(viewPurchase.total_amount)}</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewPurchase(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

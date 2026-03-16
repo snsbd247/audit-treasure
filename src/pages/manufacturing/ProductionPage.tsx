@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Factory, Printer, Check, X, ShieldAlert } from "lucide-react";
+import { Plus, Factory, Printer, Check, X, ShieldAlert, Eye, Pencil, Trash2 } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { PrintLayout } from "@/components/PrintLayout";
 import { getDocumentStatusConfig } from "@/hooks/useDocumentRules";
@@ -34,7 +34,7 @@ interface ProdEntry {
 }
 
 const ProductionPage = () => {
-  const { user, isSuperAdmin, isAdmin } = useAuth();
+  const { user, isSuperAdmin, isAdmin, hasPermission } = useAuth();
   const { userBranchId } = useBranch();
   const { toast } = useToast();
   const { fc } = useCurrency();
@@ -64,6 +64,35 @@ const ProductionPage = () => {
   const [actionType, setActionType] = useState<"approve" | "cancel" | null>(null);
   const [actionTarget, setActionTarget] = useState<ProdEntry | null>(null);
   const [actionReason, setActionReason] = useState("");
+
+  // View dialog
+  const [viewEntry, setViewEntry] = useState<ProdEntry | null>(null);
+  const [viewMaterials, setViewMaterials] = useState<any[]>([]);
+
+  const userCanEdit = hasPermission("manufacturing", "can_edit") || isSuperAdmin;
+  const userCanDelete = hasPermission("manufacturing", "can_delete") || isSuperAdmin;
+
+  const openView = async (entry: ProdEntry) => {
+    const { data } = await supabase.from("production_materials").select("*").eq("production_id", entry.id);
+    const enriched = (data || []).map((d: any) => {
+      const mat = materials.find((m) => m.id === d.material_id);
+      return { ...d, material_name: mat?.material_name || "—", unit: mat?.unit || "pcs" };
+    });
+    setViewMaterials(enriched);
+    setViewEntry(entry);
+  };
+
+  const canEditDoc = (status: string) => {
+    if (status === "cancelled") return false;
+    if (status === "approved" || status === "completed") return isSuperAdmin;
+    return userCanEdit;
+  };
+
+  const canDeleteDoc = (status: string) => {
+    if (status === "cancelled") return false;
+    if (status === "approved" || status === "completed") return isSuperAdmin;
+    return userCanDelete;
+  };
 
   const handleDocAction = async () => {
     if (!actionTarget || !actionType) return;
@@ -176,7 +205,7 @@ const ProductionPage = () => {
             <TableHead className="text-right">Qty</TableHead><TableHead className="text-right">Material Cost</TableHead>
             <TableHead className="text-right">Labor</TableHead><TableHead className="text-right">Total Cost</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead className="w-28">Actions</TableHead>
+            <TableHead className="w-56">Actions</TableHead>
           </TableRow></TableHeader>
           <TableBody>
             {loading ? <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
@@ -201,19 +230,32 @@ const ProductionPage = () => {
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-1">
-                    {!isCancelled && (status === "draft" || status === "completed") && (isAdmin || isSuperAdmin) && (
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={() => { setActionTarget(e); setActionType("approve"); setActionDialogOpen(true); }} title="Approve">
-                        <Check className="w-3.5 h-3.5" />
+                    {/* View */}
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openView(e)} title="View">
+                      <Eye className="w-3.5 h-3.5" />
+                    </Button>
+                    {/* Edit - not implemented for production yet, but show button based on permissions */}
+                    {canEditDoc(status) && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => toast({ title: "Edit not available", description: "Production editing coming soon" })} title="Edit">
+                        <Pencil className="w-3.5 h-3.5" />
                       </Button>
                     )}
-                    {!isCancelled && (
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => { setActionTarget(e); setActionType("cancel"); setActionDialogOpen(true); }} title="Cancel">
-                        <X className="w-3.5 h-3.5" />
-                      </Button>
-                    )}
+                    {/* Print */}
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openPrint(e)} title="Print">
                       <Printer className="w-3.5 h-3.5" />
                     </Button>
+                    {/* Delete */}
+                    {canDeleteDoc(status) && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setActionTarget(e); setActionType("cancel"); setActionDialogOpen(true); }} title="Delete">
+                        <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                      </Button>
+                    )}
+                    {/* Approve */}
+                    {!isCancelled && (status === "draft" || status === "completed") && (isAdmin || isSuperAdmin) && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setActionTarget(e); setActionType("approve"); setActionDialogOpen(true); }} title="Approve">
+                        <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      </Button>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>
@@ -361,6 +403,48 @@ const ProductionPage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {/* View Production Dialog */}
+      <Dialog open={!!viewEntry} onOpenChange={() => setViewEntry(null)}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Production {viewEntry?.production_number}</DialogTitle>
+          </DialogHeader>
+          {viewEntry && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-4 text-sm">
+                <div><span className="text-muted-foreground">Date:</span> <span className="font-medium">{viewEntry.production_date}</span></div>
+                <div><span className="text-muted-foreground">Product:</span> <span className="font-medium">{viewEntry.product_name}</span></div>
+                <div><span className="text-muted-foreground">Quantity:</span> <span className="font-medium">{viewEntry.quantity}</span></div>
+              </div>
+              <Table>
+                <TableHeader><TableRow>
+                  <TableHead>#</TableHead><TableHead>Material</TableHead><TableHead className="text-right">Qty</TableHead>
+                  <TableHead>Unit</TableHead><TableHead className="text-right">Cost</TableHead>
+                </TableRow></TableHeader>
+                <TableBody>
+                  {viewMaterials.map((m: any, i: number) => (
+                    <TableRow key={i}>
+                      <TableCell>{i + 1}</TableCell>
+                      <TableCell>{m.material_name}</TableCell>
+                      <TableCell className="text-right tabular-nums">{m.quantity}</TableCell>
+                      <TableCell>{m.unit}</TableCell>
+                      <TableCell className="text-right tabular-nums font-medium">{fc(m.cost)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <div className="grid grid-cols-3 gap-4 text-sm">
+                <div><span className="text-muted-foreground">Raw Material:</span> <span className="font-medium">{fc(viewEntry.raw_material_cost)}</span></div>
+                <div><span className="text-muted-foreground">Labor:</span> <span className="font-medium">{fc(viewEntry.labor_cost)}</span></div>
+                <div><span className="text-muted-foreground">Total Cost:</span> <span className="font-bold">{fc(viewEntry.total_cost)}</span></div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewEntry(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
