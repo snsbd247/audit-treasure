@@ -6,10 +6,13 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Settings, Building2, DollarSign, Sliders, Upload, Loader2 } from "lucide-react";
+import { Settings, Building2, DollarSign, Sliders, Upload, Loader2, Puzzle } from "lucide-react";
 import type { CompanySettings } from "@/hooks/useCompanySettings";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { useModules, type ModuleKey } from "@/contexts/ModuleContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Branch { id: string; name: string; }
 interface FinancialYear { id: string; name: string; is_active: boolean; }
@@ -22,6 +25,8 @@ const GeneralSettingsPage = () => {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const { refetch: refetchCurrency } = useCurrency();
+  const { modules, isModuleEnabled, toggleModule } = useModules();
+  const { isSuperAdmin } = useAuth();
 
   useEffect(() => {
     const init = async () => {
@@ -131,6 +136,7 @@ const GeneralSettingsPage = () => {
           <TabsTrigger value="company"><Building2 className="w-3.5 h-3.5 mr-1" />Company</TabsTrigger>
           <TabsTrigger value="currency"><DollarSign className="w-3.5 h-3.5 mr-1" />Currency</TabsTrigger>
           <TabsTrigger value="defaults"><Sliders className="w-3.5 h-3.5 mr-1" />Defaults</TabsTrigger>
+          {isSuperAdmin && <TabsTrigger value="modules"><Puzzle className="w-3.5 h-3.5 mr-1" />Modules</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="company">
@@ -273,6 +279,39 @@ const GeneralSettingsPage = () => {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {isSuperAdmin && (
+          <TabsContent value="modules">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Module Configuration</CardTitle>
+                <CardDescription>Enable or disable ERP modules. Disabling a module hides its menus and features but preserves all existing data.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {([
+                  { key: "manufacturing" as ModuleKey, name: "Manufacturing Module", desc: "BOM, Production Entry, Raw Materials, Production Reports. When OFF, ERP operates as a Trading system (Purchase → Stock, Sales → Stock)." },
+                  { key: "inventory" as ModuleKey, name: "Inventory Module", desc: "Items, Categories, Units, Warehouses, Stock Ledger, Stock Transfer, Stock Reports. When OFF, Sales and Purchases work without stock tracking." },
+                  { key: "multi_warehouse" as ModuleKey, name: "Multi Warehouse System", desc: "Warehouse selection on stock operations. When OFF, all stock belongs to a single default warehouse." },
+                  { key: "multi_branch" as ModuleKey, name: "Multi Branch System", desc: "Branch selector and multi-branch transactions. When OFF, system operates as a single-company ERP using the default branch." },
+                ]).map((mod) => (
+                  <div key={mod.key} className="flex items-start justify-between gap-4 p-4 rounded-lg border border-border">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-foreground">{mod.name}</p>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{mod.desc}</p>
+                    </div>
+                    <Switch
+                      checked={isModuleEnabled(mod.key)}
+                      onCheckedChange={(checked) => toggleModule(mod.key, checked)}
+                    />
+                  </div>
+                ))}
+                <div className="p-3 rounded-md bg-muted/50 text-xs text-muted-foreground">
+                  <strong>Note:</strong> Disabling a module does NOT delete any data. All records remain stored but inactive. Changes are logged in Activity Logs.
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

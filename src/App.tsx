@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { BranchProvider } from "@/contexts/BranchContext";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
+import { ModuleProvider } from "@/contexts/ModuleContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppLayout } from "@/components/AppLayout";
 import Login from "./pages/Login";
@@ -60,6 +61,7 @@ const App = () => (
         <AuthProvider>
           <BranchProvider>
           <CurrencyProvider>
+          <ModuleProvider>
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<Login />} />
@@ -109,6 +111,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
+          </ModuleProvider>
           </CurrencyProvider>
           </BranchProvider>
         </AuthProvider>

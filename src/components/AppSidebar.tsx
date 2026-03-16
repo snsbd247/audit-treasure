@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
+import { useModules, type ModuleKey } from "@/contexts/ModuleContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   LayoutDashboard, ChevronDown, ChevronRight, BookOpen, FileText, Receipt,
@@ -17,6 +18,7 @@ interface NavGroup {
   label: string;
   icon: any;
   module?: string; // maps to role_permissions.module for access control
+  requiredModules?: ModuleKey[]; // all must be enabled for group to show
   children: { to: string; label: string; icon: any; end?: boolean }[];
   adminOnly?: boolean;
 }
@@ -60,6 +62,7 @@ const navGroups: NavGroup[] = [
     label: "Manufacturing",
     icon: Factory,
     module: "manufacturing",
+    requiredModules: ["manufacturing"],
     children: [
       { to: "/products", label: "Products", icon: Package },
       { to: "/manufacturing/materials", label: "Raw Materials", icon: Layers },
@@ -71,6 +74,7 @@ const navGroups: NavGroup[] = [
     label: "Inventory",
     icon: Warehouse,
     module: "inventory",
+    requiredModules: ["inventory"],
     children: [
       { to: "/inventory/items", label: "Item Master", icon: Package },
       { to: "/inventory/categories", label: "Item Categories", icon: Layers },
@@ -132,9 +136,24 @@ const NavItem = ({ to, label, icon: Icon, end }: { to: string; label: string; ic
   </NavLink>
 );
 
-const CollapsibleGroup = ({ group }: { group: NavGroup }) => {
+// Map routes to required modules for child-level filtering
+const routeModuleMap: Record<string, ModuleKey[]> = {
+  "/manufacturing/reports": ["manufacturing"],
+  "/reports/stock-ledger": ["inventory"],
+  "/inventory/warehouses": ["multi_warehouse"],
+};
+
+const CollapsibleGroup = ({ group, isModuleEnabled }: { group: NavGroup; isModuleEnabled: (key: ModuleKey) => boolean }) => {
   const [open, setOpen] = useState(false);
   const Icon = group.icon;
+
+  const filteredChildren = group.children.filter((item) => {
+    const required = routeModuleMap[item.to];
+    if (required && required.some((m) => !isModuleEnabled(m))) return false;
+    return true;
+  });
+
+  if (filteredChildren.length === 0) return null;
 
   return (
     <div>
@@ -150,7 +169,7 @@ const CollapsibleGroup = ({ group }: { group: NavGroup }) => {
       </button>
       {open && (
         <div className="ml-2 pl-3 border-l border-border/50 space-y-0.5 mt-0.5 mb-1">
-          {group.children.map((item) => (
+          {filteredChildren.map((item) => (
             <NavItem key={item.to + item.label} {...item} />
           ))}
         </div>
@@ -161,6 +180,7 @@ const CollapsibleGroup = ({ group }: { group: NavGroup }) => {
 
 export const AppSidebar = () => {
   const { isAdmin, signOut, profile, hasPermission } = useAuth();
+  const { isModuleEnabled } = useModules();
   const isMobile = useIsMobile();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -187,9 +207,11 @@ export const AppSidebar = () => {
           <div className="my-2 border-t border-sidebar-border" />
           {navGroups.map((group) => {
             if (group.adminOnly && !isAdmin) return null;
+            // Check module enable/disable
+            if (group.requiredModules && group.requiredModules.some((m) => !isModuleEnabled(m))) return null;
             // Staff users: check module-level view permission
             if (!isAdmin && group.module && !hasPermission(group.module, "can_view")) return null;
-            return <CollapsibleGroup key={group.label} group={group} />;
+            return <CollapsibleGroup key={group.label} group={group} isModuleEnabled={isModuleEnabled} />;
           })}
         </nav>
       </ScrollArea>
