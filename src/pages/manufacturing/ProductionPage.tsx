@@ -100,6 +100,12 @@ const ProductionPage = () => {
 
   const handleSave = async () => {
     if (!formProduct || matRows.length === 0) { toast({ title: "Select product and BOM", variant: "destructive" }); return; }
+
+    const fyResult = await validateFinancialYear(formDate);
+    if (!fyResult.valid) { toast({ title: "Financial Year Error", description: fyResult.error, variant: "destructive" }); return; }
+
+    const branchId = formBranch || userBranchId || null;
+
     setSaving(true);
     try {
       const numData = await nextNumber("production");
