@@ -39,7 +39,7 @@ interface PurchaseReturn {
 }
 
 const PurchasesPage = () => {
-  const { user, profile, hasPermission, isSuperAdmin } = useAuth();
+  const { user, profile, hasPermission, isSuperAdmin, isAdmin } = useAuth();
   const { userBranchId } = useBranch();
   const { toast } = useToast();
   const { fc } = useCurrency();
