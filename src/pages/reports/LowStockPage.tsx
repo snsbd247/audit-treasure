@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertTriangle } from "lucide-react";
+import { ReportHeader } from "@/components/ReportHeader";
 
 const LowStockPage = () => {
   const [products, setProducts] = useState<any[]>([]);
@@ -31,6 +32,7 @@ const LowStockPage = () => {
 
   return (
     <div className="p-4 lg:p-6 max-w-[1200px] mx-auto space-y-4">
+      <ReportHeader reportTitle="Low Stock Alert Report" />
       <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
         <AlertTriangle className="w-5 h-5 text-warning" />Low Stock Alerts
       </h1>

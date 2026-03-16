@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBranch } from "@/contexts/BranchContext";
 import { nextNumber } from "@/lib/db-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +21,7 @@ interface Transfer { id: string; transfer_number: string; transfer_date: string;
 
 const StockTransferPage = () => {
   const { user } = useAuth();
+  const { userBranchId } = useBranch();
   const [warehouses, setWarehouses] = useState<WH[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [transfers, setTransfers] = useState<Transfer[]>([]);

@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { nextNumber } from "@/lib/db-utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBranch } from "@/contexts/BranchContext";
+import { validateFinancialYear } from "@/lib/financial-year-utils";
+import { autoPostAccounting, findAccountByName } from "@/lib/accounting-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,6 +32,7 @@ interface SalesReturn {
 
 const SalesPage = () => {
   const { user, hasPermission } = useAuth();
+  const { userBranchId, canAccessAllBranches } = useBranch();
   const { toast } = useToast();
   const [tab, setTab] = useState("invoices");
   const [invoices, setInvoices] = useState<SalesInvoice[]>([]);
@@ -97,14 +101,21 @@ const SalesPage = () => {
   const handleSaveInvoice = async () => {
     const validItems = items.filter((i) => i.product_id && i.quantity > 0);
     if (validItems.length === 0) { toast({ title: "Add at least one item", variant: "destructive" }); return; }
+
+    // Financial year validation
+    const fyResult = await validateFinancialYear(formDate);
+    if (!fyResult.valid) { toast({ title: "Financial Year Error", description: fyResult.error, variant: "destructive" }); return; }
+
+    const branchId = formBranch || userBranchId || null;
+
     setSaving(true);
     try {
-      const numData = await nextNumber("sales");
+      const numData = await nextNumber("sales_invoice");
       const totalAmt = grandTotal(validItems);
       const disc = parseFloat(formDiscount) || 0;
       const { data, error } = await supabase.from("sales_invoices").insert({
         invoice_number: numData as string,
-        invoice_date: formDate, customer_id: formCustomer || null, branch_id: formBranch || null,
+        invoice_date: formDate, customer_id: formCustomer || null, branch_id: branchId,
         total_amount: totalAmt, discount: disc, net_amount: totalAmt - disc, notes: formNotes,
         created_by: user?.id,
       }).select().single();
@@ -114,10 +125,33 @@ const SalesPage = () => {
       await supabase.from("sales_invoice_items").insert(rows);
 
       const movements = validItems.map((i) => ({
-        product_id: i.product_id, branch_id: formBranch || null,
+        product_id: i.product_id, branch_id: branchId,
         movement_type: "sale" as const, reference_type: "sales_invoice", reference_id: (data as any).id, quantity: -i.quantity,
       }));
       await supabase.from("stock_movements").insert(movements);
+
+      // Auto-post accounting: Debit Accounts Receivable, Credit Sales Revenue
+      try {
+        const arAccountId = await findAccountByName("Accounts Receivable");
+        const salesAccountId = await findAccountByName("Sales");
+        if (arAccountId && salesAccountId) {
+          const netAmt = totalAmt - disc;
+          await autoPostAccounting({
+            voucher_type: "journal",
+            voucher_date: formDate,
+            description: `Sales Invoice ${numData}`,
+            branch_id: branchId,
+            financial_year_id: fyResult.yearId,
+            created_by: user?.id,
+            entries: [
+              { account_id: arAccountId, debit: netAmt, credit: 0, narration: `Sales Invoice ${numData}` },
+              { account_id: salesAccountId, debit: 0, credit: netAmt, narration: `Sales Invoice ${numData}` },
+            ],
+          });
+        }
+      } catch (accErr) {
+        console.warn("Auto-posting accounting entry failed:", accErr);
+      }
 
       toast({ title: `Invoice ${numData} created` });
       setDialogOpen(false); fetchData();
@@ -129,12 +163,18 @@ const SalesPage = () => {
   const handleSaveReturn = async () => {
     const validItems = retItems.filter((i) => i.product_id && i.quantity > 0);
     if (validItems.length === 0) { toast({ title: "Add at least one item", variant: "destructive" }); return; }
+
+    const fyResult = await validateFinancialYear(retDate);
+    if (!fyResult.valid) { toast({ title: "Financial Year Error", description: fyResult.error, variant: "destructive" }); return; }
+
+    const branchId = retBranch || userBranchId || null;
+
     setSaving(true);
     try {
       const numData = await nextNumber("sales_return");
       const { data, error } = await supabase.from("sales_returns").insert({
         return_number: numData as string,
-        return_date: retDate, customer_id: retCustomer || null, branch_id: retBranch || null,
+        return_date: retDate, customer_id: retCustomer || null, branch_id: branchId,
         total_amount: grandTotal(validItems), reason: retReason, created_by: user?.id,
       }).select().single();
       if (error) throw error;
@@ -143,7 +183,7 @@ const SalesPage = () => {
       await supabase.from("sales_return_items").insert(rows);
 
       const movements = validItems.map((i) => ({
-        product_id: i.product_id, branch_id: retBranch || null,
+        product_id: i.product_id, branch_id: branchId,
         movement_type: "sale_return" as const, reference_type: "sales_return", reference_id: (data as any).id, quantity: i.quantity,
       }));
       await supabase.from("stock_movements").insert(movements);

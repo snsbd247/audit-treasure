@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BookOpen, Search } from "lucide-react";
+import { ReportHeader } from "@/components/ReportHeader";
 
 interface Product { id: string; product_name: string; product_code: string; }
 interface Branch { id: string; name: string; }
@@ -77,6 +78,7 @@ const StockLedger = () => {
 
   return (
     <div className="p-6 space-y-4">
+      <ReportHeader reportTitle="Stock Ledger" />
       <div className="flex items-center gap-2"><BookOpen className="w-5 h-5 text-primary" /><h1 className="text-xl font-semibold text-foreground">Stock Ledger</h1></div>
 
       <div className="flex gap-4 items-end flex-wrap">

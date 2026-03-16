@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { nextNumber } from "@/lib/db-utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBranch } from "@/contexts/BranchContext";
+import { validateFinancialYear } from "@/lib/financial-year-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,6 +29,7 @@ interface ProdEntry {
 
 const ProductionPage = () => {
   const { user } = useAuth();
+  const { userBranchId } = useBranch();
   const { toast } = useToast();
   const [entries, setEntries] = useState<ProdEntry[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -97,13 +100,19 @@ const ProductionPage = () => {
 
   const handleSave = async () => {
     if (!formProduct || matRows.length === 0) { toast({ title: "Select product and BOM", variant: "destructive" }); return; }
+
+    const fyResult = await validateFinancialYear(formDate);
+    if (!fyResult.valid) { toast({ title: "Financial Year Error", description: fyResult.error, variant: "destructive" }); return; }
+
+    const branchId = formBranch || userBranchId || null;
+
     setSaving(true);
     try {
       const numData = await nextNumber("production");
       const { data, error } = await supabase.from("production_entries").insert({
         production_number: numData as string,
         production_date: formDate, product_id: formProduct, bom_id: formBom || null,
-        quantity: parseFloat(formQty) || 1, branch_id: formBranch || null,
+        quantity: parseFloat(formQty) || 1, branch_id: branchId,
         raw_material_cost: rawMaterialCost, labor_cost: parseFloat(formLabor) || 0,
         electricity_cost: parseFloat(formElec) || 0, total_cost: totalCost,
         notes: formNotes, created_by: user?.id,
@@ -118,13 +127,13 @@ const ProductionPage = () => {
 
       // Stock movements: decrease raw materials
       const decreaseMovements = matRows.map((r) => ({
-        product_id: r.material_id, branch_id: formBranch || null,
+        product_id: r.material_id, branch_id: branchId,
         movement_type: "production_out" as const, reference_type: "production", reference_id: (data as any).id,
         quantity: -r.quantity,
       }));
       // Stock movement: increase finished product
       const increaseMovement = {
-        product_id: formProduct, branch_id: formBranch || null,
+        product_id: formProduct, branch_id: branchId,
         movement_type: "production_in" as const, reference_type: "production", reference_id: (data as any).id,
         quantity: parseFloat(formQty) || 1,
       };
