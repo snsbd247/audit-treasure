@@ -7,6 +7,7 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 
 const CashBookPage = () => {
   const [entries, setEntries] = useState<any[]>([]);
+  const { fc } = useCurrency();
 
   useEffect(() => {
     // Cash book = voucher entries involving Cash accounts
