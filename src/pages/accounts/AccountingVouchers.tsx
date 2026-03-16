@@ -65,6 +65,10 @@ const AccountingVouchers = () => {
     { id: "2", account_id: "", debit: 0, credit: 0, narration: "" },
   ]);
 
+  // Print state
+  const [printVoucher, setPrintVoucher] = useState<Voucher | null>(null);
+  const [printEntries, setPrintEntries] = useState<any[]>([]);
+
   // Super admin action state
   const [superAdminAction, setSuperAdminAction] = useState<SuperAdminAction>(null);
   const [actionVoucher, setActionVoucher] = useState<Voucher | null>(null);
