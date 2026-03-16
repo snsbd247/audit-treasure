@@ -205,7 +205,12 @@ const AccountingVouchers = () => {
     }
   };
 
-  const statusBadge = (status: string) => {
+  const openPrintVoucher = async (v: Voucher) => {
+    const { data } = await supabase.from("voucher_entries").select("*, chart_of_accounts:account_id(account_name, account_code)").eq("voucher_id", v.id).order("sort_order");
+    setPrintEntries((data || []).map((e: any) => ({ ...e, account_name: e.chart_of_accounts?.account_name || "—", account_code: e.chart_of_accounts?.account_code || "" })));
+    setPrintVoucher(v);
+  };
+
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       draft: "outline", pending: "secondary", approved: "default", rejected: "destructive",
     };
