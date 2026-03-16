@@ -55,6 +55,7 @@ const ManufacturingReports = () => {
 
   return (
     <div className="p-6 space-y-4">
+      <ReportHeader reportTitle="Manufacturing & Production Reports" />
       <div className="flex items-center gap-2">
         <BarChart3 className="w-5 h-5 text-primary" />
         <h1 className="text-xl font-semibold text-foreground">Manufacturing Reports</h1>
