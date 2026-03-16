@@ -6,13 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { LogIn, UserPlus } from "lucide-react";
+import { LogIn, UserPlus, Building2, Eye, EyeOff } from "lucide-react";
 
 const Login = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
@@ -23,7 +25,7 @@ const Login = () => {
     setSubmitting(true);
     try {
       if (isSignUp) {
-        const { error } = await signUp(email, password, { name });
+        const { error } = await signUp(email, password, { name, username });
         if (error) throw error;
         toast({ title: "Account created", description: "Check your email for verification or sign in directly." });
       } else {
@@ -39,43 +41,101 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md shadow-elevated">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-foreground">
-            {isSignUp ? "Create Account" : "Sign In"}
-          </CardTitle>
-          <CardDescription>
-            {isSignUp ? "Create a new account to get started" : "Enter your credentials to access the system"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {isSignUp && (
-              <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="John Doe" required />
-              </div>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="user@example.com" required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} />
-            </div>
-            <Button type="submit" className="w-full" disabled={submitting}>
-              {submitting ? "Please wait..." : isSignUp ? (<><UserPlus className="w-4 h-4 mr-2" />Create Account</>) : (<><LogIn className="w-4 h-4 mr-2" />Sign In</>)}
-            </Button>
-          </form>
-          <div className="mt-4 text-center">
-            <button type="button" className="text-sm text-primary hover:underline" onClick={() => setIsSignUp(!isSignUp)}>
-              {isSignUp ? "Already have an account? Sign in" : "Don't have an account? Sign up"}
-            </button>
+    <div className="min-h-screen flex bg-background">
+      {/* Left branding panel */}
+      <div className="hidden lg:flex lg:w-1/2 bg-primary relative items-center justify-center p-12">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary to-primary/80" />
+        <div className="relative z-10 text-center space-y-6 max-w-md">
+          <div className="w-16 h-16 bg-primary-foreground/20 rounded-2xl flex items-center justify-center mx-auto">
+            <Building2 className="w-8 h-8 text-primary-foreground" />
           </div>
-        </CardContent>
-      </Card>
+          <h1 className="text-3xl font-bold text-primary-foreground">ERP System</h1>
+          <p className="text-primary-foreground/80 text-sm leading-relaxed">
+            Complete enterprise resource planning for manufacturing companies.
+            Manage accounting, inventory, sales, purchases, and production — all in one place.
+          </p>
+          <div className="grid grid-cols-2 gap-3 text-xs text-primary-foreground/70">
+            {["Multi-Branch Accounting", "Inventory Management", "Manufacturing", "Financial Reports",
+              "Role-Based Access", "Voucher Workflow", "Stock Ledger", "Audit Logs"].map((f) => (
+              <div key={f} className="flex items-center gap-1.5">
+                <div className="w-1 h-1 rounded-full bg-primary-foreground/50" />
+                {f}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Right login form */}
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
+        <Card className="w-full max-w-md shadow-elevated border-border/50">
+          <CardHeader className="text-center pb-2">
+            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-3 lg:hidden">
+              <Building2 className="w-5 h-5 text-primary" />
+            </div>
+            <CardTitle className="text-xl font-bold text-foreground">
+              {isSignUp ? "Create Account" : "Welcome Back"}
+            </CardTitle>
+            <CardDescription className="text-sm">
+              {isSignUp ? "Fill in your details to create a new account" : "Sign in to access your ERP dashboard"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {isSignUp && (
+                <>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="name" className="text-xs font-medium">Full Name</Label>
+                    <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="John Doe" required className="h-10" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="username" className="text-xs font-medium">Username</Label>
+                    <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="johndoe" required className="h-10" />
+                  </div>
+                </>
+              )}
+              <div className="space-y-1.5">
+                <Label htmlFor="email" className="text-xs font-medium">Email Address</Label>
+                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="user@company.com" required className="h-10" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="password" className="text-xs font-medium">Password</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    minLength={6}
+                    className="h-10 pr-10"
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+              <Button type="submit" className="w-full h-10" disabled={submitting}>
+                {submitting ? "Please wait..." : isSignUp ? (
+                  <><UserPlus className="w-4 h-4 mr-2" />Create Account</>
+                ) : (
+                  <><LogIn className="w-4 h-4 mr-2" />Sign In</>
+                )}
+              </Button>
+            </form>
+            <div className="mt-4 text-center">
+              <button type="button" className="text-xs text-primary hover:underline" onClick={() => setIsSignUp(!isSignUp)}>
+                {isSignUp ? "Already have an account? Sign in" : "Don't have an account? Sign up"}
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
