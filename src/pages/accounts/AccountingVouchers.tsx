@@ -1,17 +1,23 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { voucherApi } from "@/lib/voucher-api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Check, X, FileText, Trash2 } from "lucide-react";
+import { Plus, Check, X, FileText, Trash2, RotateCcw, Pencil, ArrowLeftRight, Lock } from "lucide-react";
 
 const VOUCHER_TYPES = [
   { id: "journal", label: "Journal Voucher", prefix: "JV" },
@@ -30,8 +36,10 @@ interface Voucher {
   total_amount: number; status: string; created_at: string;
 }
 
+type SuperAdminAction = "delete" | "reopen" | "reverse" | null;
+
 const AccountingVouchers = () => {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, isSuperAdmin } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("journal");
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
@@ -52,10 +60,15 @@ const AccountingVouchers = () => {
     { id: "2", account_id: "", debit: 0, credit: 0, narration: "" },
   ]);
 
+  // Super admin action state
+  const [superAdminAction, setSuperAdminAction] = useState<SuperAdminAction>(null);
+  const [actionVoucher, setActionVoucher] = useState<Voucher | null>(null);
+  const [actionReason, setActionReason] = useState("");
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     const [vRes, aRes, bRes, fRes] = await Promise.all([
-      supabase.from("acc_vouchers").select("*").eq("voucher_type", activeTab).order("created_at", { ascending: false }),
+      voucherApi.list(activeTab),
       supabase.from("chart_of_accounts").select("id, account_name, account_code").order("account_code"),
       supabase.from("branches").select("id, name"),
       supabase.from("financial_years").select("id, name"),
@@ -108,35 +121,21 @@ const AccountingVouchers = () => {
     }
     setSaving(true);
     try {
-      // Generate number
-      const { data: numData } = await supabase.rpc("next_number", { seq_id: activeTab });
-      const voucherNumber = numData as string;
-
-      const { data: vData, error: vErr } = await supabase.from("acc_vouchers").insert({
-        voucher_number: voucherNumber,
+      await voucherApi.create({
         voucher_type: activeTab,
         voucher_date: formDate,
-        branch_id: formBranch || null,
-        financial_year_id: formFinYear || null,
+        branch_id: formBranch || undefined,
+        financial_year_id: formFinYear || undefined,
         description: formDesc,
-        total_amount: totalDebit,
-        status: submitForApproval ? "pending" : "draft",
-        created_by: user?.id,
-      }).select().single();
-      if (vErr) throw vErr;
-
-      const entryRows = validEntries.map((e, i) => ({
-        voucher_id: (vData as any).id,
-        account_id: e.account_id,
-        debit: e.debit,
-        credit: e.credit,
-        narration: e.narration,
-        sort_order: i,
-      }));
-      const { error: eErr } = await supabase.from("voucher_entries").insert(entryRows);
-      if (eErr) throw eErr;
-
-      toast({ title: `Voucher ${voucherNumber} created` });
+        entries: validEntries.map((e) => ({
+          account_id: e.account_id,
+          debit: e.debit,
+          credit: e.credit,
+          narration: e.narration,
+        })),
+        submit: submitForApproval,
+      });
+      toast({ title: "Voucher created successfully" });
       setDialogOpen(false);
       fetchData();
     } catch (err: any) {
@@ -147,17 +146,54 @@ const AccountingVouchers = () => {
   };
 
   const handleApprove = async (v: Voucher) => {
-    const { error } = await supabase.from("acc_vouchers").update({
-      status: "approved", approved_by: user?.id, approved_at: new Date().toISOString(),
-    }).eq("id", v.id);
-    if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
-    else { toast({ title: "Voucher approved" }); fetchData(); }
+    try {
+      await voucherApi.approve(v.id);
+      toast({ title: "Voucher approved" });
+      fetchData();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
   };
 
   const handleReject = async (v: Voucher) => {
-    const { error } = await supabase.from("acc_vouchers").update({ status: "rejected" }).eq("id", v.id);
-    if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
-    else { toast({ title: "Voucher rejected" }); fetchData(); }
+    try {
+      await voucherApi.reject(v.id);
+      toast({ title: "Voucher rejected" });
+      fetchData();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const openSuperAdminAction = (action: SuperAdminAction, voucher: Voucher) => {
+    setSuperAdminAction(action);
+    setActionVoucher(voucher);
+    setActionReason("");
+  };
+
+  const handleSuperAdminAction = async () => {
+    if (!actionVoucher || !superAdminAction) return;
+    try {
+      switch (superAdminAction) {
+        case "delete":
+          await voucherApi.deleteApproved(actionVoucher.id, actionReason);
+          toast({ title: "Voucher deleted" });
+          break;
+        case "reopen":
+          await voucherApi.reopen(actionVoucher.id, actionReason);
+          toast({ title: "Voucher reopened for correction" });
+          break;
+        case "reverse":
+          await voucherApi.reverse(actionVoucher.id, actionReason);
+          toast({ title: "Reversal voucher created" });
+          break;
+      }
+      setSuperAdminAction(null);
+      setActionVoucher(null);
+      fetchData();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
   };
 
   const statusBadge = (status: string) => {
@@ -165,6 +201,12 @@ const AccountingVouchers = () => {
       draft: "outline", pending: "secondary", approved: "default", rejected: "destructive",
     };
     return <Badge variant={variants[status] || "outline"}>{status}</Badge>;
+  };
+
+  const actionLabels: Record<string, { title: string; desc: string; confirm: string }> = {
+    delete: { title: "Delete Approved Voucher", desc: "This will permanently delete this approved voucher and all its entries. This action is irreversible and will be logged.", confirm: "Delete Voucher" },
+    reopen: { title: "Reopen Voucher", desc: "This will change the voucher status back to draft, allowing it to be edited and re-submitted. This action will be logged.", confirm: "Reopen Voucher" },
+    reverse: { title: "Reverse Voucher", desc: "This will create a new reversal voucher with swapped debit/credit entries to offset the original transaction. Both vouchers will remain in the system.", confirm: "Create Reversal" },
   };
 
   return (
@@ -196,7 +238,7 @@ const AccountingVouchers = () => {
                       <TableHead>Description</TableHead>
                       <TableHead className="text-right">Amount</TableHead>
                       <TableHead>Status</TableHead>
-                      {isAdmin && <TableHead className="w-24">Actions</TableHead>}
+                      <TableHead className="w-40">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -210,21 +252,47 @@ const AccountingVouchers = () => {
                         <TableCell className="text-sm">{v.voucher_date}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{v.description || "—"}</TableCell>
                         <TableCell className="text-right tabular-nums font-medium">{v.total_amount.toLocaleString()}</TableCell>
-                        <TableCell>{statusBadge(v.status)}</TableCell>
-                        {isAdmin && (
-                          <TableCell>
-                            {v.status === "pending" && (
-                              <div className="flex gap-1">
+                        <TableCell>
+                          <div className="flex items-center gap-1.5">
+                            {statusBadge(v.status)}
+                            {v.status === "approved" && <Lock className="w-3 h-3 text-muted-foreground" />}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-1">
+                            {/* Admin: Approve/Reject pending */}
+                            {v.status === "pending" && isAdmin && (
+                              <>
                                 <Button variant="ghost" size="icon" onClick={() => handleApprove(v)} title="Approve">
                                   <Check className="w-4 h-4 text-green-600" />
                                 </Button>
                                 <Button variant="ghost" size="icon" onClick={() => handleReject(v)} title="Reject">
                                   <X className="w-4 h-4 text-destructive" />
                                 </Button>
-                              </div>
+                              </>
                             )}
-                          </TableCell>
-                        )}
+                            {/* Super Admin: Actions on approved vouchers */}
+                            {v.status === "approved" && isSuperAdmin && (
+                              <>
+                                <Button variant="ghost" size="icon" onClick={() => openSuperAdminAction("reopen", v)} title="Reopen">
+                                  <RotateCcw className="w-4 h-4 text-amber-600" />
+                                </Button>
+                                <Button variant="ghost" size="icon" onClick={() => openSuperAdminAction("reverse", v)} title="Reverse">
+                                  <ArrowLeftRight className="w-4 h-4 text-blue-600" />
+                                </Button>
+                                <Button variant="ghost" size="icon" onClick={() => openSuperAdminAction("delete", v)} title="Delete">
+                                  <Trash2 className="w-4 h-4 text-destructive" />
+                                </Button>
+                              </>
+                            )}
+                            {/* Super Admin: Reopen rejected */}
+                            {v.status === "rejected" && isSuperAdmin && (
+                              <Button variant="ghost" size="icon" onClick={() => openSuperAdminAction("reopen", v)} title="Reopen">
+                                <RotateCcw className="w-4 h-4 text-amber-600" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -319,7 +387,6 @@ const AccountingVouchers = () => {
                         </TableCell>
                       </TableRow>
                     ))}
-                    {/* Totals Row */}
                     <TableRow className="bg-muted/50 font-medium">
                       <TableCell className="text-right text-sm">Total</TableCell>
                       <TableCell className="text-right tabular-nums">{totalDebit.toLocaleString()}</TableCell>
@@ -345,6 +412,40 @@ const AccountingVouchers = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Super Admin Confirmation Dialog */}
+      <AlertDialog open={!!superAdminAction} onOpenChange={() => setSuperAdminAction(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {superAdminAction && actionLabels[superAdminAction]?.title}
+              {actionVoucher && ` — ${actionVoucher.voucher_number}`}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {superAdminAction && actionLabels[superAdminAction]?.desc}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2">
+            <Label>Reason (required)</Label>
+            <Textarea
+              value={actionReason}
+              onChange={(e) => setActionReason(e.target.value)}
+              placeholder="Provide a reason for this action..."
+              className="resize-none h-20"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleSuperAdminAction}
+              disabled={!actionReason.trim()}
+              className={superAdminAction === "delete" ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
+            >
+              {superAdminAction && actionLabels[superAdminAction]?.confirm}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
