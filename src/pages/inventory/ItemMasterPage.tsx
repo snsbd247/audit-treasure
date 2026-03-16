@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Package, Search } from "lucide-react";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 const ITEM_TYPES = [
   { value: "raw_material", label: "Raw Material" },
