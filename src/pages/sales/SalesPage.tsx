@@ -78,8 +78,11 @@ const SalesPage = () => {
   const [printInvoice, setPrintInvoice] = useState<SalesInvoice | null>(null);
   const [printItems, setPrintItems] = useState<any[]>([]);
 
-  const canEdit = hasPermission("sales", "can_edit") || isSuperAdmin;
   const canAdd = hasPermission("sales", "can_add") || isSuperAdmin;
+  const [actionDialogOpen, setActionDialogOpen] = useState(false);
+  const [actionType, setActionType] = useState<"approve" | "cancel" | "delete" | null>(null);
+  const [actionTarget, setActionTarget] = useState<SalesInvoice | null>(null);
+  const [actionReason, setActionReason] = useState("");
 
   const fetchData = async () => {
     setLoading(true);
