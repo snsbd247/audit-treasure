@@ -31,7 +31,6 @@ import ItemCategoriesPage from "./pages/inventory/ItemCategoriesPage";
 import ItemMasterPage from "./pages/inventory/ItemMasterPage";
 import WarehousesPage from "./pages/inventory/WarehousesPage";
 import StockTransferPage from "./pages/inventory/StockTransferPage";
-import RawMaterialsPage from "./pages/manufacturing/RawMaterialsPage";
 import BOMPage from "./pages/manufacturing/BOMPage";
 import ProductionPage from "./pages/manufacturing/ProductionPage";
 import ManufacturingReports from "./pages/manufacturing/ManufacturingReports";
