@@ -80,6 +80,47 @@ export type Database = {
           },
         ]
       }
+      attendance: {
+        Row: {
+          check_in: string | null
+          check_out: string | null
+          created_at: string
+          date: string
+          employee_id: string
+          id: string
+          notes: string | null
+          status: string
+        }
+        Insert: {
+          check_in?: string | null
+          check_out?: string | null
+          created_at?: string
+          date?: string
+          employee_id: string
+          id?: string
+          notes?: string | null
+          status?: string
+        }
+        Update: {
+          check_in?: string | null
+          check_out?: string | null
+          created_at?: string
+          date?: string
+          employee_id?: string
+          id?: string
+          notes?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           action: string
@@ -465,6 +506,148 @@ export type Database = {
         }
         Relationships: []
       }
+      departments: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      designations: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      employees: {
+        Row: {
+          address: string | null
+          branch_id: string | null
+          created_at: string
+          department_id: string | null
+          designation_id: string | null
+          email: string | null
+          employee_code: string
+          employment_type: string
+          first_name: string
+          id: string
+          joining_date: string
+          last_name: string
+          mobile: string | null
+          national_id: string | null
+          photo_url: string | null
+          salary: number
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          address?: string | null
+          branch_id?: string | null
+          created_at?: string
+          department_id?: string | null
+          designation_id?: string | null
+          email?: string | null
+          employee_code: string
+          employment_type?: string
+          first_name: string
+          id?: string
+          joining_date?: string
+          last_name: string
+          mobile?: string | null
+          national_id?: string | null
+          photo_url?: string | null
+          salary?: number
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          address?: string | null
+          branch_id?: string | null
+          created_at?: string
+          department_id?: string | null
+          designation_id?: string | null
+          email?: string | null
+          employee_code?: string
+          employment_type?: string
+          first_name?: string
+          id?: string
+          joining_date?: string
+          last_name?: string
+          mobile?: string | null
+          national_id?: string | null
+          photo_url?: string | null
+          salary?: number
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employees_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employees_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employees_designation_id_fkey"
+            columns: ["designation_id"]
+            isOneToOne: false
+            referencedRelation: "designations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financial_years: {
         Row: {
           created_at: string
@@ -596,6 +779,81 @@ export type Database = {
           },
         ]
       }
+      leave_requests: {
+        Row: {
+          approved_by: string | null
+          created_at: string
+          employee_id: string
+          end_date: string
+          id: string
+          leave_type_id: string
+          reason: string | null
+          start_date: string
+          status: string
+        }
+        Insert: {
+          approved_by?: string | null
+          created_at?: string
+          employee_id: string
+          end_date: string
+          id?: string
+          leave_type_id: string
+          reason?: string | null
+          start_date: string
+          status?: string
+        }
+        Update: {
+          approved_by?: string | null
+          created_at?: string
+          employee_id?: string
+          end_date?: string
+          id?: string
+          leave_type_id?: string
+          reason?: string | null
+          start_date?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_requests_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_requests_leave_type_id_fkey"
+            columns: ["leave_type_id"]
+            isOneToOne: false
+            referencedRelation: "leave_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leave_types: {
+        Row: {
+          created_at: string
+          days_per_year: number
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          days_per_year?: number
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          days_per_year?: number
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       module_settings: {
         Row: {
           id: string
@@ -646,6 +904,63 @@ export type Database = {
           year?: number
         }
         Relationships: []
+      }
+      payroll: {
+        Row: {
+          allowances: number
+          basic_salary: number
+          created_at: string
+          deductions: number
+          employee_id: string
+          id: string
+          month: number
+          net_salary: number
+          status: string
+          voucher_id: string | null
+          year: number
+        }
+        Insert: {
+          allowances?: number
+          basic_salary?: number
+          created_at?: string
+          deductions?: number
+          employee_id: string
+          id?: string
+          month: number
+          net_salary?: number
+          status?: string
+          voucher_id?: string | null
+          year: number
+        }
+        Update: {
+          allowances?: number
+          basic_salary?: number
+          created_at?: string
+          deductions?: number
+          employee_id?: string
+          id?: string
+          month?: number
+          net_salary?: number
+          status?: string
+          voucher_id?: string | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payroll_voucher_id_fkey"
+            columns: ["voucher_id"]
+            isOneToOne: false
+            referencedRelation: "acc_vouchers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       product_categories: {
         Row: {
@@ -1157,6 +1472,47 @@ export type Database = {
             columns: ["custom_role_id"]
             isOneToOne: false
             referencedRelation: "custom_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      salary_structures: {
+        Row: {
+          allowances: number
+          basic_salary: number
+          created_at: string
+          deductions: number
+          effective_from: string
+          employee_id: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          allowances?: number
+          basic_salary?: number
+          created_at?: string
+          deductions?: number
+          effective_from?: string
+          employee_id: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          allowances?: number
+          basic_salary?: number
+          created_at?: string
+          deductions?: number
+          effective_from?: string
+          employee_id?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salary_structures_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
             referencedColumns: ["id"]
           },
         ]
