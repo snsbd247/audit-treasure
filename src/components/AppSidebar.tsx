@@ -260,14 +260,23 @@ const CollapsibleGroup = ({ group, isModuleEnabled }: { group: NavGroup; isModul
 export const AppSidebar = () => {
   const { isAdmin, signOut, profile, hasPermission } = useAuth();
   const { isModuleEnabled } = useModules();
+  const { branding } = useBranding();
   const isMobile = useIsMobile();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const sidebarContent = (
     <>
       <div className="p-4 border-b border-sidebar-border flex items-center justify-between">
-        <div>
-          <h2 className="font-bold text-sidebar-foreground text-base tracking-tight">ERP System</h2>
+        <div className="flex items-center gap-2">
+          {branding.company_logo_url ? (
+            <img src={branding.company_logo_url} alt="Logo" className="w-7 h-7 object-contain rounded" />
+          ) : (
+            <div className="w-7 h-7 rounded bg-primary/10 flex items-center justify-center">
+              <Building2 className="w-4 h-4 text-primary" />
+            </div>
+          )}
+          <div>
+            <h2 className="font-bold text-sidebar-foreground text-sm tracking-tight">{branding.software_name || "ERP System"}</h2>
           {profile && (
             <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-[180px]">
               {profile.name || profile.email}
