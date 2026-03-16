@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, ShoppingCart, Trash2, RotateCcw } from "lucide-react";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface Product { id: string; product_name: string; product_code: string; cost_price: number; }
 interface Supplier { id: string; name: string; }
@@ -31,6 +32,7 @@ const PurchasesPage = () => {
   const { user, hasPermission } = useAuth();
   const { userBranchId } = useBranch();
   const { toast } = useToast();
+  const { fc } = useCurrency();
   const [tab, setTab] = useState("purchases");
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [returns, setReturns] = useState<PurchaseReturn[]>([]);
@@ -158,7 +160,7 @@ const PurchasesPage = () => {
                 </TableCell>
                 <TableCell><Input type="number" className="h-9 text-right" value={item.quantity || ""} onChange={(e) => updateItem(item.id, "quantity", parseFloat(e.target.value) || 0, itemList, setFn)} /></TableCell>
                 <TableCell><Input type="number" className="h-9 text-right" value={item.unit_price || ""} onChange={(e) => updateItem(item.id, "unit_price", parseFloat(e.target.value) || 0, itemList, setFn)} /></TableCell>
-                <TableCell className="text-right tabular-nums font-medium">{item.total.toLocaleString()}</TableCell>
+                <TableCell className="text-right tabular-nums font-medium">{fc(item.total)}</TableCell>
                 <TableCell>
                   <Button variant="ghost" size="icon" onClick={() => setFn(itemList.filter((i) => i.id !== item.id))} disabled={itemList.length <= 1}>
                     <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
@@ -168,7 +170,7 @@ const PurchasesPage = () => {
             ))}
             <TableRow className="bg-muted/50 font-medium">
               <TableCell colSpan={3} className="text-right">Grand Total</TableCell>
-              <TableCell className="text-right tabular-nums">{grandTotal(itemList).toLocaleString()}</TableCell>
+              <TableCell className="text-right tabular-nums">{fc(grandTotal(itemList))}</TableCell>
               <TableCell />
             </TableRow>
           </TableBody>
@@ -222,7 +224,7 @@ const PurchasesPage = () => {
                     <TableCell className="font-geist-mono text-xs font-medium">{p.purchase_number}</TableCell>
                     <TableCell>{p.purchase_date}</TableCell>
                     <TableCell>{p.supplier_name || "—"}</TableCell>
-                    <TableCell className="text-right tabular-nums font-medium">{p.total_amount.toLocaleString()}</TableCell>
+                    <TableCell className="text-right tabular-nums font-medium">{fc(p.total_amount)}</TableCell>
                     <TableCell className="capitalize">{p.payment_method}</TableCell>
                   </TableRow>
                 ))}
@@ -245,7 +247,7 @@ const PurchasesPage = () => {
                     <TableCell className="font-geist-mono text-xs font-medium">{r.return_number}</TableCell>
                     <TableCell>{r.return_date}</TableCell>
                     <TableCell>{r.supplier_name || "—"}</TableCell>
-                    <TableCell className="text-right tabular-nums font-medium">{r.total_amount.toLocaleString()}</TableCell>
+                    <TableCell className="text-right tabular-nums font-medium">{fc(r.total_amount)}</TableCell>
                     <TableCell className="text-muted-foreground">{r.reason || "—"}</TableCell>
                   </TableRow>
                 ))}

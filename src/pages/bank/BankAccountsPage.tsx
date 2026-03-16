@@ -3,9 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Landmark } from "lucide-react";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 const BankAccountsPage = () => {
   const [accounts, setAccounts] = useState<any[]>([]);
+  const { fc } = useCurrency();
 
   useEffect(() => {
     supabase
@@ -41,7 +43,7 @@ const BankAccountsPage = () => {
                   <TableCell className="font-mono text-xs">{a.account_code}</TableCell>
                   <TableCell className="font-medium">{a.account_name}</TableCell>
                   <TableCell>{a.account_type}</TableCell>
-                  <TableCell className="text-right tabular-nums">{Number(a.opening_balance).toLocaleString()}</TableCell>
+                  <TableCell className="text-right tabular-nums">{fc(Number(a.opening_balance))}</TableCell>
                 </TableRow>
               ))}
               {accounts.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">No bank accounts found. Add accounts with "Bank" in the name in Chart of Accounts.</TableCell></TableRow>}

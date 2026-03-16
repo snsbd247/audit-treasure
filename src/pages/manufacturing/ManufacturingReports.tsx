@@ -9,9 +9,11 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { BarChart3, Search } from "lucide-react";
 import { ReportHeader } from "@/components/ReportHeader";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 const ManufacturingReports = () => {
   const [tab, setTab] = useState("production");
+  const { fc } = useCurrency();
   const [productions, setProductions] = useState<any[]>([]);
   const [consumptions, setConsumptions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,11 +71,11 @@ const ManufacturingReports = () => {
 
       <div className="grid grid-cols-3 gap-4">
         <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total Production Cost</CardTitle></CardHeader>
-          <CardContent><div className="text-2xl font-bold tabular-nums">{totalProdCost.toLocaleString()}</div></CardContent></Card>
+          <CardContent><div className="text-2xl font-bold tabular-nums">{fc(totalProdCost)}</div></CardContent></Card>
         <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total Material Cost</CardTitle></CardHeader>
-          <CardContent><div className="text-2xl font-bold tabular-nums">{totalMatCost.toLocaleString()}</div></CardContent></Card>
+          <CardContent><div className="text-2xl font-bold tabular-nums">{fc(totalMatCost)}</div></CardContent></Card>
         <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total Labor Cost</CardTitle></CardHeader>
-          <CardContent><div className="text-2xl font-bold tabular-nums">{totalLabor.toLocaleString()}</div></CardContent></Card>
+          <CardContent><div className="text-2xl font-bold tabular-nums">{fc(totalLabor)}</div></CardContent></Card>
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
@@ -98,7 +100,7 @@ const ManufacturingReports = () => {
                     <TableCell>{p.production_date}</TableCell>
                     <TableCell className="font-medium">{p.product_name}</TableCell>
                     <TableCell className="text-right tabular-nums">{p.quantity}</TableCell>
-                    <TableCell className="text-right tabular-nums font-medium">{Number(p.total_cost).toLocaleString()}</TableCell>
+                    <TableCell className="text-right tabular-nums font-medium">{fc(Number(p.total_cost))}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -120,7 +122,7 @@ const ManufacturingReports = () => {
                     <TableCell>{c.production_date}</TableCell>
                     <TableCell className="font-medium">{c.material_name}</TableCell>
                     <TableCell className="text-right tabular-nums">{Number(c.quantity)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{Number(c.cost).toLocaleString()}</TableCell>
+                    <TableCell className="text-right tabular-nums">{fc(Number(c.cost))}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -141,10 +143,10 @@ const ManufacturingReports = () => {
                   <TableRow key={p.id}>
                     <TableCell className="font-geist-mono text-xs">{p.production_number}</TableCell>
                     <TableCell className="font-medium">{p.product_name}</TableCell>
-                    <TableCell className="text-right tabular-nums">{Number(p.raw_material_cost).toLocaleString()}</TableCell>
-                    <TableCell className="text-right tabular-nums">{Number(p.labor_cost).toLocaleString()}</TableCell>
-                    <TableCell className="text-right tabular-nums">{Number(p.electricity_cost).toLocaleString()}</TableCell>
-                    <TableCell className="text-right tabular-nums font-medium">{Number(p.total_cost).toLocaleString()}</TableCell>
+                    <TableCell className="text-right tabular-nums">{fc(Number(p.raw_material_cost))}</TableCell>
+                    <TableCell className="text-right tabular-nums">{fc(Number(p.labor_cost))}</TableCell>
+                    <TableCell className="text-right tabular-nums">{fc(Number(p.electricity_cost))}</TableCell>
+                    <TableCell className="text-right tabular-nums font-medium">{fc(Number(p.total_cost))}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

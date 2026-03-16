@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Package } from "lucide-react";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface Category { id: string; name: string; }
 interface Product {
@@ -21,6 +22,7 @@ interface Product {
 
 const ProductsPage = () => {
   const { hasPermission } = useAuth();
+  const { fc } = useCurrency();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -147,8 +149,8 @@ const ProductsPage = () => {
                   <TableCell className="font-geist-mono text-xs">{p.product_code}</TableCell>
                   <TableCell className="text-muted-foreground">{p.category_name || "—"}</TableCell>
                   <TableCell>{p.unit}</TableCell>
-                  <TableCell className="text-right tabular-nums">{p.cost_price.toLocaleString()}</TableCell>
-                  <TableCell className="text-right tabular-nums font-medium">{p.selling_price.toLocaleString()}</TableCell>
+                  <TableCell className="text-right tabular-nums">{fc(p.cost_price)}</TableCell>
+                  <TableCell className="text-right tabular-nums font-medium">{fc(p.selling_price)}</TableCell>
                   <TableCell><Badge variant={p.status === "active" ? "default" : "secondary"}>{p.status}</Badge></TableCell>
                   <TableCell>
                     {hasPermission("Inventory", "can_edit") && (

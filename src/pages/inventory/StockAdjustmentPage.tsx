@@ -17,6 +17,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, ClipboardCheck } from "lucide-react";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface Product { id: string; product_name: string; product_code: string; cost_price: number; }
 interface WH { id: string; warehouse_name: string; warehouse_code: string; }
@@ -39,6 +40,7 @@ const StockAdjustmentPage = () => {
   const { user } = useAuth();
   const { userBranchId } = useBranch();
   const { toast } = useToast();
+  const { fc } = useCurrency();
   const [adjustments, setAdjustments] = useState<Adjustment[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [warehouses, setWarehouses] = useState<WH[]>([]);
@@ -207,7 +209,7 @@ const StockAdjustmentPage = () => {
                 </TableCell>
                 <TableCell className="font-medium">{a.product_name || "—"}</TableCell>
                 <TableCell className="text-right tabular-nums">{a.quantity}</TableCell>
-                <TableCell className="text-right tabular-nums font-medium">{a.total_value.toLocaleString()}</TableCell>
+                <TableCell className="text-right tabular-nums font-medium">{fc(a.total_value)}</TableCell>
                 <TableCell className="text-muted-foreground text-sm">{a.reason || "—"}</TableCell>
               </TableRow>
             ))}
@@ -261,7 +263,7 @@ const StockAdjustmentPage = () => {
               </div>
               <div className="space-y-2"><Label>Total Value</Label>
                 <div className="h-10 flex items-center px-3 rounded-md bg-muted text-foreground font-medium tabular-nums">
-                  {totalValue.toLocaleString()}
+                  {fc(totalValue)}
                 </div>
               </div>
             </div>

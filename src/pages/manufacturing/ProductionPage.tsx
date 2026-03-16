@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Factory } from "lucide-react";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface Product { id: string; product_name: string; product_code: string; }
 interface Branch { id: string; name: string; }
@@ -29,6 +30,7 @@ const ProductionPage = () => {
   const { user } = useAuth();
   const { userBranchId } = useBranch();
   const { toast } = useToast();
+  const { fc } = useCurrency();
   const [entries, setEntries] = useState<ProdEntry[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -136,9 +138,9 @@ const ProductionPage = () => {
                 <TableCell>{e.production_date}</TableCell>
                 <TableCell className="font-medium">{e.product_name}</TableCell>
                 <TableCell className="text-right tabular-nums">{e.quantity}</TableCell>
-                <TableCell className="text-right tabular-nums">{e.raw_material_cost.toLocaleString()}</TableCell>
-                <TableCell className="text-right tabular-nums">{e.labor_cost.toLocaleString()}</TableCell>
-                <TableCell className="text-right tabular-nums font-medium">{e.total_cost.toLocaleString()}</TableCell>
+                <TableCell className="text-right tabular-nums">{fc(e.raw_material_cost)}</TableCell>
+                <TableCell className="text-right tabular-nums">{fc(e.labor_cost)}</TableCell>
+                <TableCell className="text-right tabular-nums font-medium">{fc(e.total_cost)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -182,13 +184,13 @@ const ProductionPage = () => {
                             <TableCell className="font-medium">{mat?.material_name || "—"}</TableCell>
                             <TableCell className="text-right tabular-nums">{r.quantity}</TableCell>
                             <TableCell>{r.unit}</TableCell>
-                            <TableCell className="text-right tabular-nums">{r.cost.toLocaleString()}</TableCell>
+                            <TableCell className="text-right tabular-nums">{fc(r.cost)}</TableCell>
                           </TableRow>
                         );
                       })}
                       <TableRow className="bg-muted/50 font-medium">
                         <TableCell colSpan={3} className="text-right">Raw Material Cost</TableCell>
-                        <TableCell className="text-right tabular-nums">{rawMaterialCost.toLocaleString()}</TableCell>
+                        <TableCell className="text-right tabular-nums">{fc(rawMaterialCost)}</TableCell>
                       </TableRow>
                     </TableBody>
                   </Table>
@@ -200,7 +202,7 @@ const ProductionPage = () => {
               <div className="space-y-2"><Label>Labor Cost</Label><Input type="number" value={formLabor} onChange={(e) => setFormLabor(e.target.value)} /></div>
               <div className="space-y-2"><Label>Electricity Cost</Label><Input type="number" value={formElec} onChange={(e) => setFormElec(e.target.value)} /></div>
               <div className="space-y-2"><Label>Total Production Cost</Label>
-                <div className="h-10 flex items-center px-3 rounded-md bg-muted text-foreground font-medium tabular-nums">{totalCost.toLocaleString()}</div></div>
+                <div className="h-10 flex items-center px-3 rounded-md bg-muted text-foreground font-medium tabular-nums">{fc(totalCost)}</div></div>
             </div>
             <div className="space-y-2"><Label>Notes</Label><Input value={formNotes} onChange={(e) => setFormNotes(e.target.value)} /></div>
           </div>

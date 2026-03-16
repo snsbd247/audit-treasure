@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Settings, Building2, DollarSign, Sliders, Upload, Loader2 } from "lucide-react";
 import type { CompanySettings } from "@/hooks/useCompanySettings";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface Branch { id: string; name: string; }
 interface FinancialYear { id: string; name: string; is_active: boolean; }
@@ -20,6 +21,7 @@ const GeneralSettingsPage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const { refetch: refetchCurrency } = useCurrency();
 
   useEffect(() => {
     const init = async () => {
@@ -54,6 +56,7 @@ const GeneralSettingsPage = () => {
       toast.error("Failed to save settings: " + error.message);
     } else {
       toast.success("Settings saved successfully");
+      refetchCurrency();
     }
   };
 

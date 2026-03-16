@@ -9,12 +9,14 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { FileText, Search } from "lucide-react";
 import { ReportHeader } from "@/components/ReportHeader";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface Account { id: string; account_name: string; account_code: string; account_type: string; opening_balance: number; opening_balance_type: string; }
 interface Branch { id: string; name: string; }
 
 const FinancialReports = () => {
   const [tab, setTab] = useState("ledger");
+  const { fc } = useCurrency();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(false);
@@ -164,10 +166,10 @@ const FinancialReports = () => {
                     <TableCell>{e.voucher_date}</TableCell>
                     <TableCell className="font-geist-mono text-xs">{e.voucher_number}</TableCell>
                     <TableCell className="text-muted-foreground">{e.description || e.narration || "—"}</TableCell>
-                    <TableCell className="text-right tabular-nums">{Number(e.debit) > 0 ? Number(e.debit).toLocaleString() : ""}</TableCell>
-                    <TableCell className="text-right tabular-nums">{Number(e.credit) > 0 ? Number(e.credit).toLocaleString() : ""}</TableCell>
+                    <TableCell className="text-right tabular-nums">{Number(e.debit) > 0 ? fc(Number(e.debit)) : ""}</TableCell>
+                    <TableCell className="text-right tabular-nums">{Number(e.credit) > 0 ? fc(Number(e.credit)) : ""}</TableCell>
                     <TableCell className={`text-right tabular-nums font-medium ${e.running_balance < 0 ? "text-destructive" : ""}`}>
-                      {Math.abs(e.running_balance).toLocaleString()} {e.running_balance >= 0 ? "Dr" : "Cr"}
+                      {fc(Math.abs(e.running_balance))} {e.running_balance >= 0 ? "Dr" : "Cr"}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -189,14 +191,14 @@ const FinancialReports = () => {
                     <TableCell className="font-geist-mono text-xs">{t.account_code}</TableCell>
                     <TableCell className="font-medium">{t.account_name}</TableCell>
                     <TableCell className="capitalize text-muted-foreground">{t.account_type}</TableCell>
-                    <TableCell className="text-right tabular-nums">{t.balance > 0 ? t.balance.toLocaleString() : ""}</TableCell>
-                    <TableCell className="text-right tabular-nums">{t.balance < 0 ? Math.abs(t.balance).toLocaleString() : ""}</TableCell>
+                    <TableCell className="text-right tabular-nums">{t.balance > 0 ? fc(t.balance) : ""}</TableCell>
+                    <TableCell className="text-right tabular-nums">{t.balance < 0 ? fc(Math.abs(t.balance)) : ""}</TableCell>
                   </TableRow>
                 ))}
                 <TableRow className="bg-muted/50 font-bold">
                   <TableCell colSpan={3} className="text-right">Total</TableCell>
-                  <TableCell className="text-right tabular-nums">{trialData.filter((t) => t.balance > 0).reduce((s, t) => s + t.balance, 0).toLocaleString()}</TableCell>
-                  <TableCell className="text-right tabular-nums">{trialData.filter((t) => t.balance < 0).reduce((s, t) => s + Math.abs(t.balance), 0).toLocaleString()}</TableCell>
+                  <TableCell className="text-right tabular-nums">{fc(trialData.filter((t) => t.balance > 0).reduce((s, t) => s + t.balance, 0))}</TableCell>
+                  <TableCell className="text-right tabular-nums">{fc(trialData.filter((t) => t.balance < 0).reduce((s, t) => s + Math.abs(t.balance), 0))}</TableCell>
                 </TableRow>
               </TableBody>
             </Table>
@@ -210,9 +212,9 @@ const FinancialReports = () => {
               <CardContent className="p-0">
                 <Table><TableBody>
                   {plData.income.map((i) => (
-                    <TableRow key={i.id}><TableCell>{i.account_name}</TableCell><TableCell className="text-right tabular-nums">{Math.abs(i.balance).toLocaleString()}</TableCell></TableRow>
+                    <TableRow key={i.id}><TableCell>{i.account_name}</TableCell><TableCell className="text-right tabular-nums">{fc(Math.abs(i.balance))}</TableCell></TableRow>
                   ))}
-                  <TableRow className="bg-muted/50 font-bold"><TableCell>Total Income</TableCell><TableCell className="text-right tabular-nums">{plData.totalIncome.toLocaleString()}</TableCell></TableRow>
+                  <TableRow className="bg-muted/50 font-bold"><TableCell>Total Income</TableCell><TableCell className="text-right tabular-nums">{fc(plData.totalIncome)}</TableCell></TableRow>
                 </TableBody></Table>
               </CardContent>
             </Card>
@@ -221,9 +223,9 @@ const FinancialReports = () => {
               <CardContent className="p-0">
                 <Table><TableBody>
                   {plData.expense.map((e) => (
-                    <TableRow key={e.id}><TableCell>{e.account_name}</TableCell><TableCell className="text-right tabular-nums">{Math.abs(e.balance).toLocaleString()}</TableCell></TableRow>
+                    <TableRow key={e.id}><TableCell>{e.account_name}</TableCell><TableCell className="text-right tabular-nums">{fc(Math.abs(e.balance))}</TableCell></TableRow>
                   ))}
-                  <TableRow className="bg-muted/50 font-bold"><TableCell>Total Expenses</TableCell><TableCell className="text-right tabular-nums">{plData.totalExpense.toLocaleString()}</TableCell></TableRow>
+                  <TableRow className="bg-muted/50 font-bold"><TableCell>Total Expenses</TableCell><TableCell className="text-right tabular-nums">{fc(plData.totalExpense)}</TableCell></TableRow>
                 </TableBody></Table>
               </CardContent>
             </Card>
@@ -233,7 +235,7 @@ const FinancialReports = () => {
               <div className="flex justify-between items-center">
                 <span className="font-semibold text-foreground">Net Profit / (Loss)</span>
                 <span className={`text-xl font-bold tabular-nums ${plData.totalIncome - plData.totalExpense >= 0 ? "text-green-700" : "text-destructive"}`}>
-                  {(plData.totalIncome - plData.totalExpense).toLocaleString()}
+                  {fc(plData.totalIncome - plData.totalExpense)}
                 </span>
               </div>
             </CardContent>
@@ -246,9 +248,9 @@ const FinancialReports = () => {
               <CardHeader><CardTitle className="text-base">Assets</CardTitle></CardHeader>
               <CardContent className="p-0"><Table><TableBody>
                 {bsData.assets.map((a) => (
-                  <TableRow key={a.id}><TableCell>{a.account_name}</TableCell><TableCell className="text-right tabular-nums">{a.balance.toLocaleString()}</TableCell></TableRow>
+                  <TableRow key={a.id}><TableCell>{a.account_name}</TableCell><TableCell className="text-right tabular-nums">{fc(a.balance)}</TableCell></TableRow>
                 ))}
-                <TableRow className="bg-muted/50 font-bold"><TableCell>Total Assets</TableCell><TableCell className="text-right tabular-nums">{bsData.totalAssets.toLocaleString()}</TableCell></TableRow>
+                <TableRow className="bg-muted/50 font-bold"><TableCell>Total Assets</TableCell><TableCell className="text-right tabular-nums">{fc(bsData.totalAssets)}</TableCell></TableRow>
               </TableBody></Table></CardContent>
             </Card>
             <div className="space-y-4">
@@ -256,18 +258,18 @@ const FinancialReports = () => {
                 <CardHeader><CardTitle className="text-base">Liabilities</CardTitle></CardHeader>
                 <CardContent className="p-0"><Table><TableBody>
                   {bsData.liabilities.map((l) => (
-                    <TableRow key={l.id}><TableCell>{l.account_name}</TableCell><TableCell className="text-right tabular-nums">{Math.abs(l.balance).toLocaleString()}</TableCell></TableRow>
+                    <TableRow key={l.id}><TableCell>{l.account_name}</TableCell><TableCell className="text-right tabular-nums">{fc(Math.abs(l.balance))}</TableCell></TableRow>
                   ))}
-                  <TableRow className="bg-muted/50 font-bold"><TableCell>Total Liabilities</TableCell><TableCell className="text-right tabular-nums">{bsData.totalLiabilities.toLocaleString()}</TableCell></TableRow>
+                  <TableRow className="bg-muted/50 font-bold"><TableCell>Total Liabilities</TableCell><TableCell className="text-right tabular-nums">{fc(bsData.totalLiabilities)}</TableCell></TableRow>
                 </TableBody></Table></CardContent>
               </Card>
               <Card>
                 <CardHeader><CardTitle className="text-base">Equity</CardTitle></CardHeader>
                 <CardContent className="p-0"><Table><TableBody>
                   {bsData.equity.map((e) => (
-                    <TableRow key={e.id}><TableCell>{e.account_name}</TableCell><TableCell className="text-right tabular-nums">{Math.abs(e.balance).toLocaleString()}</TableCell></TableRow>
+                    <TableRow key={e.id}><TableCell>{e.account_name}</TableCell><TableCell className="text-right tabular-nums">{fc(Math.abs(e.balance))}</TableCell></TableRow>
                   ))}
-                  <TableRow className="bg-muted/50 font-bold"><TableCell>Total Equity</TableCell><TableCell className="text-right tabular-nums">{bsData.totalEquity.toLocaleString()}</TableCell></TableRow>
+                  <TableRow className="bg-muted/50 font-bold"><TableCell>Total Equity</TableCell><TableCell className="text-right tabular-nums">{fc(bsData.totalEquity)}</TableCell></TableRow>
                 </TableBody></Table></CardContent>
               </Card>
             </div>

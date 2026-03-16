@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Layers } from "lucide-react";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface Supplier { id: string; name: string; }
 interface RawMaterial {
@@ -19,6 +20,7 @@ interface RawMaterial {
 
 const RawMaterialsPage = () => {
   const [materials, setMaterials] = useState<RawMaterial[]>([]);
+  const { fc } = useCurrency();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -93,7 +95,7 @@ const RawMaterialsPage = () => {
                 <TableCell className="font-medium">{m.material_name}</TableCell>
                 <TableCell className="font-geist-mono text-xs">{m.material_code}</TableCell>
                 <TableCell>{m.unit}</TableCell>
-                <TableCell className="text-right tabular-nums">{m.cost_price.toLocaleString()}</TableCell>
+                <TableCell className="text-right tabular-nums">{fc(m.cost_price)}</TableCell>
                 <TableCell className="text-muted-foreground">{m.supplier_name || "—"}</TableCell>
                 <TableCell><Badge variant={m.status === "active" ? "default" : "secondary"}>{m.status}</Badge></TableCell>
                 <TableCell><Button variant="ghost" size="icon" onClick={() => openEdit(m)}><Pencil className="w-4 h-4" /></Button></TableCell>

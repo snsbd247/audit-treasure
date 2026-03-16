@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Package, Search } from "lucide-react";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 const ITEM_TYPES = [
   { value: "raw_material", label: "Raw Material" },
@@ -25,6 +26,7 @@ interface Unit { id: string; name: string; abbreviation: string; }
 
 const ItemMasterPage = () => {
   const [items, setItems] = useState<Item[]>([]);
+  const { fc } = useCurrency();
   const [categories, setCategories] = useState<Category[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(true);
@@ -152,8 +154,8 @@ const ItemMasterPage = () => {
                 <TableCell><Badge variant={typeColor(i.item_type)} className="text-xs">{typeLabel(i.item_type)}</Badge></TableCell>
                 <TableCell className="text-muted-foreground text-sm">{catMap.get(i.category_id || "") || "—"}</TableCell>
                 <TableCell className="text-sm">{unitMap.get(i.unit_id || "") || "—"}</TableCell>
-                <TableCell className="text-right tabular-nums">{i.cost_price.toLocaleString()}</TableCell>
-                <TableCell className="text-right tabular-nums">{i.selling_price.toLocaleString()}</TableCell>
+                <TableCell className="text-right tabular-nums">{fc(i.cost_price)}</TableCell>
+                <TableCell className="text-right tabular-nums">{fc(i.selling_price)}</TableCell>
                 <TableCell><Badge variant={i.status === "active" ? "default" : "secondary"}>{i.status}</Badge></TableCell>
                 <TableCell><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(i)}><Pencil className="w-3.5 h-3.5" /></Button></TableCell>
               </TableRow>

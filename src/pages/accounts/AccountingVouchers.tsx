@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Check, X, FileText, Trash2, RotateCcw, Pencil, ArrowLeftRight, Lock } from "lucide-react";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 const VOUCHER_TYPES = [
   { id: "journal", label: "Journal Voucher", prefix: "JV" },
@@ -41,6 +42,7 @@ type SuperAdminAction = "delete" | "reopen" | "reverse" | null;
 const AccountingVouchers = () => {
   const { user, isAdmin, isSuperAdmin } = useAuth();
   const { toast } = useToast();
+  const { fc } = useCurrency();
   const [activeTab, setActiveTab] = useState("journal");
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -251,7 +253,7 @@ const AccountingVouchers = () => {
                         <TableCell className="font-geist-mono text-xs font-medium">{v.voucher_number}</TableCell>
                         <TableCell className="text-sm">{v.voucher_date}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{v.description || "—"}</TableCell>
-                        <TableCell className="text-right tabular-nums font-medium">{v.total_amount.toLocaleString()}</TableCell>
+                        <TableCell className="text-right tabular-nums font-medium">{fc(v.total_amount)}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1.5">
                             {statusBadge(v.status)}

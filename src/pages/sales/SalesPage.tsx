@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Receipt, Trash2, RotateCcw } from "lucide-react";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface Product { id: string; product_name: string; product_code: string; selling_price: number; }
 interface Customer { id: string; name: string; }
@@ -32,6 +33,7 @@ const SalesPage = () => {
   const { user, hasPermission } = useAuth();
   const { userBranchId } = useBranch();
   const { toast } = useToast();
+  const { fc } = useCurrency();
   const [tab, setTab] = useState("invoices");
   const [invoices, setInvoices] = useState<SalesInvoice[]>([]);
   const [returns, setReturns] = useState<SalesReturnRow[]>([]);
@@ -158,13 +160,13 @@ const SalesPage = () => {
                 <TableCell><Input type="number" className="h-9 text-right" value={item.quantity || ""} onChange={(e) => updateItem(item.id, "quantity", parseFloat(e.target.value) || 0, itemList, setFn)} /></TableCell>
                 <TableCell><Input type="number" className="h-9 text-right" value={item.price || ""} onChange={(e) => updateItem(item.id, "price", parseFloat(e.target.value) || 0, itemList, setFn)} /></TableCell>
                 <TableCell><Input type="number" className="h-9 text-right" value={item.discount || ""} onChange={(e) => updateItem(item.id, "discount", parseFloat(e.target.value) || 0, itemList, setFn)} /></TableCell>
-                <TableCell className="text-right tabular-nums font-medium">{item.total.toLocaleString()}</TableCell>
+                <TableCell className="text-right tabular-nums font-medium">{fc(item.total)}</TableCell>
                 <TableCell><Button variant="ghost" size="icon" onClick={() => setFn(itemList.filter((i) => i.id !== item.id))} disabled={itemList.length <= 1}><Trash2 className="w-3.5 h-3.5 text-muted-foreground" /></Button></TableCell>
               </TableRow>
             ))}
             <TableRow className="bg-muted/50 font-medium">
               <TableCell colSpan={4} className="text-right">Grand Total</TableCell>
-              <TableCell className="text-right tabular-nums">{grandTotal(itemList).toLocaleString()}</TableCell>
+              <TableCell className="text-right tabular-nums">{fc(grandTotal(itemList))}</TableCell>
               <TableCell />
             </TableRow>
           </TableBody>
@@ -218,9 +220,9 @@ const SalesPage = () => {
                     <TableCell className="font-geist-mono text-xs font-medium">{inv.invoice_number}</TableCell>
                     <TableCell>{inv.invoice_date}</TableCell>
                     <TableCell>{inv.customer_name || "—"}</TableCell>
-                    <TableCell className="text-right tabular-nums">{inv.total_amount.toLocaleString()}</TableCell>
-                    <TableCell className="text-right tabular-nums">{inv.discount.toLocaleString()}</TableCell>
-                    <TableCell className="text-right tabular-nums font-medium">{inv.net_amount.toLocaleString()}</TableCell>
+                    <TableCell className="text-right tabular-nums">{fc(inv.total_amount)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{fc(inv.discount)}</TableCell>
+                    <TableCell className="text-right tabular-nums font-medium">{fc(inv.net_amount)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -242,7 +244,7 @@ const SalesPage = () => {
                     <TableCell className="font-geist-mono text-xs font-medium">{r.return_number}</TableCell>
                     <TableCell>{r.return_date}</TableCell>
                     <TableCell>{r.customer_name || "—"}</TableCell>
-                    <TableCell className="text-right tabular-nums font-medium">{r.total_amount.toLocaleString()}</TableCell>
+                    <TableCell className="text-right tabular-nums font-medium">{fc(r.total_amount)}</TableCell>
                     <TableCell className="text-muted-foreground">{r.reason || "—"}</TableCell>
                   </TableRow>
                 ))}

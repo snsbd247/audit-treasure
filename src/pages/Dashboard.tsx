@@ -8,6 +8,7 @@ import {
   FileText, ShoppingCart, Receipt, UserPlus, Truck, Plus,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell,
@@ -36,6 +37,7 @@ const CHART_COLORS = [
 const Dashboard = () => {
   const { profile, roles, isSuperAdmin } = useAuth();
   const navigate = useNavigate();
+  const { fc } = useCurrency();
   const [stats, setStats] = useState<Stats>({
     totalSales: 0, totalPurchases: 0, totalIncome: 0, totalExpenses: 0,
     cashBalance: 0, bankBalance: 0, totalReceivable: 0, totalPayable: 0,
@@ -125,8 +127,7 @@ const Dashboard = () => {
     { label: "Add Supplier", icon: Truck, to: "/suppliers" },
   ];
 
-  const fmt = (n: number) =>
-    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0 }).format(n);
+  const fmt = (n: number) => fc(n);
 
   return (
     <div className="p-4 lg:p-6 space-y-6 max-w-[1600px] mx-auto">
