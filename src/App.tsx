@@ -126,15 +126,22 @@ const App = () => (
                 <Route path="/bank/accounts" element={<BankAccountsPage />} />
                 <Route path="/bank/cashbook" element={<CashBookPage />} />
                 {/* HRM Routes */}
+                <Route path="/hrm/dashboard" element={<HrDashboardPage />} />
                 <Route path="/hrm/employees" element={<EmployeesPage />} />
                 <Route path="/hrm/departments" element={<DepartmentsPage />} />
                 <Route path="/hrm/designations" element={<DesignationsPage />} />
                 <Route path="/hrm/attendance" element={<AttendancePage />} />
+                <Route path="/hrm/biometric" element={<BiometricImportPage />} />
+                <Route path="/hrm/face-attendance" element={<FaceAttendancePage />} />
+                <Route path="/hrm/shifts" element={<ShiftsPage />} />
+                <Route path="/hrm/overtime" element={<OvertimePage />} />
                 <Route path="/hrm/leave" element={<LeavePage />} />
                 <Route path="/hrm/payroll" element={<PayrollPage />} />
                 <Route path="/hrm/documents" element={<DocumentsPage />} />
                 <Route path="/hrm/id-cards" element={<IdCardsPage />} />
                 <Route path="/hrm/reports" element={<HrReportsPage />} />
+                {/* Stock Ledger */}
+                <Route path="/inventory/stock-ledger" element={<StockLedgerPage />} />
                 {/* Employee Portal Routes */}
                 <Route path="/portal/profile" element={<MyProfilePage />} />
                 <Route path="/portal/attendance" element={<MyAttendancePage />} />
