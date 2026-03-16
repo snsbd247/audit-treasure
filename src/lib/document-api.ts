@@ -11,7 +11,7 @@ async function invoke<T = any>(body: Record<string, unknown>): Promise<T> {
   return data as T;
 }
 
-export type DocumentType = "sales_invoice" | "purchase" | "production" | "stock_transfer";
+export type DocumentType = "sales_invoice" | "purchase" | "production" | "stock_transfer" | "sales_return" | "purchase_return" | "acc_voucher" | "customer" | "supplier";
 
 export const documentApi = {
   approve: (docType: DocumentType, id: string) =>
