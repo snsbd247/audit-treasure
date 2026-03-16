@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { FileText, Search } from "lucide-react";
 import { ReportHeader } from "@/components/ReportHeader";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface Account { id: string; account_name: string; account_code: string; account_type: string; opening_balance: number; opening_balance_type: string; }
 interface Branch { id: string; name: string; }
