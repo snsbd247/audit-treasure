@@ -211,7 +211,7 @@ export const AppSidebar = () => {
             if (group.requiredModules && group.requiredModules.some((m) => !isModuleEnabled(m))) return null;
             // Staff users: check module-level view permission
             if (!isAdmin && group.module && !hasPermission(group.module, "can_view")) return null;
-            return <CollapsibleGroup key={group.label} group={group} />;
+            return <CollapsibleGroup key={group.label} group={group} isModuleEnabled={isModuleEnabled} />;
           })}
         </nav>
       </ScrollArea>
