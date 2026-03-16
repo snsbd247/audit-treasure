@@ -34,7 +34,7 @@ interface ProdEntry {
 }
 
 const ProductionPage = () => {
-  const { user, isSuperAdmin, isAdmin } = useAuth();
+  const { user, isSuperAdmin, isAdmin, hasPermission } = useAuth();
   const { userBranchId } = useBranch();
   const { toast } = useToast();
   const { fc } = useCurrency();
@@ -64,6 +64,35 @@ const ProductionPage = () => {
   const [actionType, setActionType] = useState<"approve" | "cancel" | null>(null);
   const [actionTarget, setActionTarget] = useState<ProdEntry | null>(null);
   const [actionReason, setActionReason] = useState("");
+
+  // View dialog
+  const [viewEntry, setViewEntry] = useState<ProdEntry | null>(null);
+  const [viewMaterials, setViewMaterials] = useState<any[]>([]);
+
+  const userCanEdit = hasPermission("manufacturing", "can_edit") || isSuperAdmin;
+  const userCanDelete = hasPermission("manufacturing", "can_delete") || isSuperAdmin;
+
+  const openView = async (entry: ProdEntry) => {
+    const { data } = await supabase.from("production_materials").select("*").eq("production_id", entry.id);
+    const enriched = (data || []).map((d: any) => {
+      const mat = materials.find((m) => m.id === d.material_id);
+      return { ...d, material_name: mat?.material_name || "—", unit: mat?.unit || "pcs" };
+    });
+    setViewMaterials(enriched);
+    setViewEntry(entry);
+  };
+
+  const canEditDoc = (status: string) => {
+    if (status === "cancelled") return false;
+    if (status === "approved" || status === "completed") return isSuperAdmin;
+    return userCanEdit;
+  };
+
+  const canDeleteDoc = (status: string) => {
+    if (status === "cancelled") return false;
+    if (status === "approved" || status === "completed") return isSuperAdmin;
+    return userCanDelete;
+  };
 
   const handleDocAction = async () => {
     if (!actionTarget || !actionType) return;
