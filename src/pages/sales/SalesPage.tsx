@@ -554,6 +554,36 @@ const SalesPage = () => {
           </table>
         </PrintLayout>
       )}
+
+      {/* Action Confirm Dialog */}
+      <AlertDialog open={actionDialogOpen} onOpenChange={setActionDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {actionType === "approve" ? "Approve Invoice" : actionType === "cancel" ? "Cancel Invoice" : "Delete Invoice"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {actionType === "approve"
+                ? `Are you sure you want to approve invoice ${actionTarget?.invoice_number}? This will lock it from normal user editing.`
+                : actionType === "cancel"
+                ? `Are you sure you want to cancel invoice ${actionTarget?.invoice_number}? Stock and accounting entries will be reversed.`
+                : `Are you sure you want to permanently delete invoice ${actionTarget?.invoice_number}?`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {(actionType === "cancel" || actionType === "delete") && (
+            <div className="space-y-2 px-1">
+              <Label>Reason</Label>
+              <Input value={actionReason} onChange={(e) => setActionReason(e.target.value)} placeholder="Reason for this action..." />
+            </div>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDocAction} disabled={saving}>
+              {saving ? "Processing..." : actionType === "approve" ? "Approve" : actionType === "cancel" ? "Cancel Invoice" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
