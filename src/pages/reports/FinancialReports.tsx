@@ -235,7 +235,7 @@ const FinancialReports = () => {
               <div className="flex justify-between items-center">
                 <span className="font-semibold text-foreground">Net Profit / (Loss)</span>
                 <span className={`text-xl font-bold tabular-nums ${plData.totalIncome - plData.totalExpense >= 0 ? "text-green-700" : "text-destructive"}`}>
-                  {(plData.totalIncome - plData.totalExpense).toLocaleString()}
+                  {fc(plData.totalIncome - plData.totalExpense)}
                 </span>
               </div>
             </CardContent>
