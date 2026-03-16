@@ -112,8 +112,12 @@ const ProductsPage = () => {
           <h1 className="text-xl font-semibold text-foreground">Products</h1>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => setCatDialogOpen(true)}>Add Category</Button>
-          <Button size="sm" onClick={openCreate}><Plus className="w-4 h-4 mr-1" />Add Product</Button>
+          {hasPermission("Inventory", "can_add") && (
+            <Button variant="outline" size="sm" onClick={() => setCatDialogOpen(true)}>Add Category</Button>
+          )}
+          {hasPermission("Inventory", "can_add") && (
+            <Button size="sm" onClick={openCreate}><Plus className="w-4 h-4 mr-1" />Add Product</Button>
+          )}
         </div>
       </div>
 
