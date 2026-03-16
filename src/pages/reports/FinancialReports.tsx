@@ -166,10 +166,10 @@ const FinancialReports = () => {
                     <TableCell>{e.voucher_date}</TableCell>
                     <TableCell className="font-geist-mono text-xs">{e.voucher_number}</TableCell>
                     <TableCell className="text-muted-foreground">{e.description || e.narration || "—"}</TableCell>
-                    <TableCell className="text-right tabular-nums">{Number(e.debit) > 0 ? Number(e.debit).toLocaleString() : ""}</TableCell>
-                    <TableCell className="text-right tabular-nums">{Number(e.credit) > 0 ? Number(e.credit).toLocaleString() : ""}</TableCell>
+                    <TableCell className="text-right tabular-nums">{Number(e.debit) > 0 ? fc(Number(e.debit)) : ""}</TableCell>
+                    <TableCell className="text-right tabular-nums">{Number(e.credit) > 0 ? fc(Number(e.credit)) : ""}</TableCell>
                     <TableCell className={`text-right tabular-nums font-medium ${e.running_balance < 0 ? "text-destructive" : ""}`}>
-                      {Math.abs(e.running_balance).toLocaleString()} {e.running_balance >= 0 ? "Dr" : "Cr"}
+                      {fc(Math.abs(e.running_balance))} {e.running_balance >= 0 ? "Dr" : "Cr"}
                     </TableCell>
                   </TableRow>
                 ))}
