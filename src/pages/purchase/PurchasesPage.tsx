@@ -14,7 +14,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, ShoppingCart, Trash2, RotateCcw, Pencil, Printer, Check, X, Lock, ShieldAlert } from "lucide-react";
-import { documentApi } from "@/lib/document-api";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { PrintLayout } from "@/components/PrintLayout";
 import { getDocumentStatusConfig } from "@/hooks/useDocumentRules";
