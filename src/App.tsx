@@ -59,6 +59,14 @@ import DocumentsPage from "./pages/hrm/DocumentsPage";
 import IdCardsPage from "./pages/hrm/IdCardsPage";
 import HrReportsPage from "./pages/hrm/HrReportsPage";
 import EmployeeVerifyPage from "./pages/hrm/EmployeeVerifyPage";
+import ShiftsPage from "./pages/hrm/ShiftsPage";
+import BiometricImportPage from "./pages/hrm/BiometricImportPage";
+import OvertimePage from "./pages/hrm/OvertimePage";
+import FaceAttendancePage from "./pages/hrm/FaceAttendancePage";
+import HrDashboardPage from "./pages/hrm/HrDashboardPage";
+
+// Inventory - Stock Ledger
+import StockLedgerPage from "./pages/inventory/StockLedgerPage";
 
 // Employee Portal Pages
 import MyProfilePage from "./pages/portal/MyProfilePage";
