@@ -79,10 +79,38 @@ const SalesPage = () => {
   const [printItems, setPrintItems] = useState<any[]>([]);
 
   const canAdd = hasPermission("sales", "can_add") || isSuperAdmin;
+  const userCanEdit = hasPermission("sales", "can_edit") || isSuperAdmin;
+  const userCanDelete = hasPermission("sales", "can_delete") || isSuperAdmin;
   const [actionDialogOpen, setActionDialogOpen] = useState(false);
   const [actionType, setActionType] = useState<"approve" | "cancel" | "delete" | null>(null);
   const [actionTarget, setActionTarget] = useState<SalesInvoice | null>(null);
   const [actionReason, setActionReason] = useState("");
+
+  // View dialog
+  const [viewInvoice, setViewInvoice] = useState<SalesInvoice | null>(null);
+  const [viewItems, setViewItems] = useState<any[]>([]);
+
+  const openView = async (inv: SalesInvoice) => {
+    const { data } = await supabase.from("sales_invoice_items").select("*").eq("sales_invoice_id", inv.id);
+    const enriched = (data || []).map((d: any) => {
+      const prod = products.find((p) => p.id === d.product_id);
+      return { ...d, product_name: prod?.product_name || "—", product_code: prod?.product_code || "" };
+    });
+    setViewItems(enriched);
+    setViewInvoice(inv);
+  };
+
+  const canEditDoc = (status: string) => {
+    if (status === "cancelled") return false;
+    if (status === "approved" || status === "completed") return isSuperAdmin;
+    return userCanEdit;
+  };
+
+  const canDeleteDoc = (status: string) => {
+    if (status === "cancelled") return false;
+    if (status === "approved" || status === "completed") return isSuperAdmin;
+    return userCanDelete;
+  };
 
   const fetchData = async () => {
     setLoading(true);
