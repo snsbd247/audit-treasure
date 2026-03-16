@@ -7,6 +7,7 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 
 const BankAccountsPage = () => {
   const [accounts, setAccounts] = useState<any[]>([]);
+  const { fc } = useCurrency();
 
   useEffect(() => {
     supabase
