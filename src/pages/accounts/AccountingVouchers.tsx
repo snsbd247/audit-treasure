@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { voucherApi } from "@/lib/voucher-api";
+import { logEditAudit } from "@/lib/audit-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,8 +18,9 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Check, X, FileText, Trash2, RotateCcw, Pencil, ArrowLeftRight, Lock } from "lucide-react";
+import { Plus, Check, X, FileText, Trash2, RotateCcw, Pencil, ArrowLeftRight, Lock, Printer } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { PrintLayout } from "@/components/PrintLayout";
 
 const VOUCHER_TYPES = [
   { id: "journal", label: "Journal Voucher", prefix: "JV" },
