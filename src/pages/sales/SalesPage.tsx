@@ -36,7 +36,7 @@ interface SalesInvoice {
 }
 interface SalesReturnRow {
   id: string; return_number: string; return_date: string; customer_id: string | null;
-  total_amount: number; reason: string | null; customer_name?: string;
+  total_amount: number; reason: string | null; customer_name?: string; status: string;
 }
 
 const SalesPage = () => {
