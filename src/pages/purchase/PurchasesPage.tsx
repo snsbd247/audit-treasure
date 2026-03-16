@@ -517,6 +517,36 @@ const PurchasesPage = () => {
           </table>
         </PrintLayout>
       )}
+
+      {/* Action Confirm Dialog */}
+      <AlertDialog open={actionDialogOpen} onOpenChange={setActionDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {actionType === "approve" ? "Approve Purchase" : actionType === "cancel" ? "Cancel Purchase" : "Delete Purchase"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {actionType === "approve"
+                ? `Approve purchase ${actionTarget?.purchase_number}? This will lock it from normal editing.`
+                : actionType === "cancel"
+                ? `Cancel purchase ${actionTarget?.purchase_number}? Stock and accounting entries will be reversed.`
+                : `Permanently delete purchase ${actionTarget?.purchase_number}?`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {(actionType === "cancel" || actionType === "delete") && (
+            <div className="space-y-2 px-1">
+              <Label>Reason</Label>
+              <Input value={actionReason} onChange={(e) => setActionReason(e.target.value)} placeholder="Reason..." />
+            </div>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDocAction} disabled={saving}>
+              {saving ? "Processing..." : actionType === "approve" ? "Approve" : actionType === "cancel" ? "Cancel Purchase" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

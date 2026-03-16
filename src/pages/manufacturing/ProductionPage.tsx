@@ -175,13 +175,18 @@ const ProductionPage = () => {
             <TableHead>Production #</TableHead><TableHead>Date</TableHead><TableHead>Product</TableHead>
             <TableHead className="text-right">Qty</TableHead><TableHead className="text-right">Material Cost</TableHead>
             <TableHead className="text-right">Labor</TableHead><TableHead className="text-right">Total Cost</TableHead>
-            <TableHead className="w-16">Actions</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead className="w-28">Actions</TableHead>
           </TableRow></TableHeader>
           <TableBody>
-            {loading ? <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
-            : entries.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">No production entries</TableCell></TableRow>
-            : entries.map((e) => (
-              <TableRow key={e.id}>
+            {loading ? <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
+            : entries.length === 0 ? <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground">No production entries</TableCell></TableRow>
+            : entries.map((e) => {
+              const statusCfg = getDocumentStatusConfig(e.notes === null && !("status" in e) ? "completed" : (e as any).status || "completed");
+              const status = (e as any).status || "completed";
+              const isCancelled = status === "cancelled";
+              return (
+              <TableRow key={e.id} className={isCancelled ? "opacity-60" : ""}>
                 <TableCell className="font-geist-mono text-xs font-medium">{e.production_number}</TableCell>
                 <TableCell>{e.production_date}</TableCell>
                 <TableCell className="font-medium">{e.product_name}</TableCell>
@@ -190,12 +195,30 @@ const ProductionPage = () => {
                 <TableCell className="text-right tabular-nums">{fc(e.labor_cost)}</TableCell>
                 <TableCell className="text-right tabular-nums font-medium">{fc(e.total_cost)}</TableCell>
                 <TableCell>
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openPrint(e)} title="Print">
-                    <Printer className="w-3.5 h-3.5" />
-                  </Button>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusCfg.className}`}>
+                    {statusCfg.label}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-1">
+                    {!isCancelled && (status === "draft" || status === "completed") && (isAdmin || isSuperAdmin) && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={() => { setActionTarget(e); setActionType("approve"); setActionDialogOpen(true); }} title="Approve">
+                        <Check className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                    {!isCancelled && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => { setActionTarget(e); setActionType("cancel"); setActionDialogOpen(true); }} title="Cancel">
+                        <X className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openPrint(e)} title="Print">
+                      <Printer className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
-            ))}
+              );
+            })}
           </TableBody>
         </Table>
       </CardContent></Card>
