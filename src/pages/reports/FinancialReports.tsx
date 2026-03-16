@@ -76,8 +76,7 @@ const FinancialReports = () => {
     setLoading(false);
   };
 
-  const fetchTrialBalance = async () => {
-    setLoading(true);
+  const computeTrialData = async () => {
     const { data: entries } = await supabase.from("voucher_entries")
       .select("account_id, debit, credit, acc_vouchers!inner(status)")
       .eq("acc_vouchers.status", "approved");
@@ -90,7 +89,7 @@ const FinancialReports = () => {
       balMap.set(e.account_id, cur);
     });
 
-    const trial = accounts.map((a) => {
+    return accounts.map((a) => {
       const txn = balMap.get(a.id) || { debit: 0, credit: 0 };
       let openDr = a.opening_balance_type === "debit" ? a.opening_balance : 0;
       let openCr = a.opening_balance_type === "credit" ? a.opening_balance : 0;
@@ -101,16 +100,21 @@ const FinancialReports = () => {
         balance: (openDr + txn.debit) - (openCr + txn.credit),
       };
     }).filter((a) => a.total_debit > 0 || a.total_credit > 0 || a.balance !== 0);
+  };
 
-    setTrialData(trial);
+  const fetchTrialBalance = async () => {
+    setLoading(true);
+    const data = await computeTrialData();
+    setTrialData(data);
     setLoading(false);
   };
 
   const fetchPL = async () => {
     setLoading(true);
-    await fetchTrialBalance();
-    const income = trialData.filter((t) => accounts.find((a) => a.id === t.id)?.account_type === "income");
-    const expense = trialData.filter((t) => accounts.find((a) => a.id === t.id)?.account_type === "expense");
+    const data = await computeTrialData();
+    setTrialData(data);
+    const income = data.filter((t) => accounts.find((a) => a.id === t.id)?.account_type === "income");
+    const expense = data.filter((t) => accounts.find((a) => a.id === t.id)?.account_type === "expense");
     setPlData({
       income, expense,
       totalIncome: income.reduce((s, i) => s + Math.abs(i.balance), 0),
@@ -121,10 +125,11 @@ const FinancialReports = () => {
 
   const fetchBS = async () => {
     setLoading(true);
-    await fetchTrialBalance();
-    const assets = trialData.filter((t) => accounts.find((a) => a.id === t.id)?.account_type === "asset");
-    const liabilities = trialData.filter((t) => accounts.find((a) => a.id === t.id)?.account_type === "liability");
-    const equity = trialData.filter((t) => accounts.find((a) => a.id === t.id)?.account_type === "equity");
+    const data = await computeTrialData();
+    setTrialData(data);
+    const assets = data.filter((t) => accounts.find((a) => a.id === t.id)?.account_type === "asset");
+    const liabilities = data.filter((t) => accounts.find((a) => a.id === t.id)?.account_type === "liability");
+    const equity = data.filter((t) => accounts.find((a) => a.id === t.id)?.account_type === "equity");
     setBsData({
       assets, liabilities, equity,
       totalAssets: assets.reduce((s, a) => s + a.balance, 0),
