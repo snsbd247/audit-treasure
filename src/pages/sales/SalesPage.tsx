@@ -127,13 +127,22 @@ const SalesPage = () => {
   };
 
   const openEdit = async (inv: SalesInvoice) => {
+    // Check if user can edit based on status
+    const isApproved = inv.status === "approved" || inv.status === "completed";
+    if (isApproved && !isSuperAdmin) {
+      toast({ title: "Locked", description: "Only Super Admin can edit approved invoices", variant: "destructive" });
+      return;
+    }
+    if (inv.status === "cancelled") {
+      toast({ title: "Locked", description: "Cancelled invoices cannot be edited", variant: "destructive" });
+      return;
+    }
     setEditingInvoice(inv);
     setFormDate(inv.invoice_date);
     setFormCustomer(inv.customer_id || "");
     setFormBranch(inv.branch_id || "");
     setFormDiscount(String(inv.discount));
     setFormNotes(inv.notes || "");
-    // Load line items
     const { data } = await supabase.from("sales_invoice_items").select("*").eq("sales_invoice_id", inv.id);
     if (data && data.length > 0) {
       setItems(data.map((d: any, i: number) => ({
@@ -143,6 +152,29 @@ const SalesPage = () => {
       setItems([{ id: "1", product_id: "", quantity: 0, price: 0, discount: 0, total: 0 }]);
     }
     setDialogOpen(true);
+  };
+
+  const handleDocAction = async () => {
+    if (!actionTarget || !actionType) return;
+    setSaving(true);
+    try {
+      if (actionType === "approve") {
+        await documentApi.approve("sales_invoice", actionTarget.id);
+        toast({ title: `Invoice ${actionTarget.invoice_number} approved` });
+      } else if (actionType === "cancel") {
+        await documentApi.cancel("sales_invoice", actionTarget.id, actionReason);
+        toast({ title: `Invoice ${actionTarget.invoice_number} cancelled` });
+      } else if (actionType === "delete") {
+        await documentApi.deleteApproved("sales_invoice", actionTarget.id, actionReason);
+        toast({ title: `Invoice ${actionTarget.invoice_number} deleted` });
+      }
+      setActionDialogOpen(false);
+      setActionTarget(null);
+      setActionReason("");
+      fetchData();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally { setSaving(false); }
   };
 
   const openPrint = async (inv: SalesInvoice) => {
