@@ -32,6 +32,7 @@ const PurchasesPage = () => {
   const { user, hasPermission } = useAuth();
   const { userBranchId } = useBranch();
   const { toast } = useToast();
+  const { fc } = useCurrency();
   const [tab, setTab] = useState("purchases");
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [returns, setReturns] = useState<PurchaseReturn[]>([]);
