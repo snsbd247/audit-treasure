@@ -224,7 +224,7 @@ const ChartOfAccounts = () => {
               </div>
               <div className="space-y-2">
                 <Label>Parent Account</Label>
-                <Select value={formParent} onValueChange={setFormParent}>
+                <Select value={formParent || "__none__"} onValueChange={(value) => setFormParent(value === "__none__" ? "" : value)}>
                   <SelectTrigger><SelectValue placeholder="None (root level)" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__none__">None (root level)</SelectItem>
