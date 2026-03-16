@@ -17,6 +17,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, ClipboardCheck } from "lucide-react";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface Product { id: string; product_name: string; product_code: string; cost_price: number; }
 interface WH { id: string; warehouse_name: string; warehouse_code: string; }
