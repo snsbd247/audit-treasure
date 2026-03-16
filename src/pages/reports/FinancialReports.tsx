@@ -223,9 +223,9 @@ const FinancialReports = () => {
               <CardContent className="p-0">
                 <Table><TableBody>
                   {plData.expense.map((e) => (
-                    <TableRow key={e.id}><TableCell>{e.account_name}</TableCell><TableCell className="text-right tabular-nums">{Math.abs(e.balance).toLocaleString()}</TableCell></TableRow>
+                    <TableRow key={e.id}><TableCell>{e.account_name}</TableCell><TableCell className="text-right tabular-nums">{fc(Math.abs(e.balance))}</TableCell></TableRow>
                   ))}
-                  <TableRow className="bg-muted/50 font-bold"><TableCell>Total Expenses</TableCell><TableCell className="text-right tabular-nums">{plData.totalExpense.toLocaleString()}</TableCell></TableRow>
+                  <TableRow className="bg-muted/50 font-bold"><TableCell>Total Expenses</TableCell><TableCell className="text-right tabular-nums">{fc(plData.totalExpense)}</TableCell></TableRow>
                 </TableBody></Table>
               </CardContent>
             </Card>
