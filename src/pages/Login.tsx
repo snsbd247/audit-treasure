@@ -24,18 +24,15 @@ const Login = () => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const { data: profile, error: lookupError } = await supabase
-        .from("profiles")
-        .select("email")
-        .eq("username", username)
-        .maybeSingle();
+      const { data: email, error: lookupError } = await supabase
+        .rpc("get_email_by_username", { _username: username });
 
       if (lookupError) throw lookupError;
-      if (!profile || !profile.email) {
+      if (!email) {
         throw new Error("Username not found.");
       }
 
-      const { error } = await signIn(profile.email, password);
+      const { error } = await signIn(email, password);
       if (error) throw error;
       navigate("/");
     } catch (err: any) {
