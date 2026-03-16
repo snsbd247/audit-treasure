@@ -72,6 +72,7 @@ const navGroups: NavGroup[] = [
       { to: "/inventory/warehouses", label: "Warehouses", icon: Warehouse },
       { to: "/inventory", label: "Stock Overview", icon: Warehouse },
       { to: "/inventory/transfers", label: "Stock Transfer", icon: ArrowLeftRight },
+      { to: "/inventory/adjustments", label: "Stock Adjustment", icon: ClipboardList },
       { to: "/reports/stock-ledger", label: "Stock Ledger", icon: ScrollText },
       { to: "/reports/stock-reports", label: "Stock Reports", icon: BarChart3 },
       { to: "/reports/low-stock", label: "Low Stock Alert", icon: CircleDot },
