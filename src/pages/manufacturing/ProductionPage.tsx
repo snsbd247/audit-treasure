@@ -11,9 +11,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Factory, Printer } from "lucide-react";
+import { Plus, Factory, Printer, Check, X, ShieldAlert } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { PrintLayout } from "@/components/PrintLayout";
+import { getDocumentStatusConfig } from "@/hooks/useDocumentRules";
+import { documentApi } from "@/lib/document-api";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Product { id: string; product_name: string; product_code: string; }
 interface Branch { id: string; name: string; }
@@ -28,7 +34,7 @@ interface ProdEntry {
 }
 
 const ProductionPage = () => {
-  const { user } = useAuth();
+  const { user, isSuperAdmin, isAdmin } = useAuth();
   const { userBranchId } = useBranch();
   const { toast } = useToast();
   const { fc } = useCurrency();
@@ -54,6 +60,30 @@ const ProductionPage = () => {
   // Print state
   const [printEntry, setPrintEntry] = useState<ProdEntry | null>(null);
   const [printMaterials, setPrintMaterials] = useState<any[]>([]);
+  const [actionDialogOpen, setActionDialogOpen] = useState(false);
+  const [actionType, setActionType] = useState<"approve" | "cancel" | null>(null);
+  const [actionTarget, setActionTarget] = useState<ProdEntry | null>(null);
+  const [actionReason, setActionReason] = useState("");
+
+  const handleDocAction = async () => {
+    if (!actionTarget || !actionType) return;
+    setSaving(true);
+    try {
+      if (actionType === "approve") {
+        await documentApi.approve("production", actionTarget.id);
+        toast({ title: `Production ${actionTarget.production_number} approved` });
+      } else if (actionType === "cancel") {
+        await documentApi.cancel("production", actionTarget.id, actionReason);
+        toast({ title: `Production ${actionTarget.production_number} cancelled` });
+      }
+      setActionDialogOpen(false);
+      setActionTarget(null);
+      setActionReason("");
+      fetchData();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally { setSaving(false); }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -145,13 +175,18 @@ const ProductionPage = () => {
             <TableHead>Production #</TableHead><TableHead>Date</TableHead><TableHead>Product</TableHead>
             <TableHead className="text-right">Qty</TableHead><TableHead className="text-right">Material Cost</TableHead>
             <TableHead className="text-right">Labor</TableHead><TableHead className="text-right">Total Cost</TableHead>
-            <TableHead className="w-16">Actions</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead className="w-28">Actions</TableHead>
           </TableRow></TableHeader>
           <TableBody>
-            {loading ? <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
-            : entries.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">No production entries</TableCell></TableRow>
-            : entries.map((e) => (
-              <TableRow key={e.id}>
+            {loading ? <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
+            : entries.length === 0 ? <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground">No production entries</TableCell></TableRow>
+            : entries.map((e) => {
+              const statusCfg = getDocumentStatusConfig(e.notes === null && !("status" in e) ? "completed" : (e as any).status || "completed");
+              const status = (e as any).status || "completed";
+              const isCancelled = status === "cancelled";
+              return (
+              <TableRow key={e.id} className={isCancelled ? "opacity-60" : ""}>
                 <TableCell className="font-geist-mono text-xs font-medium">{e.production_number}</TableCell>
                 <TableCell>{e.production_date}</TableCell>
                 <TableCell className="font-medium">{e.product_name}</TableCell>
@@ -160,12 +195,30 @@ const ProductionPage = () => {
                 <TableCell className="text-right tabular-nums">{fc(e.labor_cost)}</TableCell>
                 <TableCell className="text-right tabular-nums font-medium">{fc(e.total_cost)}</TableCell>
                 <TableCell>
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openPrint(e)} title="Print">
-                    <Printer className="w-3.5 h-3.5" />
-                  </Button>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusCfg.className}`}>
+                    {statusCfg.label}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-1">
+                    {!isCancelled && (status === "draft" || status === "completed") && (isAdmin || isSuperAdmin) && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={() => { setActionTarget(e); setActionType("approve"); setActionDialogOpen(true); }} title="Approve">
+                        <Check className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                    {!isCancelled && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => { setActionTarget(e); setActionType("cancel"); setActionDialogOpen(true); }} title="Cancel">
+                        <X className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openPrint(e)} title="Print">
+                      <Printer className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
-            ))}
+              );
+            })}
           </TableBody>
         </Table>
       </CardContent></Card>
@@ -280,6 +333,34 @@ const ProductionPage = () => {
           </table>
         </PrintLayout>
       )}
+
+      {/* Action Confirm Dialog */}
+      <AlertDialog open={actionDialogOpen} onOpenChange={setActionDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {actionType === "approve" ? "Approve Production" : "Cancel Production"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {actionType === "approve"
+                ? `Approve production ${actionTarget?.production_number}?`
+                : `Cancel production ${actionTarget?.production_number}? Stock movements will be reversed.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {actionType === "cancel" && (
+            <div className="space-y-2 px-1">
+              <Label>Reason</Label>
+              <Input value={actionReason} onChange={(e) => setActionReason(e.target.value)} placeholder="Reason..." />
+            </div>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel>Close</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDocAction} disabled={saving}>
+              {saving ? "Processing..." : actionType === "approve" ? "Approve" : "Cancel Production"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

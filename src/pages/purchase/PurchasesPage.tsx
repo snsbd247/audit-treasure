@@ -13,9 +13,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, ShoppingCart, Trash2, RotateCcw, Pencil, Printer } from "lucide-react";
+import { Plus, ShoppingCart, Trash2, RotateCcw, Pencil, Printer, Check, X, Lock, ShieldAlert } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { PrintLayout } from "@/components/PrintLayout";
+import { getDocumentStatusConfig } from "@/hooks/useDocumentRules";
+import { documentApi } from "@/lib/document-api";
+import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Product { id: string; product_name: string; product_code: string; cost_price: number; }
 interface Supplier { id: string; name: string; }
@@ -32,7 +39,7 @@ interface PurchaseReturn {
 }
 
 const PurchasesPage = () => {
-  const { user, profile, hasPermission, isSuperAdmin } = useAuth();
+  const { user, profile, hasPermission, isSuperAdmin, isAdmin } = useAuth();
   const { userBranchId } = useBranch();
   const { toast } = useToast();
   const { fc } = useCurrency();
@@ -70,6 +77,10 @@ const PurchasesPage = () => {
 
   const canEdit = hasPermission("purchase", "can_edit") || isSuperAdmin;
   const canAdd = hasPermission("purchase", "can_add") || isSuperAdmin;
+  const [actionDialogOpen, setActionDialogOpen] = useState(false);
+  const [actionType, setActionType] = useState<"approve" | "cancel" | "delete" | null>(null);
+  const [actionTarget, setActionTarget] = useState<Purchase | null>(null);
+  const [actionReason, setActionReason] = useState("");
 
   const fetchData = async () => {
     setLoading(true);
@@ -114,6 +125,15 @@ const PurchasesPage = () => {
   };
 
   const openEdit = async (p: Purchase) => {
+    const isApproved = p.status === "approved" || p.status === "completed";
+    if (isApproved && !isSuperAdmin) {
+      toast({ title: "Locked", description: "Only Super Admin can edit approved purchases", variant: "destructive" });
+      return;
+    }
+    if (p.status === "cancelled") {
+      toast({ title: "Locked", description: "Cancelled purchases cannot be edited", variant: "destructive" });
+      return;
+    }
     setEditingPurchase(p);
     setFormDate(p.purchase_date);
     setFormSupplier(p.supplier_id || "");
@@ -129,6 +149,29 @@ const PurchasesPage = () => {
       setItems([{ id: "1", product_id: "", quantity: 0, unit_price: 0, total: 0 }]);
     }
     setDialogOpen(true);
+  };
+
+  const handleDocAction = async () => {
+    if (!actionTarget || !actionType) return;
+    setSaving(true);
+    try {
+      if (actionType === "approve") {
+        await documentApi.approve("purchase", actionTarget.id);
+        toast({ title: `Purchase ${actionTarget.purchase_number} approved` });
+      } else if (actionType === "cancel") {
+        await documentApi.cancel("purchase", actionTarget.id, actionReason);
+        toast({ title: `Purchase ${actionTarget.purchase_number} cancelled` });
+      } else if (actionType === "delete") {
+        await documentApi.deleteApproved("purchase", actionTarget.id, actionReason);
+        toast({ title: `Purchase ${actionTarget.purchase_number} deleted` });
+      }
+      setActionDialogOpen(false);
+      setActionTarget(null);
+      setActionReason("");
+      fetchData();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally { setSaving(false); }
   };
 
   const openPrint = async (p: Purchase) => {
@@ -148,22 +191,33 @@ const PurchasesPage = () => {
     setSaving(true);
     try {
       if (editingPurchase) {
-        const oldValues = { purchase_date: editingPurchase.purchase_date, supplier_id: editingPurchase.supplier_id, total_amount: editingPurchase.total_amount, payment_method: editingPurchase.payment_method };
+        const isApprovedEdit = editingPurchase.status === "approved" || editingPurchase.status === "completed";
         const total = grandTotal(validItems);
-        const newValues = { purchase_date: formDate, supplier_id: formSupplier || null, total_amount: total, payment_method: formPayment };
 
-        const { error } = await supabase.from("purchases").update({
-          purchase_date: formDate, supplier_id: formSupplier || null, branch_id: formBranch || null,
-          total_amount: total, payment_method: formPayment, notes: formNotes || null,
-        }).eq("id", editingPurchase.id);
-        if (error) throw error;
+        if (isApprovedEdit && isSuperAdmin) {
+          await documentApi.editApproved("purchase", editingPurchase.id, {
+            purchase_date: formDate, supplier_id: formSupplier || null,
+            branch_id: formBranch || null, payment_method: formPayment, notes: formNotes || null,
+          }, validItems.map((i) => ({
+            product_id: i.product_id, quantity: i.quantity, unit_price: i.unit_price, total: i.total,
+          })));
+        } else {
+          const oldValues = { purchase_date: editingPurchase.purchase_date, supplier_id: editingPurchase.supplier_id, total_amount: editingPurchase.total_amount, payment_method: editingPurchase.payment_method };
+          const newValues = { purchase_date: formDate, supplier_id: formSupplier || null, total_amount: total, payment_method: formPayment };
 
-        await supabase.from("purchase_items").delete().eq("purchase_id", editingPurchase.id);
-        await supabase.from("purchase_items").insert(
-          validItems.map((i) => ({ purchase_id: editingPurchase.id, product_id: i.product_id, quantity: i.quantity, unit_price: i.unit_price, total: i.total }))
-        );
+          const { error } = await supabase.from("purchases").update({
+            purchase_date: formDate, supplier_id: formSupplier || null, branch_id: formBranch || null,
+            total_amount: total, payment_method: formPayment, notes: formNotes || null,
+          }).eq("id", editingPurchase.id);
+          if (error) throw error;
 
-        await logEditAudit({ userId: user?.id, userName: profile?.name, module: "Purchase", action: "Edit", recordId: editingPurchase.id, oldValues, newValues });
+          await supabase.from("purchase_items").delete().eq("purchase_id", editingPurchase.id);
+          await supabase.from("purchase_items").insert(
+            validItems.map((i) => ({ purchase_id: editingPurchase.id, product_id: i.product_id, quantity: i.quantity, unit_price: i.unit_price, total: i.total }))
+          );
+
+          await logEditAudit({ userId: user?.id, userName: profile?.name, module: "Purchase", action: "Edit", recordId: editingPurchase.id, oldValues, newValues });
+        }
         toast({ title: `Purchase ${editingPurchase.purchase_number} updated` });
       } else {
         const ctx = { date: formDate, branchId: formBranch || userBranchId || null, userId: user?.id };
@@ -270,24 +324,48 @@ const PurchasesPage = () => {
             <Table>
               <TableHeader><TableRow>
                 <TableHead>Purchase #</TableHead><TableHead>Date</TableHead><TableHead>Supplier</TableHead>
-                <TableHead className="text-right">Amount</TableHead><TableHead>Payment</TableHead>
-                <TableHead className="w-24">Actions</TableHead>
+                <TableHead className="text-right">Amount</TableHead><TableHead>Payment</TableHead><TableHead>Status</TableHead>
+                <TableHead className="w-32">Actions</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {loading ? <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
-                : purchases.length === 0 ? <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">No purchases yet</TableCell></TableRow>
-                : purchases.map((p) => (
-                  <TableRow key={p.id}>
+                : purchases.length === 0 ? <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">No purchases yet</TableCell></TableRow>
+                : purchases.map((p) => {
+                  const statusCfg = getDocumentStatusConfig(p.status);
+                  const isLocked = (p.status === "approved" || p.status === "completed") && !isSuperAdmin;
+                  const isCancelled = p.status === "cancelled";
+                  return (
+                  <TableRow key={p.id} className={isCancelled ? "opacity-60" : ""}>
                     <TableCell className="font-geist-mono text-xs font-medium">{p.purchase_number}</TableCell>
                     <TableCell>{p.purchase_date}</TableCell>
                     <TableCell>{p.supplier_name || "—"}</TableCell>
                     <TableCell className="text-right tabular-nums font-medium">{fc(p.total_amount)}</TableCell>
                     <TableCell className="capitalize">{p.payment_method}</TableCell>
                     <TableCell>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusCfg.className}`}>
+                        {statusCfg.label}
+                      </span>
+                    </TableCell>
+                    <TableCell>
                       <div className="flex gap-1">
-                        {canEdit && (
+                        {!isCancelled && (p.status === "draft" || p.status === "completed") && (isAdmin || isSuperAdmin) && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={() => { setActionTarget(p); setActionType("approve"); setActionDialogOpen(true); }} title="Approve">
+                            <Check className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                        {!isCancelled && !isLocked && (
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(p)} title="Edit">
                             <Pencil className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                        {isSuperAdmin && (p.status === "approved" || p.status === "completed") && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-amber-600" onClick={() => openEdit(p)} title="Super Admin Edit">
+                            <ShieldAlert className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                        {!isCancelled && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => { setActionTarget(p); setActionType("cancel"); setActionDialogOpen(true); }} title="Cancel">
+                            <X className="w-3.5 h-3.5" />
                           </Button>
                         )}
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openPrint(p)} title="Print">
@@ -296,7 +374,8 @@ const PurchasesPage = () => {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent></Card>
@@ -438,6 +517,36 @@ const PurchasesPage = () => {
           </table>
         </PrintLayout>
       )}
+
+      {/* Action Confirm Dialog */}
+      <AlertDialog open={actionDialogOpen} onOpenChange={setActionDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {actionType === "approve" ? "Approve Purchase" : actionType === "cancel" ? "Cancel Purchase" : "Delete Purchase"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {actionType === "approve"
+                ? `Approve purchase ${actionTarget?.purchase_number}? This will lock it from normal editing.`
+                : actionType === "cancel"
+                ? `Cancel purchase ${actionTarget?.purchase_number}? Stock and accounting entries will be reversed.`
+                : `Permanently delete purchase ${actionTarget?.purchase_number}?`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {(actionType === "cancel" || actionType === "delete") && (
+            <div className="space-y-2 px-1">
+              <Label>Reason</Label>
+              <Input value={actionReason} onChange={(e) => setActionReason(e.target.value)} placeholder="Reason..." />
+            </div>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDocAction} disabled={saving}>
+              {saving ? "Processing..." : actionType === "approve" ? "Approve" : actionType === "cancel" ? "Cancel Purchase" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

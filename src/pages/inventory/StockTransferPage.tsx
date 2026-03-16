@@ -13,15 +13,21 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, ArrowRightLeft, Printer } from "lucide-react";
+import { Plus, ArrowRightLeft, Printer, Check, X } from "lucide-react";
 import { PrintLayout } from "@/components/PrintLayout";
+import { getDocumentStatusConfig } from "@/hooks/useDocumentRules";
+import { documentApi } from "@/lib/document-api";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface WH { id: string; warehouse_code: string; warehouse_name: string; branch_id: string | null; }
 interface Item { id: string; item_code: string; item_name: string; }
 interface Transfer { id: string; transfer_number: string; transfer_date: string; from_warehouse_id: string; to_warehouse_id: string; item_id: string; quantity: number; notes: string | null; status: string; created_at: string; }
 
 const StockTransferPage = () => {
-  const { user } = useAuth();
+  const { user, isSuperAdmin, isAdmin } = useAuth();
   const { userBranchId } = useBranch();
   const [warehouses, setWarehouses] = useState<WH[]>([]);
   const [items, setItems] = useState<Item[]>([]);
@@ -39,6 +45,30 @@ const StockTransferPage = () => {
 
   // Print state
   const [printTransfer, setPrintTransfer] = useState<Transfer | null>(null);
+  const [actionDialogOpen, setActionDialogOpen] = useState(false);
+  const [actionType, setActionType] = useState<"approve" | "cancel" | null>(null);
+  const [actionTarget, setActionTarget] = useState<Transfer | null>(null);
+  const [actionReason, setActionReason] = useState("");
+
+  const handleDocAction = async () => {
+    if (!actionTarget || !actionType) return;
+    setSaving(true);
+    try {
+      if (actionType === "approve") {
+        await documentApi.approve("stock_transfer", actionTarget.id);
+        toast({ title: `Transfer ${actionTarget.transfer_number} approved` });
+      } else if (actionType === "cancel") {
+        await documentApi.cancel("stock_transfer", actionTarget.id, actionReason);
+        toast({ title: `Transfer ${actionTarget.transfer_number} cancelled` });
+      }
+      setActionDialogOpen(false);
+      setActionTarget(null);
+      setActionReason("");
+      fetchData();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally { setSaving(false); }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -98,22 +128,42 @@ const StockTransferPage = () => {
           <TableBody>
             {loading ? <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
             : transfers.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">No transfers yet</TableCell></TableRow>
-            : transfers.map((t) => (
-              <TableRow key={t.id}>
+            : transfers.map((t) => {
+              const statusCfg = getDocumentStatusConfig(t.status);
+              const isCancelled = t.status === "cancelled";
+              return (
+              <TableRow key={t.id} className={isCancelled ? "opacity-60" : ""}>
                 <TableCell className="font-mono text-xs">{t.transfer_number}</TableCell>
                 <TableCell>{t.transfer_date}</TableCell>
                 <TableCell className="font-medium">{itemMap.get(t.item_id) || "—"}</TableCell>
                 <TableCell>{whMap.get(t.from_warehouse_id) || "—"}</TableCell>
                 <TableCell>{whMap.get(t.to_warehouse_id) || "—"}</TableCell>
                 <TableCell className="text-right tabular-nums">{t.quantity}</TableCell>
-                <TableCell><Badge variant="default">{t.status}</Badge></TableCell>
                 <TableCell>
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setPrintTransfer(t)} title="Print">
-                    <Printer className="w-3.5 h-3.5" />
-                  </Button>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusCfg.className}`}>
+                    {statusCfg.label}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-1">
+                    {!isCancelled && (t.status === "draft" || t.status === "completed") && (isAdmin || isSuperAdmin) && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={() => { setActionTarget(t); setActionType("approve"); setActionDialogOpen(true); }} title="Approve">
+                        <Check className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                    {!isCancelled && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => { setActionTarget(t); setActionType("cancel"); setActionDialogOpen(true); }} title="Cancel">
+                        <X className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setPrintTransfer(t)} title="Print">
+                      <Printer className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
-            ))}
+              );
+            })}
           </TableBody>
         </Table>
       </CardContent></Card>
@@ -185,6 +235,34 @@ const StockTransferPage = () => {
           </table>
         </PrintLayout>
       )}
+
+      {/* Action Confirm Dialog */}
+      <AlertDialog open={actionDialogOpen} onOpenChange={setActionDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {actionType === "approve" ? "Approve Transfer" : "Cancel Transfer"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {actionType === "approve"
+                ? `Approve transfer ${actionTarget?.transfer_number}?`
+                : `Cancel transfer ${actionTarget?.transfer_number}? Warehouse stock will be reversed.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {actionType === "cancel" && (
+            <div className="space-y-2 px-1">
+              <Label>Reason</Label>
+              <Input value={actionReason} onChange={(e) => setActionReason(e.target.value)} placeholder="Reason..." />
+            </div>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel>Close</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDocAction} disabled={saving}>
+              {saving ? "Processing..." : actionType === "approve" ? "Approve" : "Cancel Transfer"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

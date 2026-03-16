@@ -13,9 +13,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Receipt, Trash2, RotateCcw, Pencil, Printer } from "lucide-react";
+import { Plus, Receipt, Trash2, RotateCcw, Pencil, Printer, Check, X, Lock, ShieldAlert } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { PrintLayout } from "@/components/PrintLayout";
+import { useDocumentRules, getDocumentStatusConfig } from "@/hooks/useDocumentRules";
+import { documentApi } from "@/lib/document-api";
+import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Product { id: string; product_name: string; product_code: string; selling_price: number; }
 interface Customer { id: string; name: string; }
@@ -33,7 +40,7 @@ interface SalesReturnRow {
 }
 
 const SalesPage = () => {
-  const { user, profile, hasPermission, isSuperAdmin } = useAuth();
+  const { user, profile, hasPermission, isSuperAdmin, isAdmin } = useAuth();
   const { userBranchId } = useBranch();
   const { toast } = useToast();
   const { fc } = useCurrency();
@@ -71,8 +78,11 @@ const SalesPage = () => {
   const [printInvoice, setPrintInvoice] = useState<SalesInvoice | null>(null);
   const [printItems, setPrintItems] = useState<any[]>([]);
 
-  const canEdit = hasPermission("sales", "can_edit") || isSuperAdmin;
   const canAdd = hasPermission("sales", "can_add") || isSuperAdmin;
+  const [actionDialogOpen, setActionDialogOpen] = useState(false);
+  const [actionType, setActionType] = useState<"approve" | "cancel" | "delete" | null>(null);
+  const [actionTarget, setActionTarget] = useState<SalesInvoice | null>(null);
+  const [actionReason, setActionReason] = useState("");
 
   const fetchData = async () => {
     setLoading(true);
@@ -117,13 +127,22 @@ const SalesPage = () => {
   };
 
   const openEdit = async (inv: SalesInvoice) => {
+    // Check if user can edit based on status
+    const isApproved = inv.status === "approved" || inv.status === "completed";
+    if (isApproved && !isSuperAdmin) {
+      toast({ title: "Locked", description: "Only Super Admin can edit approved invoices", variant: "destructive" });
+      return;
+    }
+    if (inv.status === "cancelled") {
+      toast({ title: "Locked", description: "Cancelled invoices cannot be edited", variant: "destructive" });
+      return;
+    }
     setEditingInvoice(inv);
     setFormDate(inv.invoice_date);
     setFormCustomer(inv.customer_id || "");
     setFormBranch(inv.branch_id || "");
     setFormDiscount(String(inv.discount));
     setFormNotes(inv.notes || "");
-    // Load line items
     const { data } = await supabase.from("sales_invoice_items").select("*").eq("sales_invoice_id", inv.id);
     if (data && data.length > 0) {
       setItems(data.map((d: any, i: number) => ({
@@ -133,6 +152,29 @@ const SalesPage = () => {
       setItems([{ id: "1", product_id: "", quantity: 0, price: 0, discount: 0, total: 0 }]);
     }
     setDialogOpen(true);
+  };
+
+  const handleDocAction = async () => {
+    if (!actionTarget || !actionType) return;
+    setSaving(true);
+    try {
+      if (actionType === "approve") {
+        await documentApi.approve("sales_invoice", actionTarget.id);
+        toast({ title: `Invoice ${actionTarget.invoice_number} approved` });
+      } else if (actionType === "cancel") {
+        await documentApi.cancel("sales_invoice", actionTarget.id, actionReason);
+        toast({ title: `Invoice ${actionTarget.invoice_number} cancelled` });
+      } else if (actionType === "delete") {
+        await documentApi.deleteApproved("sales_invoice", actionTarget.id, actionReason);
+        toast({ title: `Invoice ${actionTarget.invoice_number} deleted` });
+      }
+      setActionDialogOpen(false);
+      setActionTarget(null);
+      setActionReason("");
+      fetchData();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally { setSaving(false); }
   };
 
   const openPrint = async (inv: SalesInvoice) => {
@@ -152,59 +194,52 @@ const SalesPage = () => {
     setSaving(true);
     try {
       if (editingInvoice) {
-        // Edit mode - update header
-        const oldValues = {
-          invoice_date: editingInvoice.invoice_date,
-          customer_id: editingInvoice.customer_id,
-          discount: editingInvoice.discount,
-          notes: editingInvoice.notes,
-          total_amount: editingInvoice.total_amount,
-        };
+        const isApprovedEdit = editingInvoice.status === "approved" || editingInvoice.status === "completed";
         const total = grandTotal(validItems);
         const disc = parseFloat(formDiscount) || 0;
         const net = total - disc;
-        const newValues = {
-          invoice_date: formDate,
-          customer_id: formCustomer || null,
-          discount: disc,
-          notes: formNotes || null,
-          total_amount: total,
-        };
 
-        const { error } = await supabase.from("sales_invoices").update({
-          invoice_date: formDate,
-          customer_id: formCustomer || null,
-          branch_id: formBranch || null,
-          discount: disc,
-          notes: formNotes || null,
-          total_amount: total,
-          net_amount: net,
-        }).eq("id", editingInvoice.id);
-        if (error) throw error;
+        if (isApprovedEdit && isSuperAdmin) {
+          // Use document API for approved doc edits (handles stock + accounting recalc)
+          await documentApi.editApproved("sales_invoice", editingInvoice.id, {
+            invoice_date: formDate,
+            customer_id: formCustomer || null,
+            branch_id: formBranch || null,
+            discount: disc,
+            notes: formNotes || null,
+          }, validItems.map((i) => ({
+            product_id: i.product_id, quantity: i.quantity, price: i.price, discount: i.discount, total: i.total,
+          })));
+        } else {
+          // Normal draft edit
+          const oldValues = {
+            invoice_date: editingInvoice.invoice_date, customer_id: editingInvoice.customer_id,
+            discount: editingInvoice.discount, notes: editingInvoice.notes, total_amount: editingInvoice.total_amount,
+          };
+          const newValues = {
+            invoice_date: formDate, customer_id: formCustomer || null,
+            discount: disc, notes: formNotes || null, total_amount: total,
+          };
 
-        // Replace line items
-        await supabase.from("sales_invoice_items").delete().eq("sales_invoice_id", editingInvoice.id);
-        await supabase.from("sales_invoice_items").insert(
-          validItems.map((i) => ({
-            sales_invoice_id: editingInvoice.id,
-            product_id: i.product_id,
-            quantity: i.quantity,
-            price: i.price,
-            discount: i.discount,
-            total: i.total,
-          }))
-        );
+          const { error } = await supabase.from("sales_invoices").update({
+            invoice_date: formDate, customer_id: formCustomer || null, branch_id: formBranch || null,
+            discount: disc, notes: formNotes || null, total_amount: total, net_amount: net,
+          }).eq("id", editingInvoice.id);
+          if (error) throw error;
 
-        // Audit log
-        await logEditAudit({
-          userId: user?.id,
-          userName: profile?.name,
-          module: "Sales",
-          action: editingInvoice.status === "approved" ? "Edit (Approved Document)" : "Edit",
-          recordId: editingInvoice.id,
-          oldValues,
-          newValues,
-        });
+          await supabase.from("sales_invoice_items").delete().eq("sales_invoice_id", editingInvoice.id);
+          await supabase.from("sales_invoice_items").insert(
+            validItems.map((i) => ({
+              sales_invoice_id: editingInvoice.id, product_id: i.product_id,
+              quantity: i.quantity, price: i.price, discount: i.discount, total: i.total,
+            }))
+          );
+
+          await logEditAudit({
+            userId: user?.id, userName: profile?.name, module: "Sales",
+            action: "Edit", recordId: editingInvoice.id, oldValues, newValues,
+          });
+        }
 
         toast({ title: `Invoice ${editingInvoice.invoice_number} updated` });
       } else {
@@ -313,15 +348,20 @@ const SalesPage = () => {
           <Card><CardContent className="p-0">
             <Table>
               <TableHeader><TableRow>
-                <TableHead>Invoice #</TableHead><TableHead>Date</TableHead><TableHead>Customer</TableHead>
+              <TableHead>Invoice #</TableHead><TableHead>Date</TableHead><TableHead>Customer</TableHead>
                 <TableHead className="text-right">Total</TableHead><TableHead className="text-right">Discount</TableHead><TableHead className="text-right">Net</TableHead>
-                <TableHead className="w-24">Actions</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="w-32">Actions</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {loading ? <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
-                : invoices.length === 0 ? <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">No invoices yet</TableCell></TableRow>
-                : invoices.map((inv) => (
-                  <TableRow key={inv.id}>
+                : invoices.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">No invoices yet</TableCell></TableRow>
+                : invoices.map((inv) => {
+                  const statusCfg = getDocumentStatusConfig(inv.status);
+                  const isLocked = (inv.status === "approved" || inv.status === "completed") && !isSuperAdmin;
+                  const isCancelled = inv.status === "cancelled";
+                  return (
+                  <TableRow key={inv.id} className={isCancelled ? "opacity-60" : ""}>
                     <TableCell className="font-geist-mono text-xs font-medium">{inv.invoice_number}</TableCell>
                     <TableCell>{inv.invoice_date}</TableCell>
                     <TableCell>{inv.customer_name || "—"}</TableCell>
@@ -329,10 +369,30 @@ const SalesPage = () => {
                     <TableCell className="text-right tabular-nums">{fc(inv.discount)}</TableCell>
                     <TableCell className="text-right tabular-nums font-medium">{fc(inv.net_amount)}</TableCell>
                     <TableCell>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusCfg.className}`}>
+                        {statusCfg.label}
+                      </span>
+                    </TableCell>
+                    <TableCell>
                       <div className="flex gap-1">
-                        {canEdit && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(inv)} title="Edit">
-                            <Pencil className="w-3.5 h-3.5" />
+                        {!isCancelled && (inv.status === "draft" || inv.status === "completed") && (isAdmin || isSuperAdmin) && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={() => { setActionTarget(inv); setActionType("approve"); setActionDialogOpen(true); }} title="Approve">
+                            <Check className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                        {!isCancelled && !isLocked && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(inv)} title={isLocked ? "Locked" : "Edit"}>
+                            {isLocked ? <Lock className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
+                          </Button>
+                        )}
+                        {isSuperAdmin && (inv.status === "approved" || inv.status === "completed") && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-amber-600" onClick={() => openEdit(inv)} title="Super Admin Edit">
+                            <ShieldAlert className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                        {!isCancelled && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => { setActionTarget(inv); setActionType("cancel"); setActionDialogOpen(true); }} title="Cancel">
+                            <X className="w-3.5 h-3.5" />
                           </Button>
                         )}
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openPrint(inv)} title="Print">
@@ -341,7 +401,8 @@ const SalesPage = () => {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent></Card>
@@ -493,6 +554,36 @@ const SalesPage = () => {
           </table>
         </PrintLayout>
       )}
+
+      {/* Action Confirm Dialog */}
+      <AlertDialog open={actionDialogOpen} onOpenChange={setActionDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {actionType === "approve" ? "Approve Invoice" : actionType === "cancel" ? "Cancel Invoice" : "Delete Invoice"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {actionType === "approve"
+                ? `Are you sure you want to approve invoice ${actionTarget?.invoice_number}? This will lock it from normal user editing.`
+                : actionType === "cancel"
+                ? `Are you sure you want to cancel invoice ${actionTarget?.invoice_number}? Stock and accounting entries will be reversed.`
+                : `Are you sure you want to permanently delete invoice ${actionTarget?.invoice_number}?`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {(actionType === "cancel" || actionType === "delete") && (
+            <div className="space-y-2 px-1">
+              <Label>Reason</Label>
+              <Input value={actionReason} onChange={(e) => setActionReason(e.target.value)} placeholder="Reason for this action..." />
+            </div>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDocAction} disabled={saving}>
+              {saving ? "Processing..." : actionType === "approve" ? "Approve" : actionType === "cancel" ? "Cancel Invoice" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
