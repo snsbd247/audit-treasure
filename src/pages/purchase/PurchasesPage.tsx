@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { nextNumber } from "@/lib/db-utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBranch } from "@/contexts/BranchContext";
-import { validateFinancialYear } from "@/lib/financial-year-utils";
-import { autoPostAccounting, findAccountByName } from "@/lib/accounting-utils";
+import { createPurchase, createPurchaseReturn } from "@/lib/transaction-service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,8 +20,7 @@ interface Branch { id: string; name: string; }
 interface ItemRow { id: string; product_id: string; quantity: number; unit_price: number; total: number; }
 interface Purchase {
   id: string; purchase_number: string; purchase_date: string; supplier_id: string | null;
-  total_amount: number; payment_method: string; created_at: string;
-  supplier_name?: string;
+  total_amount: number; payment_method: string; created_at: string; supplier_name?: string;
 }
 interface PurchaseReturn {
   id: string; return_number: string; return_date: string; supplier_id: string | null;
@@ -42,7 +39,6 @@ const PurchasesPage = () => {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Purchase form
   const [dialogOpen, setDialogOpen] = useState(false);
   const [returnDialogOpen, setReturnDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -53,14 +49,12 @@ const PurchasesPage = () => {
   const [formNotes, setFormNotes] = useState("");
   const [items, setItems] = useState<ItemRow[]>([{ id: "1", product_id: "", quantity: 0, unit_price: 0, total: 0 }]);
 
-  // Return form
   const [retDate, setRetDate] = useState(new Date().toISOString().slice(0, 10));
   const [retSupplier, setRetSupplier] = useState("");
   const [retBranch, setRetBranch] = useState("");
   const [retReason, setRetReason] = useState("");
   const [retItems, setRetItems] = useState<ItemRow[]>([{ id: "1", product_id: "", quantity: 0, unit_price: 0, total: 0 }]);
 
-  // Supplier dialog
   const [supDialogOpen, setSupDialogOpen] = useState(false);
   const [supName, setSupName] = useState("");
   const [supPhone, setSupPhone] = useState("");
@@ -104,56 +98,11 @@ const PurchasesPage = () => {
     const validItems = items.filter((i) => i.product_id && i.quantity > 0);
     if (validItems.length === 0) { toast({ title: "Add at least one item", variant: "destructive" }); return; }
 
-    const fyResult = await validateFinancialYear(formDate);
-    if (!fyResult.valid) { toast({ title: "Financial Year Error", description: fyResult.error, variant: "destructive" }); return; }
-
-    const branchId = formBranch || userBranchId || null;
-
     setSaving(true);
     try {
-      const numData = await nextNumber("purchase");
-      const totalAmt = grandTotal(validItems);
-      const { data, error } = await supabase.from("purchases").insert({
-        purchase_number: numData as string,
-        purchase_date: formDate, supplier_id: formSupplier || null, branch_id: branchId,
-        total_amount: totalAmt, payment_method: formPayment, notes: formNotes,
-        created_by: user?.id,
-      }).select().single();
-      if (error) throw error;
-
-      const rows = validItems.map((i) => ({ purchase_id: (data as any).id, product_id: i.product_id, quantity: i.quantity, unit_price: i.unit_price, total: i.total }));
-      await supabase.from("purchase_items").insert(rows);
-
-      // Stock movements
-      const movements = validItems.map((i) => ({
-        product_id: i.product_id, branch_id: branchId,
-        movement_type: "purchase" as const, reference_type: "purchase", reference_id: (data as any).id, quantity: i.quantity,
-      }));
-      await supabase.from("stock_movements").insert(movements);
-
-      // Auto-post accounting: Debit Inventory/Purchases, Credit Accounts Payable
-      try {
-        const purchaseAccountId = await findAccountByName("Purchase");
-        const apAccountId = await findAccountByName("Accounts Payable");
-        if (purchaseAccountId && apAccountId) {
-          await autoPostAccounting({
-            voucher_type: "journal",
-            voucher_date: formDate,
-            description: `Purchase ${numData}`,
-            branch_id: branchId,
-            financial_year_id: fyResult.yearId,
-            created_by: user?.id,
-            entries: [
-              { account_id: purchaseAccountId, debit: totalAmt, credit: 0, narration: `Purchase ${numData}` },
-              { account_id: apAccountId, debit: 0, credit: totalAmt, narration: `Purchase ${numData}` },
-            ],
-          });
-        }
-      } catch (accErr) {
-        console.warn("Auto-posting accounting entry failed:", accErr);
-      }
-
-      toast({ title: `Purchase ${numData} created` });
+      const ctx = { date: formDate, branchId: formBranch || userBranchId || null, userId: user?.id };
+      const result = await createPurchase(ctx, formSupplier || null, formPayment, formNotes, validItems);
+      toast({ title: `Purchase ${result.purchaseNumber} created` });
       setDialogOpen(false); fetchData();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -164,31 +113,11 @@ const PurchasesPage = () => {
     const validItems = retItems.filter((i) => i.product_id && i.quantity > 0);
     if (validItems.length === 0) { toast({ title: "Add at least one item", variant: "destructive" }); return; }
 
-    const fyResult = await validateFinancialYear(retDate);
-    if (!fyResult.valid) { toast({ title: "Financial Year Error", description: fyResult.error, variant: "destructive" }); return; }
-
-    const branchId = retBranch || userBranchId || null;
-
     setSaving(true);
     try {
-      const numData = await nextNumber("purchase_return");
-      const { data, error } = await supabase.from("purchase_returns").insert({
-        return_number: numData as string,
-        return_date: retDate, supplier_id: retSupplier || null, branch_id: branchId,
-        total_amount: grandTotal(validItems), reason: retReason, created_by: user?.id,
-      }).select().single();
-      if (error) throw error;
-
-      const rows = validItems.map((i) => ({ purchase_return_id: (data as any).id, product_id: i.product_id, quantity: i.quantity, unit_price: i.unit_price, total: i.total }));
-      await supabase.from("purchase_return_items").insert(rows);
-
-      const movements = validItems.map((i) => ({
-        product_id: i.product_id, branch_id: branchId,
-        movement_type: "purchase_return" as const, reference_type: "purchase_return", reference_id: (data as any).id, quantity: -i.quantity,
-      }));
-      await supabase.from("stock_movements").insert(movements);
-
-      toast({ title: `Return ${numData} created` });
+      const ctx = { date: retDate, branchId: retBranch || userBranchId || null, userId: user?.id };
+      const result = await createPurchaseReturn(ctx, retSupplier || null, retReason, validItems);
+      toast({ title: `Return ${result.returnNumber} created` });
       setReturnDialogOpen(false); fetchData();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
