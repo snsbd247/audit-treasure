@@ -10,7 +10,7 @@ import {
   CreditCard, Landmark, PiggyBank, TrendingUp,
   ArrowLeftRight, Calendar, Activity, Menu, X, CircleDot, Truck, UserCheck,
   Briefcase, Clock, CalendarDays, DollarSign, FileCheck, BadgeCheck, User,
-  Fingerprint, ScanFace, Timer, Gauge,
+  Fingerprint, ScanFace, Timer, Gauge, Keyboard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
