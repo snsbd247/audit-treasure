@@ -56,6 +56,7 @@ const GeneralSettingsPage = () => {
       toast.error("Failed to save settings: " + error.message);
     } else {
       toast.success("Settings saved successfully");
+      refetchCurrency();
     }
   };
 
