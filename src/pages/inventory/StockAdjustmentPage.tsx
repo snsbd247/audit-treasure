@@ -209,7 +209,7 @@ const StockAdjustmentPage = () => {
                 </TableCell>
                 <TableCell className="font-medium">{a.product_name || "—"}</TableCell>
                 <TableCell className="text-right tabular-nums">{a.quantity}</TableCell>
-                <TableCell className="text-right tabular-nums font-medium">{a.total_value.toLocaleString()}</TableCell>
+                <TableCell className="text-right tabular-nums font-medium">{fc(a.total_value)}</TableCell>
                 <TableCell className="text-muted-foreground text-sm">{a.reason || "—"}</TableCell>
               </TableRow>
             ))}
