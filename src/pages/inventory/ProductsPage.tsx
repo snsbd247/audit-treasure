@@ -150,7 +150,11 @@ const ProductsPage = () => {
                   <TableCell className="text-right tabular-nums">{p.cost_price.toLocaleString()}</TableCell>
                   <TableCell className="text-right tabular-nums font-medium">{p.selling_price.toLocaleString()}</TableCell>
                   <TableCell><Badge variant={p.status === "active" ? "default" : "secondary"}>{p.status}</Badge></TableCell>
-                  <TableCell><Button variant="ghost" size="icon" onClick={() => openEdit(p)}><Pencil className="w-4 h-4" /></Button></TableCell>
+                  <TableCell>
+                    {hasPermission("Inventory", "can_edit") && (
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(p)}><Pencil className="w-4 h-4" /></Button>
+                    )}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

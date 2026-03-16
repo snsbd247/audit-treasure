@@ -216,13 +216,19 @@ const PurchasesPage = () => {
           <h1 className="text-xl font-semibold text-foreground">Purchase</h1>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => setSupDialogOpen(true)}>Add Supplier</Button>
-          <Button variant="outline" size="sm" onClick={() => { setReturnDialogOpen(true); setRetItems([{ id: "1", product_id: "", quantity: 0, unit_price: 0, total: 0 }]); }}>
-            <RotateCcw className="w-4 h-4 mr-1" />Purchase Return
-          </Button>
-          <Button size="sm" onClick={() => { setDialogOpen(true); setItems([{ id: "1", product_id: "", quantity: 0, unit_price: 0, total: 0 }]); }}>
-            <Plus className="w-4 h-4 mr-1" />New Purchase
-          </Button>
+          {hasPermission("Purchase", "can_add") && (
+            <Button variant="outline" size="sm" onClick={() => setSupDialogOpen(true)}>Add Supplier</Button>
+          )}
+          {hasPermission("Purchase", "can_add") && (
+            <Button variant="outline" size="sm" onClick={() => { setReturnDialogOpen(true); setRetItems([{ id: "1", product_id: "", quantity: 0, unit_price: 0, total: 0 }]); }}>
+              <RotateCcw className="w-4 h-4 mr-1" />Purchase Return
+            </Button>
+          )}
+          {hasPermission("Purchase", "can_add") && (
+            <Button size="sm" onClick={() => { setDialogOpen(true); setItems([{ id: "1", product_id: "", quantity: 0, unit_price: 0, total: 0 }]); }}>
+              <Plus className="w-4 h-4 mr-1" />New Purchase
+            </Button>
+          )}
         </div>
       </div>
 

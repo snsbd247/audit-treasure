@@ -209,13 +209,19 @@ const SalesPage = () => {
           <h1 className="text-xl font-semibold text-foreground">Sales</h1>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => setCustDialogOpen(true)}>Add Customer</Button>
-          <Button variant="outline" size="sm" onClick={() => { setReturnDialogOpen(true); setRetItems([{ id: "1", product_id: "", quantity: 0, price: 0, discount: 0, total: 0 }]); }}>
-            <RotateCcw className="w-4 h-4 mr-1" />Sales Return
-          </Button>
-          <Button size="sm" onClick={() => { setDialogOpen(true); setItems([{ id: "1", product_id: "", quantity: 0, price: 0, discount: 0, total: 0 }]); }}>
-            <Plus className="w-4 h-4 mr-1" />New Invoice
-          </Button>
+          {hasPermission("Sales", "can_add") && (
+            <Button variant="outline" size="sm" onClick={() => setCustDialogOpen(true)}>Add Customer</Button>
+          )}
+          {hasPermission("Sales", "can_add") && (
+            <Button variant="outline" size="sm" onClick={() => { setReturnDialogOpen(true); setRetItems([{ id: "1", product_id: "", quantity: 0, price: 0, discount: 0, total: 0 }]); }}>
+              <RotateCcw className="w-4 h-4 mr-1" />Sales Return
+            </Button>
+          )}
+          {hasPermission("Sales", "can_add") && (
+            <Button size="sm" onClick={() => { setDialogOpen(true); setItems([{ id: "1", product_id: "", quantity: 0, price: 0, discount: 0, total: 0 }]); }}>
+              <Plus className="w-4 h-4 mr-1" />New Invoice
+            </Button>
+          )}
         </div>
       </div>
 
