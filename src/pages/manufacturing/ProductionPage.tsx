@@ -30,6 +30,7 @@ const ProductionPage = () => {
   const { user } = useAuth();
   const { userBranchId } = useBranch();
   const { toast } = useToast();
+  const { fc } = useCurrency();
   const [entries, setEntries] = useState<ProdEntry[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
