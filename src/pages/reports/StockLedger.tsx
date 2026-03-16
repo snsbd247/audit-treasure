@@ -37,8 +37,8 @@ const StockLedger = () => {
   const fetchMovements = async () => {
     setLoading(true);
     let query = supabase.from("stock_movements").select("*").order("created_at", { ascending: true });
-    if (filterProduct) query = query.eq("product_id", filterProduct);
-    if (filterBranch) query = query.eq("branch_id", filterBranch);
+    if (filterProduct && filterProduct !== "__all__") query = query.eq("product_id", filterProduct);
+    if (filterBranch && filterBranch !== "__all__") query = query.eq("branch_id", filterBranch);
 
     const { data } = await query;
     const prodMap = new Map(products.map((p) => [p.id, p]));
