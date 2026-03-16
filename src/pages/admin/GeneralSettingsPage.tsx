@@ -289,8 +289,14 @@ const GeneralSettingsPage = () => {
               </CardHeader>
               <CardContent className="space-y-6">
                 {([
-                  { key: "manufacturing" as ModuleKey, name: "Manufacturing Module", desc: "BOM, Production Entry, Raw Materials, Production Reports. When OFF, ERP operates as a Trading system (Purchase → Stock, Sales → Stock)." },
+                  { key: "accounts" as ModuleKey, name: "Accounting Module", desc: "Chart of Accounts, Journal/Payment/Receipt/Contra Vouchers. Core double-entry accounting system." },
+                  { key: "sales" as ModuleKey, name: "Sales Module", desc: "Sales Invoices, Sales Returns, Customer management, and Sales Reports." },
+                  { key: "purchase" as ModuleKey, name: "Purchase Module", desc: "Purchase Entry, Purchase Returns, Supplier management, and Purchase Reports." },
                   { key: "inventory" as ModuleKey, name: "Inventory Module", desc: "Items, Categories, Units, Warehouses, Stock Ledger, Stock Transfer, Stock Reports. When OFF, Sales and Purchases work without stock tracking." },
+                  { key: "manufacturing" as ModuleKey, name: "Manufacturing Module", desc: "BOM, Production Entry, Raw Materials, Production Reports. When OFF, ERP operates as a Trading system." },
+                  { key: "bank" as ModuleKey, name: "Bank & Cash Module", desc: "Bank Accounts and Cash Book management for tracking banking transactions." },
+                  { key: "hrm" as ModuleKey, name: "HRM Module", desc: "Employees, Departments, Attendance, Leave, Payroll, Documents, ID Cards, and Employee Portal." },
+                  { key: "reports" as ModuleKey, name: "Reports Module", desc: "Financial Reports, Stock Ledger, Production Reports, and other analytical reports." },
                   { key: "multi_warehouse" as ModuleKey, name: "Multi Warehouse System", desc: "Warehouse selection on stock operations. When OFF, all stock belongs to a single default warehouse." },
                   { key: "multi_branch" as ModuleKey, name: "Multi Branch System", desc: "Branch selector and multi-branch transactions. When OFF, system operates as a single-company ERP using the default branch." },
                 ]).map((mod) => (

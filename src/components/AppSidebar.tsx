@@ -141,6 +141,7 @@ const navGroups: NavGroup[] = [
     label: "Reports",
     icon: BarChart3,
     module: "reports",
+    requiredModules: ["reports"],
     children: [
       { to: "/reports/financial", label: "Financial Reports", icon: FileText },
       { to: "/reports/stock-ledger", label: "Stock Ledger", icon: ScrollText },
