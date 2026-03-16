@@ -21,16 +21,16 @@ interface UserRow {
   status: string;
   roles: string[];
   branch_name?: string;
+  custom_role_ids: string[];
 }
 
-interface Branch {
-  id: string;
-  name: string;
-}
+interface Branch { id: string; name: string; }
+interface CustomRole { id: string; name: string; }
 
 const UsersPage = () => {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
+  const [customRoles, setCustomRoles] = useState<CustomRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -47,27 +47,33 @@ const UsersPage = () => {
   const [formRole, setFormRole] = useState<string>("staff");
   const [formBranch, setFormBranch] = useState<string>("");
   const [formStatus, setFormStatus] = useState<string>("active");
+  const [formCustomRole, setFormCustomRole] = useState<string>("");
 
   const { toast } = useToast();
 
   const fetchData = async () => {
     setLoading(true);
-    const [profilesRes, rolesRes, branchesRes] = await Promise.all([
+    const [profilesRes, rolesRes, branchesRes, customRolesRes, userCustomRolesRes] = await Promise.all([
       supabase.from("profiles").select("*"),
       supabase.from("user_roles").select("*"),
       supabase.from("branches").select("id, name"),
+      supabase.from("custom_roles").select("id, name").order("name"),
+      supabase.from("user_custom_roles").select("*"),
     ]);
 
     const branchList = (branchesRes.data || []) as Branch[];
     setBranches(branchList);
+    setCustomRoles((customRolesRes.data || []) as CustomRole[]);
 
     const profiles = profilesRes.data || [];
     const rolesList = rolesRes.data || [];
+    const userCustomRolesList = userCustomRolesRes.data || [];
 
     const mapped: UserRow[] = profiles.map((p: any) => ({
       ...p,
       roles: rolesList.filter((r: any) => r.user_id === p.id).map((r: any) => r.role),
       branch_name: branchList.find((b) => b.id === p.branch_id)?.name,
+      custom_role_ids: userCustomRolesList.filter((ucr: any) => ucr.user_id === p.id).map((ucr: any) => ucr.custom_role_id),
     }));
     setUsers(mapped);
     setLoading(false);
@@ -79,6 +85,7 @@ const UsersPage = () => {
     setEditUser(null);
     setFormName(""); setFormUsername(""); setFormEmail(""); setFormPhone("");
     setFormPassword(""); setFormRole("staff"); setFormBranch(""); setFormStatus("active");
+    setFormCustomRole("");
     setDialogOpen(true);
   };
 
@@ -87,6 +94,7 @@ const UsersPage = () => {
     setFormName(u.name); setFormUsername(u.username || ""); setFormEmail(u.email || "");
     setFormPhone(u.phone || ""); setFormPassword(""); setFormRole(u.roles[0] || "staff");
     setFormBranch(u.branch_id || ""); setFormStatus(u.status);
+    setFormCustomRole(u.custom_role_ids[0] || "");
     setDialogOpen(true);
   };
 
@@ -101,8 +109,15 @@ const UsersPage = () => {
         }).eq("id", editUser.id);
         if (error) throw error;
 
+        // Update system role
         await supabase.from("user_roles").delete().eq("user_id", editUser.id);
         await supabase.from("user_roles").insert({ user_id: editUser.id, role: formRole as any });
+
+        // Update custom role
+        await supabase.from("user_custom_roles").delete().eq("user_id", editUser.id);
+        if (formCustomRole) {
+          await supabase.from("user_custom_roles").insert({ user_id: editUser.id, custom_role_id: formCustomRole });
+        }
 
         toast({ title: "User updated" });
       } else {
@@ -119,8 +134,12 @@ const UsersPage = () => {
           }).eq("id", data.user.id);
 
           await supabase.from("user_roles").insert({ user_id: data.user.id, role: formRole as any });
+
+          if (formCustomRole) {
+            await supabase.from("user_custom_roles").insert({ user_id: data.user.id, custom_role_id: formCustomRole });
+          }
         }
-        toast({ title: "User created", description: "They may need to verify their email." });
+        toast({ title: "User created" });
       }
       setDialogOpen(false);
       fetchData();
@@ -138,7 +157,7 @@ const UsersPage = () => {
   };
 
   const filtered = users.filter((u) => {
-    const matchSearch = !search || 
+    const matchSearch = !search ||
       u.name.toLowerCase().includes(search.toLowerCase()) ||
       (u.email || "").toLowerCase().includes(search.toLowerCase()) ||
       (u.username || "").toLowerCase().includes(search.toLowerCase());
@@ -147,6 +166,8 @@ const UsersPage = () => {
     return matchSearch && matchRole && matchStatus;
   });
 
+  const getCustomRoleName = (id: string) => customRoles.find((r) => r.id === id)?.name || "";
+
   return (
     <div className="p-4 lg:p-6 max-w-[1200px] mx-auto space-y-4">
       <div className="flex items-center justify-between">
@@ -154,7 +175,6 @@ const UsersPage = () => {
         <Button onClick={openCreate} size="sm"><Plus className="w-4 h-4 mr-1" />Add User</Button>
       </div>
 
-      {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[200px] max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -188,7 +208,8 @@ const UsersPage = () => {
                 <TableHead>Username</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Phone</TableHead>
-                <TableHead>Role</TableHead>
+                <TableHead>System Role</TableHead>
+                <TableHead>Custom Role</TableHead>
                 <TableHead>Branch</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="w-12"></TableHead>
@@ -196,9 +217,9 @@ const UsersPage = () => {
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Loading...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">Loading...</TableCell></TableRow>
               ) : filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">No users found</TableCell></TableRow>
+                <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">No users found</TableCell></TableRow>
               ) : filtered.map((u) => (
                 <TableRow key={u.id}>
                   <TableCell className="font-medium">{u.name}</TableCell>
@@ -209,6 +230,12 @@ const UsersPage = () => {
                     {u.roles.map((r) => (
                       <Badge key={r} variant={roleColor(r)} className="mr-1 text-xs">{r}</Badge>
                     ))}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {u.custom_role_ids.map((id) => (
+                      <Badge key={id} variant="outline" className="mr-1 text-xs">{getCustomRoleName(id)}</Badge>
+                    ))}
+                    {u.custom_role_ids.length === 0 && <span className="text-muted-foreground">—</span>}
                   </TableCell>
                   <TableCell className="text-sm">{u.branch_name || "—"}</TableCell>
                   <TableCell>
@@ -258,7 +285,7 @@ const UsersPage = () => {
                 <Input type="password" value={formPassword} onChange={(e) => setFormPassword(e.target.value)} minLength={6} />
               </div>
             )}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs">System Role</Label>
                 <Select value={formRole} onValueChange={setFormRole}>
@@ -270,6 +297,20 @@ const UsersPage = () => {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Custom Role (Permissions)</Label>
+                <Select value={formCustomRole} onValueChange={setFormCustomRole}>
+                  <SelectTrigger><SelectValue placeholder="Select role" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {customRoles.map((r) => (
+                      <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs">Branch</Label>
                 <Select value={formBranch} onValueChange={setFormBranch}>
