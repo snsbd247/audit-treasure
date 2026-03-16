@@ -55,6 +55,7 @@ const navGroups: NavGroup[] = [
     label: "Purchase",
     icon: ShoppingCart,
     module: "purchase",
+    requiredModules: ["purchase"],
     children: [
       { to: "/purchase", label: "Purchase Entry", icon: ShoppingCart },
       { to: "/purchase/returns", label: "Purchase Return", icon: ArrowLeftRight },
