@@ -47,6 +47,7 @@ import StockReportsPage from "./pages/reports/StockReportsPage";
 import StockAdjustmentPage from "./pages/inventory/StockAdjustmentPage";
 import NotFound from "./pages/NotFound";
 import ResetPassword from "./pages/ResetPassword";
+import ShortcutsPage from "./pages/admin/ShortcutsPage";
 
 // HRM Pages
 import EmployeesPage from "./pages/hrm/EmployeesPage";
