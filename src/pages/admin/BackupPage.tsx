@@ -23,7 +23,7 @@ const BackupPage = () => {
     try {
       const allData: Record<string, any[]> = {};
       for (const table of TABLES) {
-        const { data, error } = await supabase.from(table).select("*");
+        const { data, error } = await supabase.from(table as any).select("*");
         if (error) {
           console.warn(`Skipping ${table}: ${error.message}`);
           continue;
