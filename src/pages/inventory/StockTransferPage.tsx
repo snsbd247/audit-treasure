@@ -13,8 +13,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, ArrowRightLeft, Printer } from "lucide-react";
+import { Plus, ArrowRightLeft, Printer, Check, X } from "lucide-react";
 import { PrintLayout } from "@/components/PrintLayout";
+import { getDocumentStatusConfig } from "@/hooks/useDocumentRules";
+import { documentApi } from "@/lib/document-api";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface WH { id: string; warehouse_code: string; warehouse_name: string; branch_id: string | null; }
 interface Item { id: string; item_code: string; item_name: string; }
