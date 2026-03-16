@@ -191,22 +191,33 @@ const PurchasesPage = () => {
     setSaving(true);
     try {
       if (editingPurchase) {
-        const oldValues = { purchase_date: editingPurchase.purchase_date, supplier_id: editingPurchase.supplier_id, total_amount: editingPurchase.total_amount, payment_method: editingPurchase.payment_method };
+        const isApprovedEdit = editingPurchase.status === "approved" || editingPurchase.status === "completed";
         const total = grandTotal(validItems);
-        const newValues = { purchase_date: formDate, supplier_id: formSupplier || null, total_amount: total, payment_method: formPayment };
 
-        const { error } = await supabase.from("purchases").update({
-          purchase_date: formDate, supplier_id: formSupplier || null, branch_id: formBranch || null,
-          total_amount: total, payment_method: formPayment, notes: formNotes || null,
-        }).eq("id", editingPurchase.id);
-        if (error) throw error;
+        if (isApprovedEdit && isSuperAdmin) {
+          await documentApi.editApproved("purchase", editingPurchase.id, {
+            purchase_date: formDate, supplier_id: formSupplier || null,
+            branch_id: formBranch || null, payment_method: formPayment, notes: formNotes || null,
+          }, validItems.map((i) => ({
+            product_id: i.product_id, quantity: i.quantity, unit_price: i.unit_price, total: i.total,
+          })));
+        } else {
+          const oldValues = { purchase_date: editingPurchase.purchase_date, supplier_id: editingPurchase.supplier_id, total_amount: editingPurchase.total_amount, payment_method: editingPurchase.payment_method };
+          const newValues = { purchase_date: formDate, supplier_id: formSupplier || null, total_amount: total, payment_method: formPayment };
 
-        await supabase.from("purchase_items").delete().eq("purchase_id", editingPurchase.id);
-        await supabase.from("purchase_items").insert(
-          validItems.map((i) => ({ purchase_id: editingPurchase.id, product_id: i.product_id, quantity: i.quantity, unit_price: i.unit_price, total: i.total }))
-        );
+          const { error } = await supabase.from("purchases").update({
+            purchase_date: formDate, supplier_id: formSupplier || null, branch_id: formBranch || null,
+            total_amount: total, payment_method: formPayment, notes: formNotes || null,
+          }).eq("id", editingPurchase.id);
+          if (error) throw error;
 
-        await logEditAudit({ userId: user?.id, userName: profile?.name, module: "Purchase", action: "Edit", recordId: editingPurchase.id, oldValues, newValues });
+          await supabase.from("purchase_items").delete().eq("purchase_id", editingPurchase.id);
+          await supabase.from("purchase_items").insert(
+            validItems.map((i) => ({ purchase_id: editingPurchase.id, product_id: i.product_id, quantity: i.quantity, unit_price: i.unit_price, total: i.total }))
+          );
+
+          await logEditAudit({ userId: user?.id, userName: profile?.name, module: "Purchase", action: "Edit", recordId: editingPurchase.id, oldValues, newValues });
+        }
         toast({ title: `Purchase ${editingPurchase.purchase_number} updated` });
       } else {
         const ctx = { date: formDate, branchId: formBranch || userBranchId || null, userId: user?.id };
