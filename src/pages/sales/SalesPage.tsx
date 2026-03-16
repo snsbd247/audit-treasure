@@ -130,7 +130,7 @@ const SalesPage = () => {
     if (validItems.length === 0) { toast({ title: "Add at least one item", variant: "destructive" }); return; }
     setSaving(true);
     try {
-      const { data: numData } = await supabase.rpc("next_number", { seq_id: "sales_return" });
+      const numData = await nextNumber("sales_return");
       const { data, error } = await supabase.from("sales_returns").insert({
         return_number: numData as string,
         return_date: retDate, customer_id: retCustomer || null, branch_id: retBranch || null,

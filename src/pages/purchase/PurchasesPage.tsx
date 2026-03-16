@@ -131,7 +131,7 @@ const PurchasesPage = () => {
     if (validItems.length === 0) { toast({ title: "Add at least one item", variant: "destructive" }); return; }
     setSaving(true);
     try {
-      const { data: numData } = await supabase.rpc("next_number", { seq_id: "purchase_return" });
+      const numData = await nextNumber("purchase_return");
       const { data, error } = await supabase.from("purchase_returns").insert({
         return_number: numData as string,
         return_date: retDate, supplier_id: retSupplier || null, branch_id: retBranch || null,
