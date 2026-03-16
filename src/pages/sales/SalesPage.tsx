@@ -220,9 +220,9 @@ const SalesPage = () => {
                     <TableCell className="font-geist-mono text-xs font-medium">{inv.invoice_number}</TableCell>
                     <TableCell>{inv.invoice_date}</TableCell>
                     <TableCell>{inv.customer_name || "—"}</TableCell>
-                    <TableCell className="text-right tabular-nums">{inv.total_amount.toLocaleString()}</TableCell>
-                    <TableCell className="text-right tabular-nums">{inv.discount.toLocaleString()}</TableCell>
-                    <TableCell className="text-right tabular-nums font-medium">{inv.net_amount.toLocaleString()}</TableCell>
+                    <TableCell className="text-right tabular-nums">{fc(inv.total_amount)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{fc(inv.discount)}</TableCell>
+                    <TableCell className="text-right tabular-nums font-medium">{fc(inv.net_amount)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
