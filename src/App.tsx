@@ -40,8 +40,7 @@ import StockLedger from "./pages/reports/StockLedger";
 import CustomersPage from "./pages/CustomersPage";
 import SuppliersPage from "./pages/SuppliersPage";
 import FinancialYearsPage from "./pages/FinancialYearsPage";
-import IncomePage from "./pages/transactions/IncomePage";
-import ExpensePage from "./pages/transactions/ExpensePage";
+import ChangePasswordPage from "./pages/ChangePasswordPage";
 import BankAccountsPage from "./pages/bank/BankAccountsPage";
 import CashBookPage from "./pages/bank/CashBookPage";
 import LowStockPage from "./pages/reports/LowStockPage";
@@ -95,8 +94,7 @@ const App = () => (
                 <Route path="/reports/low-stock" element={<LowStockPage />} />
                 <Route path="/reports/sales" element={<FinancialReports />} />
                 <Route path="/reports/purchase" element={<FinancialReports />} />
-                <Route path="/transactions/income" element={<IncomePage />} />
-                <Route path="/transactions/expense" element={<ExpensePage />} />
+                <Route path="/change-password" element={<ChangePasswordPage />} />
                 <Route path="/bank/accounts" element={<BankAccountsPage />} />
                 <Route path="/bank/cashbook" element={<CashBookPage />} />
                 <Route path="/admin/users" element={<ProtectedRoute requireAdmin><UsersPage /></ProtectedRoute>} />

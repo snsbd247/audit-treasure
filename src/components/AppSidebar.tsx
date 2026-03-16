@@ -5,8 +5,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import {
   LayoutDashboard, ChevronDown, ChevronRight, BookOpen, FileText, Receipt,
   ShoppingCart, Package, Warehouse, Factory, Layers, ClipboardList, BarChart3,
-  ScrollText, Database, Users, Shield, Building2, UserCircle, LogOut,
-  DollarSign, CreditCard, Landmark, PiggyBank, TrendingUp, TrendingDown,
+  ScrollText, Database, Users, Shield, Building2, LogOut,
+  CreditCard, Landmark, PiggyBank, TrendingUp,
   ArrowLeftRight, Calendar, Activity, Menu, X, CircleDot, Truck, UserCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -76,14 +76,6 @@ const navGroups: NavGroup[] = [
       { to: "/reports/stock-ledger", label: "Stock Ledger", icon: ScrollText },
       { to: "/reports/stock-reports", label: "Stock Reports", icon: BarChart3 },
       { to: "/reports/low-stock", label: "Low Stock Alert", icon: CircleDot },
-    ],
-  },
-  {
-    label: "Transactions",
-    icon: DollarSign,
-    children: [
-      { to: "/transactions/income", label: "Income", icon: TrendingUp },
-      { to: "/transactions/expense", label: "Expense", icon: TrendingDown },
     ],
   },
   {
@@ -184,7 +176,6 @@ export const AppSidebar = () => {
       <ScrollArea className="flex-1">
         <nav className="p-2 space-y-0.5">
           <NavItem to="/" label="Dashboard" icon={LayoutDashboard} end />
-          <NavItem to="/profile" label="Profile" icon={UserCircle} />
           <div className="my-2 border-t border-sidebar-border" />
           {navGroups.map((group) => {
             if (group.adminOnly && !isAdmin) return null;
