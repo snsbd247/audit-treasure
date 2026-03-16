@@ -116,3 +116,36 @@
     box-shadow: var(--shadow-overlay);
   }
 }
+
+/* Print layout always renders white regardless of theme */
+.print-preview-area,
+.print-preview-area * {
+  color-scheme: light !important;
+}
+
+.dark .print-preview-area {
+  --background: 0 0% 100%;
+  --foreground: 222 47% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  --muted: 220 14% 96%;
+  --muted-foreground: 215 16% 47%;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-preview-area,
+  .print-preview-area * {
+    visibility: visible;
+  }
+  .print-preview-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    background: white !important;
+    color: black !important;
+  }
+}
