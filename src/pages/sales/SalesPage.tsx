@@ -32,6 +32,7 @@ interface SalesReturn {
 
 const SalesPage = () => {
   const { user, hasPermission } = useAuth();
+  const { userBranchId, canAccessAllBranches } = useBranch();
   const { toast } = useToast();
   const [tab, setTab] = useState("invoices");
   const [invoices, setInvoices] = useState<SalesInvoice[]>([]);
