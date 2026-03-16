@@ -248,9 +248,9 @@ const FinancialReports = () => {
               <CardHeader><CardTitle className="text-base">Assets</CardTitle></CardHeader>
               <CardContent className="p-0"><Table><TableBody>
                 {bsData.assets.map((a) => (
-                  <TableRow key={a.id}><TableCell>{a.account_name}</TableCell><TableCell className="text-right tabular-nums">{a.balance.toLocaleString()}</TableCell></TableRow>
+                  <TableRow key={a.id}><TableCell>{a.account_name}</TableCell><TableCell className="text-right tabular-nums">{fc(a.balance)}</TableCell></TableRow>
                 ))}
-                <TableRow className="bg-muted/50 font-bold"><TableCell>Total Assets</TableCell><TableCell className="text-right tabular-nums">{bsData.totalAssets.toLocaleString()}</TableCell></TableRow>
+                <TableRow className="bg-muted/50 font-bold"><TableCell>Total Assets</TableCell><TableCell className="text-right tabular-nums">{fc(bsData.totalAssets)}</TableCell></TableRow>
               </TableBody></Table></CardContent>
             </Card>
             <div className="space-y-4">
