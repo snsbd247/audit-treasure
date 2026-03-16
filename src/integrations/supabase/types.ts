@@ -590,6 +590,33 @@ export type Database = {
           },
         ]
       }
+      module_settings: {
+        Row: {
+          id: string
+          is_enabled: boolean
+          module_key: string
+          module_name: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          is_enabled?: boolean
+          module_key: string
+          module_name: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          is_enabled?: boolean
+          module_key?: string
+          module_name?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       number_sequences: {
         Row: {
           current_number: number
