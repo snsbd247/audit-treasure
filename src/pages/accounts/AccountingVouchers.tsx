@@ -609,6 +609,62 @@ const AccountingVouchers = () => {
           </div>
         </PrintLayout>
       )}
+      {/* View Voucher Dialog */}
+      <Dialog open={!!viewVoucher} onOpenChange={() => setViewVoucher(null)}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {viewVoucher && VOUCHER_TYPES.find((vt) => vt.id === viewVoucher.voucher_type)?.label} — {viewVoucher?.voucher_number}
+              {viewVoucher && statusBadge(viewVoucher.status)}
+            </DialogTitle>
+          </DialogHeader>
+          {viewVoucher && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-4 text-sm">
+                <div><span className="text-muted-foreground">Date:</span> <span className="font-medium">{viewVoucher.voucher_date}</span></div>
+                <div><span className="text-muted-foreground">Branch:</span> <span className="font-medium">{viewVoucher.branch_id ? branchMap.get(viewVoucher.branch_id) || "—" : "—"}</span></div>
+                <div><span className="text-muted-foreground">Amount:</span> <span className="font-medium">{fc(viewVoucher.total_amount)}</span></div>
+              </div>
+              {viewVoucher.description && (
+                <div className="text-sm"><span className="text-muted-foreground">Description:</span> {viewVoucher.description}</div>
+              )}
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>#</TableHead>
+                    <TableHead>Account Code</TableHead>
+                    <TableHead>Account Name</TableHead>
+                    <TableHead className="text-right">Debit</TableHead>
+                    <TableHead className="text-right">Credit</TableHead>
+                    <TableHead>Narration</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {viewEntries.map((e: any, i: number) => (
+                    <TableRow key={i}>
+                      <TableCell>{i + 1}</TableCell>
+                      <TableCell className="font-geist-mono text-xs">{e.account_code}</TableCell>
+                      <TableCell>{e.account_name}</TableCell>
+                      <TableCell className="text-right tabular-nums">{Number(e.debit) > 0 ? fc(Number(e.debit)) : ""}</TableCell>
+                      <TableCell className="text-right tabular-nums">{Number(e.credit) > 0 ? fc(Number(e.credit)) : ""}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{e.narration || ""}</TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow className="bg-muted/50 font-medium">
+                    <TableCell colSpan={3} className="text-right">Total</TableCell>
+                    <TableCell className="text-right tabular-nums">{fc(viewEntries.reduce((s: number, e: any) => s + Number(e.debit), 0))}</TableCell>
+                    <TableCell className="text-right tabular-nums">{fc(viewEntries.reduce((s: number, e: any) => s + Number(e.credit), 0))}</TableCell>
+                    <TableCell />
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewVoucher(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
