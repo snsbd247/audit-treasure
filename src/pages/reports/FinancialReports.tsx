@@ -16,6 +16,7 @@ interface Branch { id: string; name: string; }
 
 const FinancialReports = () => {
   const [tab, setTab] = useState("ledger");
+  const { fc } = useCurrency();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(false);
