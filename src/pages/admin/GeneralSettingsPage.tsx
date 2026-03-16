@@ -6,10 +6,13 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Settings, Building2, DollarSign, Sliders, Upload, Loader2 } from "lucide-react";
+import { Settings, Building2, DollarSign, Sliders, Upload, Loader2, Puzzle } from "lucide-react";
 import type { CompanySettings } from "@/hooks/useCompanySettings";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { useModules, type ModuleKey } from "@/contexts/ModuleContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Branch { id: string; name: string; }
 interface FinancialYear { id: string; name: string; is_active: boolean; }
