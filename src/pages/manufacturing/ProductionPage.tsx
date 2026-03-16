@@ -112,7 +112,7 @@ const ProductionPage = () => {
       const { data, error } = await supabase.from("production_entries").insert({
         production_number: numData as string,
         production_date: formDate, product_id: formProduct, bom_id: formBom || null,
-        quantity: parseFloat(formQty) || 1, branch_id: formBranch || null,
+        quantity: parseFloat(formQty) || 1, branch_id: branchId,
         raw_material_cost: rawMaterialCost, labor_cost: parseFloat(formLabor) || 0,
         electricity_cost: parseFloat(formElec) || 0, total_cost: totalCost,
         notes: formNotes, created_by: user?.id,
