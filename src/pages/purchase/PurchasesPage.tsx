@@ -77,6 +77,10 @@ const PurchasesPage = () => {
 
   const canEdit = hasPermission("purchase", "can_edit") || isSuperAdmin;
   const canAdd = hasPermission("purchase", "can_add") || isSuperAdmin;
+  const [actionDialogOpen, setActionDialogOpen] = useState(false);
+  const [actionType, setActionType] = useState<"approve" | "cancel" | "delete" | null>(null);
+  const [actionTarget, setActionTarget] = useState<Purchase | null>(null);
+  const [actionReason, setActionReason] = useState("");
 
   const fetchData = async () => {
     setLoading(true);
