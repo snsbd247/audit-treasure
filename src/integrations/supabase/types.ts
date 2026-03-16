@@ -492,6 +492,104 @@ export type Database = {
         }
         Relationships: []
       }
+      item_categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          parent_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          parent_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          parent_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "item_categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "item_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      item_master: {
+        Row: {
+          category_id: string | null
+          cost_price: number
+          created_at: string
+          description: string | null
+          id: string
+          item_code: string
+          item_name: string
+          item_type: string
+          min_stock_level: number
+          selling_price: number
+          status: string
+          unit_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          category_id?: string | null
+          cost_price?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          item_code: string
+          item_name: string
+          item_type?: string
+          min_stock_level?: number
+          selling_price?: number
+          status?: string
+          unit_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string | null
+          cost_price?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          item_code?: string
+          item_name?: string
+          item_type?: string
+          min_stock_level?: number
+          selling_price?: number
+          status?: string
+          unit_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "item_master_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "item_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "item_master_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       number_sequences: {
         Row: {
           current_number: number
@@ -1237,31 +1335,37 @@ export type Database = {
           branch_id: string | null
           created_at: string
           id: string
+          item_id: string | null
           movement_type: string
           product_id: string
           quantity: number
           reference_id: string | null
           reference_type: string | null
+          warehouse_id: string | null
         }
         Insert: {
           branch_id?: string | null
           created_at?: string
           id?: string
+          item_id?: string | null
           movement_type: string
           product_id: string
           quantity: number
           reference_id?: string | null
           reference_type?: string | null
+          warehouse_id?: string | null
         }
         Update: {
           branch_id?: string | null
           created_at?: string
           id?: string
+          item_id?: string | null
           movement_type?: string
           product_id?: string
           quantity?: number
           reference_id?: string | null
           reference_type?: string | null
+          warehouse_id?: string | null
         }
         Relationships: [
           {
@@ -1272,10 +1376,88 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "stock_movements_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "item_master"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "stock_movements_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_transfers: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          from_warehouse_id: string
+          id: string
+          item_id: string
+          notes: string | null
+          quantity: number
+          status: string
+          to_warehouse_id: string
+          transfer_date: string
+          transfer_number: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          from_warehouse_id: string
+          id?: string
+          item_id: string
+          notes?: string | null
+          quantity: number
+          status?: string
+          to_warehouse_id: string
+          transfer_date?: string
+          transfer_number: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          from_warehouse_id?: string
+          id?: string
+          item_id?: string
+          notes?: string | null
+          quantity?: number
+          status?: string
+          to_warehouse_id?: string
+          transfer_date?: string
+          transfer_number?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_transfers_from_warehouse_id_fkey"
+            columns: ["from_warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_transfers_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "item_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_transfers_to_warehouse_id_fkey"
+            columns: ["to_warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
             referencedColumns: ["id"]
           },
         ]
@@ -1307,6 +1489,27 @@ export type Database = {
           name?: string
           phone?: string | null
           status?: string
+        }
+        Relationships: []
+      }
+      units: {
+        Row: {
+          abbreviation: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          abbreviation: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          abbreviation?: string
+          created_at?: string
+          id?: string
+          name?: string
         }
         Relationships: []
       }
@@ -1395,6 +1598,86 @@ export type Database = {
             columns: ["voucher_id"]
             isOneToOne: false
             referencedRelation: "acc_vouchers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      warehouse_stock: {
+        Row: {
+          id: string
+          item_id: string
+          quantity: number
+          updated_at: string
+          warehouse_id: string
+        }
+        Insert: {
+          id?: string
+          item_id: string
+          quantity?: number
+          updated_at?: string
+          warehouse_id: string
+        }
+        Update: {
+          id?: string
+          item_id?: string
+          quantity?: number
+          updated_at?: string
+          warehouse_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "warehouse_stock_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "item_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "warehouse_stock_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      warehouses: {
+        Row: {
+          branch_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          status: string
+          updated_at: string
+          warehouse_code: string
+          warehouse_name: string
+        }
+        Insert: {
+          branch_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          status?: string
+          updated_at?: string
+          warehouse_code: string
+          warehouse_name: string
+        }
+        Update: {
+          branch_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          status?: string
+          updated_at?: string
+          warehouse_code?: string
+          warehouse_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "warehouses_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
             referencedColumns: ["id"]
           },
         ]
