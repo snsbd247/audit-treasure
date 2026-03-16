@@ -18,6 +18,7 @@ import BranchesPage from "./pages/admin/BranchesPage";
 import AuditLogPage from "./pages/admin/AuditLogPage";
 import BackupPage from "./pages/admin/BackupPage";
 import GeneralSettingsPage from "./pages/admin/GeneralSettingsPage";
+import DocumentNumberingPage from "./pages/admin/DocumentNumberingPage";
 import ChartOfAccounts from "./pages/accounts/ChartOfAccounts";
 import AccountingVouchers from "./pages/accounts/AccountingVouchers";
 import ProductsPage from "./pages/inventory/ProductsPage";
