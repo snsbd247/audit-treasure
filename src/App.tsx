@@ -43,6 +43,7 @@ import ExpensePage from "./pages/transactions/ExpensePage";
 import BankAccountsPage from "./pages/bank/BankAccountsPage";
 import CashBookPage from "./pages/bank/CashBookPage";
 import LowStockPage from "./pages/reports/LowStockPage";
+import StockReportsPage from "./pages/reports/StockReportsPage";
 import NotFound from "./pages/NotFound";
 import ResetPassword from "./pages/ResetPassword";
 
