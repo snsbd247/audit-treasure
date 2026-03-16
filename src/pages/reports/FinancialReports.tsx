@@ -191,8 +191,8 @@ const FinancialReports = () => {
                     <TableCell className="font-geist-mono text-xs">{t.account_code}</TableCell>
                     <TableCell className="font-medium">{t.account_name}</TableCell>
                     <TableCell className="capitalize text-muted-foreground">{t.account_type}</TableCell>
-                    <TableCell className="text-right tabular-nums">{t.balance > 0 ? t.balance.toLocaleString() : ""}</TableCell>
-                    <TableCell className="text-right tabular-nums">{t.balance < 0 ? Math.abs(t.balance).toLocaleString() : ""}</TableCell>
+                    <TableCell className="text-right tabular-nums">{t.balance > 0 ? fc(t.balance) : ""}</TableCell>
+                    <TableCell className="text-right tabular-nums">{t.balance < 0 ? fc(Math.abs(t.balance)) : ""}</TableCell>
                   </TableRow>
                 ))}
                 <TableRow className="bg-muted/50 font-bold">
