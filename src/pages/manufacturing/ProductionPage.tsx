@@ -138,9 +138,9 @@ const ProductionPage = () => {
                 <TableCell>{e.production_date}</TableCell>
                 <TableCell className="font-medium">{e.product_name}</TableCell>
                 <TableCell className="text-right tabular-nums">{e.quantity}</TableCell>
-                <TableCell className="text-right tabular-nums">{e.raw_material_cost.toLocaleString()}</TableCell>
-                <TableCell className="text-right tabular-nums">{e.labor_cost.toLocaleString()}</TableCell>
-                <TableCell className="text-right tabular-nums font-medium">{e.total_cost.toLocaleString()}</TableCell>
+                <TableCell className="text-right tabular-nums">{fc(e.raw_material_cost)}</TableCell>
+                <TableCell className="text-right tabular-nums">{fc(e.labor_cost)}</TableCell>
+                <TableCell className="text-right tabular-nums font-medium">{fc(e.total_cost)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
