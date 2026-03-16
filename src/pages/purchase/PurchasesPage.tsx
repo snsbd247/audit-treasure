@@ -27,7 +27,7 @@ interface PurchaseReturn {
 }
 
 const PurchasesPage = () => {
-  const { user } = useAuth();
+  const { user, hasPermission } = useAuth();
   const { toast } = useToast();
   const [tab, setTab] = useState("purchases");
   const [purchases, setPurchases] = useState<Purchase[]>([]);
