@@ -3,6 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getEmailByUsername } from "@/lib/db-utils";
+import { useBranding } from "@/contexts/BrandingContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +19,7 @@ const Login = () => {
   const [forgotMode, setForgotMode] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const { signIn } = useAuth();
+  const { branding } = useBranding();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -62,10 +64,16 @@ const Login = () => {
       <div className="hidden lg:flex lg:w-1/2 bg-primary relative items-center justify-center p-12">
         <div className="absolute inset-0 bg-gradient-to-br from-primary to-primary/80" />
         <div className="relative z-10 text-center space-y-6 max-w-md">
-          <div className="w-16 h-16 bg-primary-foreground/20 rounded-2xl flex items-center justify-center mx-auto">
-            <Building2 className="w-8 h-8 text-primary-foreground" />
-          </div>
-          <h1 className="text-3xl font-bold text-primary-foreground">ERP System</h1>
+          {branding.login_logo_url ? (
+            <img src={branding.login_logo_url} alt="Logo" className="h-16 mx-auto" />
+          ) : branding.company_logo_url ? (
+            <img src={branding.company_logo_url} alt="Logo" className="h-16 mx-auto" />
+          ) : (
+            <div className="w-16 h-16 bg-primary-foreground/20 rounded-2xl flex items-center justify-center mx-auto">
+              <Building2 className="w-8 h-8 text-primary-foreground" />
+            </div>
+          )}
+          <h1 className="text-3xl font-bold text-primary-foreground">{branding.software_name || "ERP System"}</h1>
           <p className="text-primary-foreground/80 text-sm leading-relaxed">
             Complete enterprise resource planning for manufacturing companies.
             Manage accounting, inventory, sales, purchases, and production — all in one place.
@@ -79,20 +87,27 @@ const Login = () => {
               </div>
             ))}
           </div>
+          {!branding.white_label_mode && branding.developer_name && (
+            <p className="text-primary-foreground/50 text-xs mt-4">Developed by {branding.developer_name}</p>
+          )}
         </div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
+      <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8">
         <Card className="w-full max-w-md shadow-elevated border-border/50">
           <CardHeader className="text-center pb-2">
-            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-3 lg:hidden">
-              <Building2 className="w-5 h-5 text-primary" />
-            </div>
+            {branding.company_logo_url ? (
+              <img src={branding.company_logo_url} alt="Logo" className="h-10 mx-auto mb-3 lg:hidden object-contain" />
+            ) : (
+              <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-3 lg:hidden">
+                <Building2 className="w-5 h-5 text-primary" />
+              </div>
+            )}
             <CardTitle className="text-xl font-bold text-foreground">
               {forgotMode ? "Forgot Password" : "Welcome Back"}
             </CardTitle>
             <CardDescription className="text-sm">
-              {forgotMode ? "Enter your email to receive a reset link" : "Sign in with your username and password"}
+              {forgotMode ? "Enter your email to receive a reset link" : `Sign in to ${branding.software_name || "ERP System"}`}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -153,6 +168,10 @@ const Login = () => {
             )}
           </CardContent>
         </Card>
+        <p className="mt-4 text-xs text-muted-foreground text-center">
+          {branding.footer_text}
+          {!branding.white_label_mode && branding.developer_name && ` | Developed by ${branding.developer_name}`}
+        </p>
       </div>
     </div>
   );

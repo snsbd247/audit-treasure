@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { BranchProvider } from "@/contexts/BranchContext";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { ModuleProvider } from "@/contexts/ModuleContext";
+import { BrandingProvider } from "@/contexts/BrandingContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppLayout } from "@/components/AppLayout";
 import Login from "./pages/Login";
@@ -48,6 +49,7 @@ import StockAdjustmentPage from "./pages/inventory/StockAdjustmentPage";
 import NotFound from "./pages/NotFound";
 import ResetPassword from "./pages/ResetPassword";
 import ShortcutsPage from "./pages/admin/ShortcutsPage";
+import BrandingPage from "./pages/admin/BrandingPage";
 
 // HRM Pages
 import EmployeesPage from "./pages/hrm/EmployeesPage";
@@ -105,6 +107,7 @@ const App = () => (
           <BranchProvider>
           <CurrencyProvider>
           <ModuleProvider>
+          <BrandingProvider>
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<Login />} />
@@ -198,10 +201,12 @@ const App = () => (
                 <Route path="/admin/settings" element={<ProtectedRoute requireAdmin><GeneralSettingsPage /></ProtectedRoute>} />
                 <Route path="/admin/numbering" element={<ProtectedRoute requireAdmin><DocumentNumberingPage /></ProtectedRoute>} />
                 <Route path="/admin/shortcuts" element={<ProtectedRoute requireAdmin><ShortcutsPage /></ProtectedRoute>} />
+                <Route path="/admin/branding" element={<ProtectedRoute requireAdmin><BrandingPage /></ProtectedRoute>} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
+          </BrandingProvider>
           </ModuleProvider>
           </CurrencyProvider>
           </BranchProvider>
