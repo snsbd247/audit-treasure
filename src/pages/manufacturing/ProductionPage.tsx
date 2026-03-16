@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Factory } from "lucide-react";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface Product { id: string; product_name: string; product_code: string; }
 interface Branch { id: string; name: string; }
