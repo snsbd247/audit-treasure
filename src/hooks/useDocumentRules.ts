@@ -85,6 +85,8 @@ export function getDocumentStatusConfig(status: string) {
       return { label: "Approved", variant: "default" as const, className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400" };
     case "completed":
       return { label: "Completed", variant: "default" as const, className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400" };
+    case "active":
+      return { label: "Active", variant: "default" as const, className: "bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-400" };
     case "rejected":
       return { label: "Rejected", variant: "destructive" as const, className: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400" };
     case "cancelled":
