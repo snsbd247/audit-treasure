@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
+import { useModules, type ModuleKey } from "@/contexts/ModuleContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   LayoutDashboard, ChevronDown, ChevronRight, BookOpen, FileText, Receipt,
