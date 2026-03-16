@@ -42,8 +42,8 @@ interface Voucher {
 type SuperAdminAction = "delete" | "reopen" | "reverse" | null;
 
 const AccountingVouchers = () => {
-  const { user, isAdmin, isSuperAdmin } = useAuth();
-  const { toast } = useToast();
+  const { user, profile, isAdmin, isSuperAdmin, hasPermission } = useAuth();
+  const canEdit = hasPermission("accounts", "can_edit") || isSuperAdmin;
   const { fc } = useCurrency();
   const [activeTab, setActiveTab] = useState("journal");
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
