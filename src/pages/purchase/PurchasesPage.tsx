@@ -247,7 +247,7 @@ const PurchasesPage = () => {
                     <TableCell className="font-geist-mono text-xs font-medium">{r.return_number}</TableCell>
                     <TableCell>{r.return_date}</TableCell>
                     <TableCell>{r.supplier_name || "—"}</TableCell>
-                    <TableCell className="text-right tabular-nums font-medium">{r.total_amount.toLocaleString()}</TableCell>
+                    <TableCell className="text-right tabular-nums font-medium">{fc(r.total_amount)}</TableCell>
                     <TableCell className="text-muted-foreground">{r.reason || "—"}</TableCell>
                   </TableRow>
                 ))}

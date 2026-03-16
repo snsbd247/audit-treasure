@@ -127,8 +127,7 @@ const Dashboard = () => {
     { label: "Add Supplier", icon: Truck, to: "/suppliers" },
   ];
 
-  const fmt = (n: number) =>
-    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0 }).format(n);
+  const fmt = (n: number) => fc(n);
 
   return (
     <div className="p-4 lg:p-6 space-y-6 max-w-[1600px] mx-auto">
