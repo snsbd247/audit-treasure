@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBranch } from "@/contexts/BranchContext";
 import { createPurchase, createPurchaseReturn } from "@/lib/transaction-service";
+import { logEditAudit } from "@/lib/audit-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,8 +13,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, ShoppingCart, Trash2, RotateCcw } from "lucide-react";
+import { Plus, ShoppingCart, Trash2, RotateCcw, Pencil, Printer } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { PrintLayout } from "@/components/PrintLayout";
 
 interface Product { id: string; product_name: string; product_code: string; cost_price: number; }
 interface Supplier { id: string; name: string; }
@@ -22,6 +24,7 @@ interface ItemRow { id: string; product_id: string; quantity: number; unit_price
 interface Purchase {
   id: string; purchase_number: string; purchase_date: string; supplier_id: string | null;
   total_amount: number; payment_method: string; created_at: string; supplier_name?: string;
+  notes: string | null; branch_id?: string | null; status: string;
 }
 interface PurchaseReturn {
   id: string; return_number: string; return_date: string; supplier_id: string | null;
@@ -29,7 +32,7 @@ interface PurchaseReturn {
 }
 
 const PurchasesPage = () => {
-  const { user, hasPermission } = useAuth();
+  const { user, profile, hasPermission, isSuperAdmin } = useAuth();
   const { userBranchId } = useBranch();
   const { toast } = useToast();
   const { fc } = useCurrency();
@@ -44,6 +47,7 @@ const PurchasesPage = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [returnDialogOpen, setReturnDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editingPurchase, setEditingPurchase] = useState<Purchase | null>(null);
   const [formDate, setFormDate] = useState(new Date().toISOString().slice(0, 10));
   const [formSupplier, setFormSupplier] = useState("");
   const [formBranch, setFormBranch] = useState("");
@@ -60,6 +64,12 @@ const PurchasesPage = () => {
   const [supDialogOpen, setSupDialogOpen] = useState(false);
   const [supName, setSupName] = useState("");
   const [supPhone, setSupPhone] = useState("");
+
+  const [printPurchase, setPrintPurchase] = useState<Purchase | null>(null);
+  const [printItems, setPrintItems] = useState<any[]>([]);
+
+  const canEdit = hasPermission("purchase", "can_edit") || isSuperAdmin;
+  const canAdd = hasPermission("purchase", "can_add") || isSuperAdmin;
 
   const fetchData = async () => {
     setLoading(true);
@@ -96,15 +106,70 @@ const PurchasesPage = () => {
 
   const grandTotal = (list: ItemRow[]) => list.reduce((s, i) => s + i.total, 0);
 
+  const openCreate = () => {
+    setEditingPurchase(null);
+    setFormDate(new Date().toISOString().slice(0, 10)); setFormSupplier(""); setFormBranch(""); setFormPayment("cash"); setFormNotes("");
+    setItems([{ id: "1", product_id: "", quantity: 0, unit_price: 0, total: 0 }]);
+    setDialogOpen(true);
+  };
+
+  const openEdit = async (p: Purchase) => {
+    setEditingPurchase(p);
+    setFormDate(p.purchase_date);
+    setFormSupplier(p.supplier_id || "");
+    setFormBranch(p.branch_id || "");
+    setFormPayment(p.payment_method || "cash");
+    setFormNotes(p.notes || "");
+    const { data } = await supabase.from("purchase_items").select("*").eq("purchase_id", p.id);
+    if (data && data.length > 0) {
+      setItems(data.map((d: any, i: number) => ({
+        id: String(i + 1), product_id: d.product_id, quantity: d.quantity, unit_price: d.unit_price, total: d.total,
+      })));
+    } else {
+      setItems([{ id: "1", product_id: "", quantity: 0, unit_price: 0, total: 0 }]);
+    }
+    setDialogOpen(true);
+  };
+
+  const openPrint = async (p: Purchase) => {
+    const { data } = await supabase.from("purchase_items").select("*").eq("purchase_id", p.id);
+    const enriched = (data || []).map((d: any) => {
+      const prod = products.find((pr) => pr.id === d.product_id);
+      return { ...d, product_name: prod?.product_name || "—", product_code: prod?.product_code || "" };
+    });
+    setPrintItems(enriched);
+    setPrintPurchase(p);
+  };
+
   const handleSavePurchase = async () => {
     const validItems = items.filter((i) => i.product_id && i.quantity > 0);
     if (validItems.length === 0) { toast({ title: "Add at least one item", variant: "destructive" }); return; }
 
     setSaving(true);
     try {
-      const ctx = { date: formDate, branchId: formBranch || userBranchId || null, userId: user?.id };
-      const result = await createPurchase(ctx, formSupplier || null, formPayment, formNotes, validItems);
-      toast({ title: `Purchase ${result.purchaseNumber} created` });
+      if (editingPurchase) {
+        const oldValues = { purchase_date: editingPurchase.purchase_date, supplier_id: editingPurchase.supplier_id, total_amount: editingPurchase.total_amount, payment_method: editingPurchase.payment_method };
+        const total = grandTotal(validItems);
+        const newValues = { purchase_date: formDate, supplier_id: formSupplier || null, total_amount: total, payment_method: formPayment };
+
+        const { error } = await supabase.from("purchases").update({
+          purchase_date: formDate, supplier_id: formSupplier || null, branch_id: formBranch || null,
+          total_amount: total, payment_method: formPayment, notes: formNotes || null,
+        }).eq("id", editingPurchase.id);
+        if (error) throw error;
+
+        await supabase.from("purchase_items").delete().eq("purchase_id", editingPurchase.id);
+        await supabase.from("purchase_items").insert(
+          validItems.map((i) => ({ purchase_id: editingPurchase.id, product_id: i.product_id, quantity: i.quantity, unit_price: i.unit_price, total: i.total }))
+        );
+
+        await logEditAudit({ userId: user?.id, userName: profile?.name, module: "Purchase", action: "Edit", recordId: editingPurchase.id, oldValues, newValues });
+        toast({ title: `Purchase ${editingPurchase.purchase_number} updated` });
+      } else {
+        const ctx = { date: formDate, branchId: formBranch || userBranchId || null, userId: user?.id };
+        const result = await createPurchase(ctx, formSupplier || null, formPayment, formNotes, validItems);
+        toast({ title: `Purchase ${result.purchaseNumber} created` });
+      }
       setDialogOpen(false); fetchData();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -114,7 +179,6 @@ const PurchasesPage = () => {
   const handleSaveReturn = async () => {
     const validItems = retItems.filter((i) => i.product_id && i.quantity > 0);
     if (validItems.length === 0) { toast({ title: "Add at least one item", variant: "destructive" }); return; }
-
     setSaving(true);
     try {
       const ctx = { date: retDate, branchId: retBranch || userBranchId || null, userId: user?.id };
@@ -138,34 +202,26 @@ const PurchasesPage = () => {
       <CardHeader className="py-3 px-4"><CardTitle className="text-sm">Items</CardTitle></CardHeader>
       <CardContent className="p-0">
         <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[35%]">Product</TableHead>
-              <TableHead className="text-right">Qty</TableHead>
-              <TableHead className="text-right">Unit Price</TableHead>
-              <TableHead className="text-right">Total</TableHead>
-              <TableHead className="w-10"></TableHead>
-            </TableRow>
-          </TableHeader>
+          <TableHeader><TableRow>
+            <TableHead className="w-[35%]">Product</TableHead>
+            <TableHead className="text-right">Qty</TableHead>
+            <TableHead className="text-right">Unit Price</TableHead>
+            <TableHead className="text-right">Total</TableHead>
+            <TableHead className="w-10"></TableHead>
+          </TableRow></TableHeader>
           <TableBody>
             {itemList.map((item) => (
               <TableRow key={item.id}>
                 <TableCell>
                   <Select value={item.product_id} onValueChange={(v) => updateItem(item.id, "product_id", v, itemList, setFn)}>
                     <SelectTrigger className="h-9"><SelectValue placeholder="Select product" /></SelectTrigger>
-                    <SelectContent>
-                      {products.map((p) => <SelectItem key={p.id} value={p.id}>{p.product_code} — {p.product_name}</SelectItem>)}
-                    </SelectContent>
+                    <SelectContent>{products.map((p) => <SelectItem key={p.id} value={p.id}>{p.product_code} — {p.product_name}</SelectItem>)}</SelectContent>
                   </Select>
                 </TableCell>
                 <TableCell><Input type="number" className="h-9 text-right" value={item.quantity || ""} onChange={(e) => updateItem(item.id, "quantity", parseFloat(e.target.value) || 0, itemList, setFn)} /></TableCell>
                 <TableCell><Input type="number" className="h-9 text-right" value={item.unit_price || ""} onChange={(e) => updateItem(item.id, "unit_price", parseFloat(e.target.value) || 0, itemList, setFn)} /></TableCell>
                 <TableCell className="text-right tabular-nums font-medium">{fc(item.total)}</TableCell>
-                <TableCell>
-                  <Button variant="ghost" size="icon" onClick={() => setFn(itemList.filter((i) => i.id !== item.id))} disabled={itemList.length <= 1}>
-                    <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
-                  </Button>
-                </TableCell>
+                <TableCell><Button variant="ghost" size="icon" onClick={() => setFn(itemList.filter((i) => i.id !== item.id))} disabled={itemList.length <= 1}><Trash2 className="w-3.5 h-3.5 text-muted-foreground" /></Button></TableCell>
               </TableRow>
             ))}
             <TableRow className="bg-muted/50 font-medium">
@@ -179,6 +235,8 @@ const PurchasesPage = () => {
     </Card>
   );
 
+  const branchMap = new Map(branches.map((b) => [b.id, b.name]));
+
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
@@ -187,16 +245,14 @@ const PurchasesPage = () => {
           <h1 className="text-xl font-semibold text-foreground">Purchase</h1>
         </div>
         <div className="flex gap-2">
-          {hasPermission("Purchase", "can_add") && (
-            <Button variant="outline" size="sm" onClick={() => setSupDialogOpen(true)}>Add Supplier</Button>
-          )}
-          {hasPermission("Purchase", "can_add") && (
+          {canAdd && <Button variant="outline" size="sm" onClick={() => setSupDialogOpen(true)}>Add Supplier</Button>}
+          {canAdd && (
             <Button variant="outline" size="sm" onClick={() => { setReturnDialogOpen(true); setRetItems([{ id: "1", product_id: "", quantity: 0, unit_price: 0, total: 0 }]); }}>
               <RotateCcw className="w-4 h-4 mr-1" />Purchase Return
             </Button>
           )}
-          {hasPermission("Purchase", "can_add") && (
-            <Button size="sm" onClick={() => { setDialogOpen(true); setItems([{ id: "1", product_id: "", quantity: 0, unit_price: 0, total: 0 }]); }}>
+          {canAdd && (
+            <Button size="sm" onClick={openCreate}>
               <Plus className="w-4 h-4 mr-1" />New Purchase
             </Button>
           )}
@@ -215,10 +271,11 @@ const PurchasesPage = () => {
               <TableHeader><TableRow>
                 <TableHead>Purchase #</TableHead><TableHead>Date</TableHead><TableHead>Supplier</TableHead>
                 <TableHead className="text-right">Amount</TableHead><TableHead>Payment</TableHead>
+                <TableHead className="w-24">Actions</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {loading ? <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
-                : purchases.length === 0 ? <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">No purchases yet</TableCell></TableRow>
+                {loading ? <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
+                : purchases.length === 0 ? <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">No purchases yet</TableCell></TableRow>
                 : purchases.map((p) => (
                   <TableRow key={p.id}>
                     <TableCell className="font-geist-mono text-xs font-medium">{p.purchase_number}</TableCell>
@@ -226,6 +283,18 @@ const PurchasesPage = () => {
                     <TableCell>{p.supplier_name || "—"}</TableCell>
                     <TableCell className="text-right tabular-nums font-medium">{fc(p.total_amount)}</TableCell>
                     <TableCell className="capitalize">{p.payment_method}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        {canEdit && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(p)} title="Edit">
+                            <Pencil className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openPrint(p)} title="Print">
+                          <Printer className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -260,7 +329,7 @@ const PurchasesPage = () => {
       {/* Purchase Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>New Purchase</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editingPurchase ? `Edit Purchase ${editingPurchase.purchase_number}` : "New Purchase"}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2"><Label>Date</Label><Input type="date" value={formDate} onChange={(e) => setFormDate(e.target.value)} /></div>
@@ -284,7 +353,7 @@ const PurchasesPage = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSavePurchase} disabled={saving}>{saving ? "Saving..." : "Save Purchase"}</Button>
+            <Button onClick={handleSavePurchase} disabled={saving}>{saving ? "Saving..." : editingPurchase ? "Update Purchase" : "Save Purchase"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -327,6 +396,48 @@ const PurchasesPage = () => {
           <DialogFooter><Button variant="outline" onClick={() => setSupDialogOpen(false)}>Cancel</Button><Button onClick={handleAddSupplier}>Add</Button></DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Print Preview */}
+      {printPurchase && (
+        <PrintLayout
+          open={!!printPurchase}
+          onClose={() => setPrintPurchase(null)}
+          title="Purchase Invoice"
+          docNumber={printPurchase.purchase_number}
+          docDate={printPurchase.purchase_date}
+          branch={printPurchase.branch_id ? branchMap.get(printPurchase.branch_id) : undefined}
+          partyLabel="Supplier"
+          partyName={printPurchase.supplier_name}
+          notes={printPurchase.notes || undefined}
+        >
+          <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "16px" }}>
+            <thead>
+              <tr>
+                <th style={{ background: "#f0f0f0", fontWeight: 600, textAlign: "left", padding: "8px 10px", border: "1px solid #ddd", fontSize: "11px" }}>#</th>
+                <th style={{ background: "#f0f0f0", fontWeight: 600, textAlign: "left", padding: "8px 10px", border: "1px solid #ddd", fontSize: "11px" }}>Product</th>
+                <th style={{ background: "#f0f0f0", fontWeight: 600, textAlign: "right", padding: "8px 10px", border: "1px solid #ddd", fontSize: "11px" }}>Qty</th>
+                <th style={{ background: "#f0f0f0", fontWeight: 600, textAlign: "right", padding: "8px 10px", border: "1px solid #ddd", fontSize: "11px" }}>Unit Price</th>
+                <th style={{ background: "#f0f0f0", fontWeight: 600, textAlign: "right", padding: "8px 10px", border: "1px solid #ddd", fontSize: "11px" }}>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {printItems.map((item: any, idx: number) => (
+                <tr key={idx}>
+                  <td style={{ padding: "6px 10px", border: "1px solid #ddd" }}>{idx + 1}</td>
+                  <td style={{ padding: "6px 10px", border: "1px solid #ddd" }}>{item.product_code} — {item.product_name}</td>
+                  <td style={{ padding: "6px 10px", border: "1px solid #ddd", textAlign: "right" }}>{item.quantity}</td>
+                  <td style={{ padding: "6px 10px", border: "1px solid #ddd", textAlign: "right" }}>{fc(item.unit_price)}</td>
+                  <td style={{ padding: "6px 10px", border: "1px solid #ddd", textAlign: "right", fontWeight: 600 }}>{fc(item.total)}</td>
+                </tr>
+              ))}
+              <tr style={{ background: "#f0f0f0", fontWeight: 700 }}>
+                <td colSpan={4} style={{ padding: "8px 10px", border: "1px solid #ddd", textAlign: "right" }}>Total Amount</td>
+                <td style={{ padding: "8px 10px", border: "1px solid #ddd", textAlign: "right" }}>{fc(printPurchase.total_amount)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </PrintLayout>
+      )}
     </div>
   );
 };
