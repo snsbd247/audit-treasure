@@ -96,6 +96,7 @@ const navGroups: NavGroup[] = [
     label: "Bank & Cash",
     icon: Landmark,
     module: "bank",
+    requiredModules: ["bank"],
     children: [
       { to: "/bank/accounts", label: "Bank Accounts", icon: Landmark },
       { to: "/bank/cashbook", label: "Cash Book", icon: PiggyBank },
