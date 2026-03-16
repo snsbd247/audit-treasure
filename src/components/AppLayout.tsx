@@ -2,6 +2,7 @@ import { Outlet } from "react-router-dom";
 import { AppSidebar } from "@/components/AppSidebar";
 import { TopNavbar } from "@/components/TopNavbar";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { CommandPalette } from "@/components/CommandPalette";
 
 export const AppLayout = () => {
   return (
@@ -14,6 +15,7 @@ export const AppLayout = () => {
           <Outlet />
         </main>
       </div>
+      <CommandPalette />
     </div>
   );
 };

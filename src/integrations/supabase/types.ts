@@ -1056,6 +1056,39 @@ export type Database = {
           },
         ]
       }
+      page_shortcuts: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          module_name: string
+          page_name: string
+          page_url: string
+          shortcut_code: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          module_name: string
+          page_name: string
+          page_url: string
+          shortcut_code: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          module_name?: string
+          page_name?: string
+          page_url?: string
+          shortcut_code?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payroll: {
         Row: {
           allowances: number
@@ -2217,6 +2250,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_favorite_pages: {
+        Row: {
+          created_at: string
+          id: string
+          page_url: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          page_url: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          page_url?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {

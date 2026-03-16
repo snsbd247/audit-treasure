@@ -10,7 +10,7 @@ import {
   CreditCard, Landmark, PiggyBank, TrendingUp,
   ArrowLeftRight, Calendar, Activity, Menu, X, CircleDot, Truck, UserCheck,
   Briefcase, Clock, CalendarDays, DollarSign, FileCheck, BadgeCheck, User,
-  Fingerprint, ScanFace, Timer, Gauge,
+  Fingerprint, ScanFace, Timer, Gauge, Keyboard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -160,6 +160,7 @@ const navGroups: NavGroup[] = [
       { to: "/admin/backup", label: "Backup & Restore", icon: Database },
       { to: "/admin/audit-log", label: "Activity Logs", icon: Activity },
       { to: "/admin/numbering", label: "Document Numbering", icon: ScrollText },
+      { to: "/admin/shortcuts", label: "Page Shortcuts", icon: Keyboard },
       { to: "/admin/settings", label: "General Settings", icon: CircleDot },
     ],
   },
