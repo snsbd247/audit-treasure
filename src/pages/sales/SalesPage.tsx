@@ -194,59 +194,52 @@ const SalesPage = () => {
     setSaving(true);
     try {
       if (editingInvoice) {
-        // Edit mode - update header
-        const oldValues = {
-          invoice_date: editingInvoice.invoice_date,
-          customer_id: editingInvoice.customer_id,
-          discount: editingInvoice.discount,
-          notes: editingInvoice.notes,
-          total_amount: editingInvoice.total_amount,
-        };
+        const isApprovedEdit = editingInvoice.status === "approved" || editingInvoice.status === "completed";
         const total = grandTotal(validItems);
         const disc = parseFloat(formDiscount) || 0;
         const net = total - disc;
-        const newValues = {
-          invoice_date: formDate,
-          customer_id: formCustomer || null,
-          discount: disc,
-          notes: formNotes || null,
-          total_amount: total,
-        };
 
-        const { error } = await supabase.from("sales_invoices").update({
-          invoice_date: formDate,
-          customer_id: formCustomer || null,
-          branch_id: formBranch || null,
-          discount: disc,
-          notes: formNotes || null,
-          total_amount: total,
-          net_amount: net,
-        }).eq("id", editingInvoice.id);
-        if (error) throw error;
+        if (isApprovedEdit && isSuperAdmin) {
+          // Use document API for approved doc edits (handles stock + accounting recalc)
+          await documentApi.editApproved("sales_invoice", editingInvoice.id, {
+            invoice_date: formDate,
+            customer_id: formCustomer || null,
+            branch_id: formBranch || null,
+            discount: disc,
+            notes: formNotes || null,
+          }, validItems.map((i) => ({
+            product_id: i.product_id, quantity: i.quantity, price: i.price, discount: i.discount, total: i.total,
+          })));
+        } else {
+          // Normal draft edit
+          const oldValues = {
+            invoice_date: editingInvoice.invoice_date, customer_id: editingInvoice.customer_id,
+            discount: editingInvoice.discount, notes: editingInvoice.notes, total_amount: editingInvoice.total_amount,
+          };
+          const newValues = {
+            invoice_date: formDate, customer_id: formCustomer || null,
+            discount: disc, notes: formNotes || null, total_amount: total,
+          };
 
-        // Replace line items
-        await supabase.from("sales_invoice_items").delete().eq("sales_invoice_id", editingInvoice.id);
-        await supabase.from("sales_invoice_items").insert(
-          validItems.map((i) => ({
-            sales_invoice_id: editingInvoice.id,
-            product_id: i.product_id,
-            quantity: i.quantity,
-            price: i.price,
-            discount: i.discount,
-            total: i.total,
-          }))
-        );
+          const { error } = await supabase.from("sales_invoices").update({
+            invoice_date: formDate, customer_id: formCustomer || null, branch_id: formBranch || null,
+            discount: disc, notes: formNotes || null, total_amount: total, net_amount: net,
+          }).eq("id", editingInvoice.id);
+          if (error) throw error;
 
-        // Audit log
-        await logEditAudit({
-          userId: user?.id,
-          userName: profile?.name,
-          module: "Sales",
-          action: editingInvoice.status === "approved" ? "Edit (Approved Document)" : "Edit",
-          recordId: editingInvoice.id,
-          oldValues,
-          newValues,
-        });
+          await supabase.from("sales_invoice_items").delete().eq("sales_invoice_id", editingInvoice.id);
+          await supabase.from("sales_invoice_items").insert(
+            validItems.map((i) => ({
+              sales_invoice_id: editingInvoice.id, product_id: i.product_id,
+              quantity: i.quantity, price: i.price, discount: i.discount, total: i.total,
+            }))
+          );
+
+          await logEditAudit({
+            userId: user?.id, userName: profile?.name, module: "Sales",
+            action: "Edit", recordId: editingInvoice.id, oldValues, newValues,
+          });
+        }
 
         toast({ title: `Invoice ${editingInvoice.invoice_number} updated` });
       } else {
