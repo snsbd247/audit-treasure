@@ -348,9 +348,10 @@ const SalesPage = () => {
           <Card><CardContent className="p-0">
             <Table>
               <TableHeader><TableRow>
-                <TableHead>Invoice #</TableHead><TableHead>Date</TableHead><TableHead>Customer</TableHead>
+              <TableHead>Invoice #</TableHead><TableHead>Date</TableHead><TableHead>Customer</TableHead>
                 <TableHead className="text-right">Total</TableHead><TableHead className="text-right">Discount</TableHead><TableHead className="text-right">Net</TableHead>
-                <TableHead className="w-24">Actions</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="w-32">Actions</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {loading ? <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
