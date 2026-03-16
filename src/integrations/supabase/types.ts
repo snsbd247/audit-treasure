@@ -593,18 +593,21 @@ export type Database = {
       number_sequences: {
         Row: {
           current_number: number
+          description: string | null
           id: string
           prefix: string
           year: number
         }
         Insert: {
           current_number?: number
+          description?: string | null
           id: string
           prefix: string
           year?: number
         }
         Update: {
           current_number?: number
+          description?: string | null
           id?: string
           prefix?: string
           year?: number
