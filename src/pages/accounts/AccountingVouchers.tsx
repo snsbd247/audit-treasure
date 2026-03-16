@@ -218,6 +218,8 @@ const AccountingVouchers = () => {
     return <Badge variant={variants[status] || "outline"}>{status}</Badge>;
   };
 
+  const branchMap = new Map(branches.map((b) => [b.id, b.name]));
+
   const actionLabels: Record<string, { title: string; desc: string; confirm: string }> = {
     delete: { title: "Delete Approved Voucher", desc: "This will permanently delete this approved voucher and all its entries. This action is irreversible and will be logged.", confirm: "Delete Voucher" },
     reopen: { title: "Reopen Voucher", desc: "This will change the voucher status back to draft, allowing it to be edited and re-submitted. This action will be logged.", confirm: "Reopen Voucher" },
@@ -253,7 +255,7 @@ const AccountingVouchers = () => {
                       <TableHead>Description</TableHead>
                       <TableHead className="text-right">Amount</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead className="w-40">Actions</TableHead>
+                      <TableHead className="w-48">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -275,6 +277,10 @@ const AccountingVouchers = () => {
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-1">
+                            {/* Print button - always visible */}
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openPrintVoucher(v)} title="Print">
+                              <Printer className="w-3.5 h-3.5" />
+                            </Button>
                             {/* Admin: Approve/Reject pending */}
                             {v.status === "pending" && isAdmin && (
                               <>
@@ -461,6 +467,53 @@ const AccountingVouchers = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Print Preview */}
+      {printVoucher && (
+        <PrintLayout
+          open={!!printVoucher}
+          onClose={() => setPrintVoucher(null)}
+          title={VOUCHER_TYPES.find((vt) => vt.id === printVoucher.voucher_type)?.label || "Voucher"}
+          docNumber={printVoucher.voucher_number}
+          docDate={printVoucher.voucher_date}
+          branch={printVoucher.branch_id ? branchMap.get(printVoucher.branch_id) : undefined}
+          notes={printVoucher.description || undefined}
+        >
+          <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "16px" }}>
+            <thead>
+              <tr>
+                <th style={{ background: "#f0f0f0", fontWeight: 600, textAlign: "left", padding: "8px 10px", border: "1px solid #ddd", fontSize: "11px" }}>#</th>
+                <th style={{ background: "#f0f0f0", fontWeight: 600, textAlign: "left", padding: "8px 10px", border: "1px solid #ddd", fontSize: "11px" }}>Account Code</th>
+                <th style={{ background: "#f0f0f0", fontWeight: 600, textAlign: "left", padding: "8px 10px", border: "1px solid #ddd", fontSize: "11px" }}>Account Name</th>
+                <th style={{ background: "#f0f0f0", fontWeight: 600, textAlign: "right", padding: "8px 10px", border: "1px solid #ddd", fontSize: "11px" }}>Debit</th>
+                <th style={{ background: "#f0f0f0", fontWeight: 600, textAlign: "right", padding: "8px 10px", border: "1px solid #ddd", fontSize: "11px" }}>Credit</th>
+                <th style={{ background: "#f0f0f0", fontWeight: 600, textAlign: "left", padding: "8px 10px", border: "1px solid #ddd", fontSize: "11px" }}>Narration</th>
+              </tr>
+            </thead>
+            <tbody>
+              {printEntries.map((entry: any, idx: number) => (
+                <tr key={idx}>
+                  <td style={{ padding: "6px 10px", border: "1px solid #ddd" }}>{idx + 1}</td>
+                  <td style={{ padding: "6px 10px", border: "1px solid #ddd", fontFamily: "monospace", fontSize: "11px" }}>{entry.account_code}</td>
+                  <td style={{ padding: "6px 10px", border: "1px solid #ddd" }}>{entry.account_name}</td>
+                  <td style={{ padding: "6px 10px", border: "1px solid #ddd", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{Number(entry.debit) > 0 ? fc(Number(entry.debit)) : ""}</td>
+                  <td style={{ padding: "6px 10px", border: "1px solid #ddd", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{Number(entry.credit) > 0 ? fc(Number(entry.credit)) : ""}</td>
+                  <td style={{ padding: "6px 10px", border: "1px solid #ddd", fontSize: "11px", color: "#666" }}>{entry.narration || ""}</td>
+                </tr>
+              ))}
+              <tr style={{ background: "#f0f0f0", fontWeight: 700 }}>
+                <td colSpan={3} style={{ padding: "8px 10px", border: "1px solid #ddd", textAlign: "right" }}>Total</td>
+                <td style={{ padding: "8px 10px", border: "1px solid #ddd", textAlign: "right" }}>{fc(printEntries.reduce((s: number, e: any) => s + Number(e.debit), 0))}</td>
+                <td style={{ padding: "8px 10px", border: "1px solid #ddd", textAlign: "right" }}>{fc(printEntries.reduce((s: number, e: any) => s + Number(e.credit), 0))}</td>
+                <td style={{ padding: "8px 10px", border: "1px solid #ddd" }}></td>
+              </tr>
+            </tbody>
+          </table>
+          <div style={{ fontSize: "12px", marginTop: "8px" }}>
+            <strong>Status:</strong> {printVoucher.status.charAt(0).toUpperCase() + printVoucher.status.slice(1)}
+          </div>
+        </PrintLayout>
+      )}
     </div>
   );
 };

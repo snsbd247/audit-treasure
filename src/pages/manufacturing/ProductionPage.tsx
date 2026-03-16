@@ -11,8 +11,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Factory } from "lucide-react";
+import { Plus, Factory, Printer } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { PrintLayout } from "@/components/PrintLayout";
 
 interface Product { id: string; product_name: string; product_code: string; }
 interface Branch { id: string; name: string; }
@@ -23,7 +24,7 @@ interface MatRow { id: string; material_id: string; quantity: number; cost: numb
 interface ProdEntry {
   id: string; production_number: string; production_date: string; product_id: string;
   quantity: number; raw_material_cost: number; labor_cost: number; electricity_cost: number;
-  total_cost: number; notes: string | null; product_name?: string;
+  total_cost: number; notes: string | null; product_name?: string; branch_id?: string | null;
 }
 
 const ProductionPage = () => {
@@ -49,6 +50,10 @@ const ProductionPage = () => {
   const [formElec, setFormElec] = useState("0");
   const [formNotes, setFormNotes] = useState("");
   const [matRows, setMatRows] = useState<MatRow[]>([]);
+
+  // Print state
+  const [printEntry, setPrintEntry] = useState<ProdEntry | null>(null);
+  const [printMaterials, setPrintMaterials] = useState<any[]>([]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -116,6 +121,18 @@ const ProductionPage = () => {
     } finally { setSaving(false); }
   };
 
+  const openPrint = async (entry: ProdEntry) => {
+    const { data } = await supabase.from("production_materials").select("*").eq("production_id", entry.id);
+    const enriched = (data || []).map((d: any) => {
+      const mat = materials.find((m) => m.id === d.material_id);
+      return { ...d, material_name: mat?.material_name || "—", material_code: mat?.material_code || "", unit: mat?.unit || "pcs" };
+    });
+    setPrintMaterials(enriched);
+    setPrintEntry(entry);
+  };
+
+  const branchMap = new Map(branches.map((b) => [b.id, b.name]));
+
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
@@ -128,10 +145,11 @@ const ProductionPage = () => {
             <TableHead>Production #</TableHead><TableHead>Date</TableHead><TableHead>Product</TableHead>
             <TableHead className="text-right">Qty</TableHead><TableHead className="text-right">Material Cost</TableHead>
             <TableHead className="text-right">Labor</TableHead><TableHead className="text-right">Total Cost</TableHead>
+            <TableHead className="w-16">Actions</TableHead>
           </TableRow></TableHeader>
           <TableBody>
-            {loading ? <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
-            : entries.length === 0 ? <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">No production entries</TableCell></TableRow>
+            {loading ? <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
+            : entries.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">No production entries</TableCell></TableRow>
             : entries.map((e) => (
               <TableRow key={e.id}>
                 <TableCell className="font-geist-mono text-xs font-medium">{e.production_number}</TableCell>
@@ -141,6 +159,11 @@ const ProductionPage = () => {
                 <TableCell className="text-right tabular-nums">{fc(e.raw_material_cost)}</TableCell>
                 <TableCell className="text-right tabular-nums">{fc(e.labor_cost)}</TableCell>
                 <TableCell className="text-right tabular-nums font-medium">{fc(e.total_cost)}</TableCell>
+                <TableCell>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openPrint(e)} title="Print">
+                    <Printer className="w-3.5 h-3.5" />
+                  </Button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -209,6 +232,54 @@ const ProductionPage = () => {
           <DialogFooter><Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button><Button onClick={handleSave} disabled={saving}>{saving ? "Saving..." : "Save Production"}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Print Preview */}
+      {printEntry && (
+        <PrintLayout
+          open={!!printEntry}
+          onClose={() => setPrintEntry(null)}
+          title="Production Entry"
+          docNumber={printEntry.production_number}
+          docDate={printEntry.production_date}
+          branch={printEntry.branch_id ? branchMap.get(printEntry.branch_id) : undefined}
+          notes={printEntry.notes || undefined}
+        >
+          <div style={{ marginBottom: "12px", fontSize: "12px" }}>
+            <strong>Product:</strong> {printEntry.product_name} &nbsp;&nbsp;|&nbsp;&nbsp;
+            <strong>Quantity Produced:</strong> {printEntry.quantity}
+          </div>
+          <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "16px" }}>
+            <thead>
+              <tr>
+                <th style={{ background: "#f0f0f0", fontWeight: 600, textAlign: "left", padding: "8px 10px", border: "1px solid #ddd", fontSize: "11px" }}>#</th>
+                <th style={{ background: "#f0f0f0", fontWeight: 600, textAlign: "left", padding: "8px 10px", border: "1px solid #ddd", fontSize: "11px" }}>Material</th>
+                <th style={{ background: "#f0f0f0", fontWeight: 600, textAlign: "right", padding: "8px 10px", border: "1px solid #ddd", fontSize: "11px" }}>Qty</th>
+                <th style={{ background: "#f0f0f0", fontWeight: 600, textAlign: "left", padding: "8px 10px", border: "1px solid #ddd", fontSize: "11px" }}>Unit</th>
+                <th style={{ background: "#f0f0f0", fontWeight: 600, textAlign: "right", padding: "8px 10px", border: "1px solid #ddd", fontSize: "11px" }}>Cost</th>
+              </tr>
+            </thead>
+            <tbody>
+              {printMaterials.map((m: any, idx: number) => (
+                <tr key={idx}>
+                  <td style={{ padding: "6px 10px", border: "1px solid #ddd" }}>{idx + 1}</td>
+                  <td style={{ padding: "6px 10px", border: "1px solid #ddd" }}>{m.material_code} — {m.material_name}</td>
+                  <td style={{ padding: "6px 10px", border: "1px solid #ddd", textAlign: "right" }}>{m.quantity}</td>
+                  <td style={{ padding: "6px 10px", border: "1px solid #ddd" }}>{m.unit}</td>
+                  <td style={{ padding: "6px 10px", border: "1px solid #ddd", textAlign: "right", fontWeight: 600 }}>{fc(m.cost)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <table style={{ width: "50%", marginLeft: "auto", borderCollapse: "collapse" }}>
+            <tbody>
+              <tr><td style={{ padding: "6px 10px", border: "1px solid #ddd" }}>Raw Material Cost</td><td style={{ padding: "6px 10px", border: "1px solid #ddd", textAlign: "right" }}>{fc(printEntry.raw_material_cost)}</td></tr>
+              <tr><td style={{ padding: "6px 10px", border: "1px solid #ddd" }}>Labor Cost</td><td style={{ padding: "6px 10px", border: "1px solid #ddd", textAlign: "right" }}>{fc(printEntry.labor_cost)}</td></tr>
+              <tr><td style={{ padding: "6px 10px", border: "1px solid #ddd" }}>Electricity Cost</td><td style={{ padding: "6px 10px", border: "1px solid #ddd", textAlign: "right" }}>{fc(printEntry.electricity_cost)}</td></tr>
+              <tr style={{ background: "#f0f0f0", fontWeight: 700 }}><td style={{ padding: "8px 10px", border: "1px solid #ddd" }}>Total Production Cost</td><td style={{ padding: "8px 10px", border: "1px solid #ddd", textAlign: "right" }}>{fc(printEntry.total_cost)}</td></tr>
+            </tbody>
+          </table>
+        </PrintLayout>
+      )}
     </div>
   );
 };
