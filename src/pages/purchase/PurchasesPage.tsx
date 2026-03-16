@@ -160,7 +160,7 @@ const PurchasesPage = () => {
                 </TableCell>
                 <TableCell><Input type="number" className="h-9 text-right" value={item.quantity || ""} onChange={(e) => updateItem(item.id, "quantity", parseFloat(e.target.value) || 0, itemList, setFn)} /></TableCell>
                 <TableCell><Input type="number" className="h-9 text-right" value={item.unit_price || ""} onChange={(e) => updateItem(item.id, "unit_price", parseFloat(e.target.value) || 0, itemList, setFn)} /></TableCell>
-                <TableCell className="text-right tabular-nums font-medium">{item.total.toLocaleString()}</TableCell>
+                <TableCell className="text-right tabular-nums font-medium">{fc(item.total)}</TableCell>
                 <TableCell>
                   <Button variant="ghost" size="icon" onClick={() => setFn(itemList.filter((i) => i.id !== item.id))} disabled={itemList.length <= 1}>
                     <Trash2 className="w-3.5 h-3.5 text-muted-foreground" />
