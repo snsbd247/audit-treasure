@@ -125,6 +125,15 @@ const PurchasesPage = () => {
   };
 
   const openEdit = async (p: Purchase) => {
+    const isApproved = p.status === "approved" || p.status === "completed";
+    if (isApproved && !isSuperAdmin) {
+      toast({ title: "Locked", description: "Only Super Admin can edit approved purchases", variant: "destructive" });
+      return;
+    }
+    if (p.status === "cancelled") {
+      toast({ title: "Locked", description: "Cancelled purchases cannot be edited", variant: "destructive" });
+      return;
+    }
     setEditingPurchase(p);
     setFormDate(p.purchase_date);
     setFormSupplier(p.supplier_id || "");
@@ -140,6 +149,29 @@ const PurchasesPage = () => {
       setItems([{ id: "1", product_id: "", quantity: 0, unit_price: 0, total: 0 }]);
     }
     setDialogOpen(true);
+  };
+
+  const handleDocAction = async () => {
+    if (!actionTarget || !actionType) return;
+    setSaving(true);
+    try {
+      if (actionType === "approve") {
+        await documentApi.approve("purchase", actionTarget.id);
+        toast({ title: `Purchase ${actionTarget.purchase_number} approved` });
+      } else if (actionType === "cancel") {
+        await documentApi.cancel("purchase", actionTarget.id, actionReason);
+        toast({ title: `Purchase ${actionTarget.purchase_number} cancelled` });
+      } else if (actionType === "delete") {
+        await documentApi.deleteApproved("purchase", actionTarget.id, actionReason);
+        toast({ title: `Purchase ${actionTarget.purchase_number} deleted` });
+      }
+      setActionDialogOpen(false);
+      setActionTarget(null);
+      setActionReason("");
+      fetchData();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally { setSaving(false); }
   };
 
   const openPrint = async (p: Purchase) => {
