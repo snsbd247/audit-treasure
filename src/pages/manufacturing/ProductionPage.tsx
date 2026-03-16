@@ -29,6 +29,7 @@ interface ProdEntry {
 
 const ProductionPage = () => {
   const { user } = useAuth();
+  const { userBranchId } = useBranch();
   const { toast } = useToast();
   const [entries, setEntries] = useState<ProdEntry[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
