@@ -169,8 +169,8 @@ export const PrintLayout = ({
                   </div>
                 ))}
               </div>
-              <p style={{ fontSize: "10px", color: "#999", textAlign: "right", marginTop: "16px" }}>
-                Generated: {new Date().toLocaleString()}
+              <p style={{ fontSize: "10px", color: "#999", textAlign: "center", marginTop: "16px" }}>
+                {settings?.company_name || "Company"} | Generated: {new Date().toLocaleString()}
               </p>
             </div>
           </div>

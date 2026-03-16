@@ -93,17 +93,21 @@ const Login = () => {
         </div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
+      <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8">
         <Card className="w-full max-w-md shadow-elevated border-border/50">
           <CardHeader className="text-center pb-2">
-            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-3 lg:hidden">
-              <Building2 className="w-5 h-5 text-primary" />
-            </div>
+            {branding.company_logo_url ? (
+              <img src={branding.company_logo_url} alt="Logo" className="h-10 mx-auto mb-3 lg:hidden object-contain" />
+            ) : (
+              <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-3 lg:hidden">
+                <Building2 className="w-5 h-5 text-primary" />
+              </div>
+            )}
             <CardTitle className="text-xl font-bold text-foreground">
               {forgotMode ? "Forgot Password" : "Welcome Back"}
             </CardTitle>
             <CardDescription className="text-sm">
-              {forgotMode ? "Enter your email to receive a reset link" : "Sign in with your username and password"}
+              {forgotMode ? "Enter your email to receive a reset link" : `Sign in to ${branding.software_name || "ERP System"}`}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -164,6 +168,10 @@ const Login = () => {
             )}
           </CardContent>
         </Card>
+        <p className="mt-4 text-xs text-muted-foreground text-center">
+          {branding.footer_text}
+          {!branding.white_label_mode && branding.developer_name && ` | Developed by ${branding.developer_name}`}
+        </p>
       </div>
     </div>
   );
