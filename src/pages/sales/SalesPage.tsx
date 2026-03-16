@@ -379,14 +379,13 @@ const SalesPage = () => {
               <TableHead>Invoice #</TableHead><TableHead>Date</TableHead><TableHead>Customer</TableHead>
                 <TableHead className="text-right">Total</TableHead><TableHead className="text-right">Discount</TableHead><TableHead className="text-right">Net</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="w-32">Actions</TableHead>
+                <TableHead className="w-56">Actions</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {loading ? <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
+                {loading ? <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
                 : invoices.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">No invoices yet</TableCell></TableRow>
                 : invoices.map((inv) => {
                   const statusCfg = getDocumentStatusConfig(inv.status);
-                  const isLocked = (inv.status === "approved" || inv.status === "completed") && !isSuperAdmin;
                   const isCancelled = inv.status === "cancelled";
                   return (
                   <TableRow key={inv.id} className={isCancelled ? "opacity-60" : ""}>
@@ -403,29 +402,32 @@ const SalesPage = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        {!isCancelled && (inv.status === "draft" || inv.status === "completed") && (isAdmin || isSuperAdmin) && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={() => { setActionTarget(inv); setActionType("approve"); setActionDialogOpen(true); }} title="Approve">
-                            <Check className="w-3.5 h-3.5" />
+                        {/* View */}
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openView(inv)} title="View">
+                          <Eye className="w-3.5 h-3.5" />
+                        </Button>
+                        {/* Edit */}
+                        {canEditDoc(inv.status) && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(inv)} title="Edit">
+                            <Pencil className="w-3.5 h-3.5" />
                           </Button>
                         )}
-                        {!isCancelled && !isLocked && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(inv)} title={isLocked ? "Locked" : "Edit"}>
-                            {isLocked ? <Lock className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
-                          </Button>
-                        )}
-                        {isSuperAdmin && (inv.status === "approved" || inv.status === "completed") && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-amber-600" onClick={() => openEdit(inv)} title="Super Admin Edit">
-                            <ShieldAlert className="w-3.5 h-3.5" />
-                          </Button>
-                        )}
-                        {!isCancelled && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => { setActionTarget(inv); setActionType("cancel"); setActionDialogOpen(true); }} title="Cancel">
-                            <X className="w-3.5 h-3.5" />
-                          </Button>
-                        )}
+                        {/* Print */}
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openPrint(inv)} title="Print">
                           <Printer className="w-3.5 h-3.5" />
                         </Button>
+                        {/* Delete */}
+                        {canDeleteDoc(inv.status) && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setActionTarget(inv); setActionType("delete"); setActionDialogOpen(true); }} title="Delete">
+                            <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                          </Button>
+                        )}
+                        {/* Approve (admin only, draft/completed) */}
+                        {!isCancelled && (inv.status === "draft" || inv.status === "completed") && (isAdmin || isSuperAdmin) && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setActionTarget(inv); setActionType("approve"); setActionDialogOpen(true); }} title="Approve">
+                            <Check className="w-3.5 h-3.5 text-emerald-600" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
