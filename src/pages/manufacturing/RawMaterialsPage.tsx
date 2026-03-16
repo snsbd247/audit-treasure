@@ -20,6 +20,7 @@ interface RawMaterial {
 
 const RawMaterialsPage = () => {
   const [materials, setMaterials] = useState<RawMaterial[]>([]);
+  const { fc } = useCurrency();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
