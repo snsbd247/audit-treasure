@@ -18,7 +18,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Check, X, FileText, Trash2, RotateCcw, Pencil, ArrowLeftRight, Lock, Printer } from "lucide-react";
+import { Plus, Check, X, FileText, Trash2, RotateCcw, Pencil, ArrowLeftRight, Lock, Printer, Eye } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { PrintLayout } from "@/components/PrintLayout";
 
@@ -44,7 +44,8 @@ type SuperAdminAction = "delete" | "reopen" | "reverse" | null;
 const AccountingVouchers = () => {
   const { user, profile, isAdmin, isSuperAdmin, hasPermission } = useAuth();
   const { toast } = useToast();
-  const canEdit = hasPermission("accounts", "can_edit") || isSuperAdmin;
+  const userCanEdit = hasPermission("accounts", "can_edit") || isSuperAdmin;
+  const userCanDelete = hasPermission("accounts", "can_delete") || isSuperAdmin;
   const { fc } = useCurrency();
   const [activeTab, setActiveTab] = useState("journal");
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
@@ -54,6 +55,11 @@ const AccountingVouchers = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editingVoucher, setEditingVoucher] = useState<Voucher | null>(null);
+
+  // View dialog state
+  const [viewVoucher, setViewVoucher] = useState<Voucher | null>(null);
+  const [viewEntries, setViewEntries] = useState<any[]>([]);
 
   // Form state
   const [formDate, setFormDate] = useState(new Date().toISOString().slice(0, 10));
@@ -109,6 +115,7 @@ const AccountingVouchers = () => {
   };
 
   const openCreate = () => {
+    setEditingVoucher(null);
     setFormDate(new Date().toISOString().slice(0, 10));
     setFormBranch(""); setFormFinYear(""); setFormDesc("");
     setEntries([
@@ -116,6 +123,41 @@ const AccountingVouchers = () => {
       { id: "2", account_id: "", debit: 0, credit: 0, narration: "" },
     ]);
     setDialogOpen(true);
+  };
+
+  const openView = async (v: Voucher) => {
+    const { data } = await supabase.from("voucher_entries").select("*, chart_of_accounts:account_id(account_name, account_code)").eq("voucher_id", v.id).order("sort_order");
+    setViewEntries((data || []).map((e: any) => ({ ...e, account_name: e.chart_of_accounts?.account_name || "—", account_code: e.chart_of_accounts?.account_code || "" })));
+    setViewVoucher(v);
+  };
+
+  const openEdit = async (v: Voucher) => {
+    const { data } = await supabase.from("voucher_entries").select("*").eq("voucher_id", v.id).order("sort_order");
+    setEditingVoucher(v);
+    setFormDate(v.voucher_date);
+    setFormBranch(v.branch_id || "");
+    setFormFinYear(v.financial_year_id || "");
+    setFormDesc(v.description || "");
+    setEntries((data || []).map((e: any) => ({
+      id: e.id,
+      account_id: e.account_id,
+      debit: Number(e.debit),
+      credit: Number(e.credit),
+      narration: e.narration || "",
+    })));
+    setDialogOpen(true);
+  };
+
+  const canEditVoucher = (v: Voucher) => {
+    if (v.status === "draft" || v.status === "rejected") return userCanEdit;
+    if (v.status === "approved") return isSuperAdmin;
+    return false;
+  };
+
+  const canDeleteVoucher = (v: Voucher) => {
+    if (v.status === "draft" || v.status === "rejected") return userCanDelete;
+    if (v.status === "approved") return isSuperAdmin;
+    return false;
   };
 
   const handleSave = async (submitForApproval: boolean) => {
@@ -130,22 +172,64 @@ const AccountingVouchers = () => {
     }
     setSaving(true);
     try {
-      await voucherApi.create({
-        voucher_type: activeTab,
-        voucher_date: formDate,
-        branch_id: formBranch || undefined,
-        financial_year_id: formFinYear || undefined,
-        description: formDesc,
-        entries: validEntries.map((e) => ({
-          account_id: e.account_id,
-          debit: e.debit,
-          credit: e.credit,
-          narration: e.narration,
-        })),
-        submit: submitForApproval,
-      });
-      toast({ title: "Voucher created successfully" });
+      if (editingVoucher) {
+        // Editing existing voucher
+        if (editingVoucher.status === "approved" && isSuperAdmin) {
+          await voucherApi.editApproved({
+            id: editingVoucher.id,
+            description: formDesc,
+            entries: validEntries.map((e) => ({
+              account_id: e.account_id,
+              debit: e.debit,
+              credit: e.credit,
+              narration: e.narration,
+            })),
+          });
+          toast({ title: "Approved voucher updated (Super Admin override)" });
+        } else {
+          // Draft/rejected edit — update via direct DB
+          await supabase.from("acc_vouchers").update({
+            voucher_date: formDate,
+            branch_id: formBranch || null,
+            financial_year_id: formFinYear || null,
+            description: formDesc,
+            total_amount: totalDebit,
+            status: submitForApproval ? "pending" : "draft",
+            updated_at: new Date().toISOString(),
+          }).eq("id", editingVoucher.id);
+          // Replace entries
+          await supabase.from("voucher_entries").delete().eq("voucher_id", editingVoucher.id);
+          await supabase.from("voucher_entries").insert(
+            validEntries.map((e, i) => ({
+              voucher_id: editingVoucher.id,
+              account_id: e.account_id,
+              debit: e.debit,
+              credit: e.credit,
+              narration: e.narration,
+              sort_order: i,
+            }))
+          );
+          toast({ title: "Voucher updated successfully" });
+        }
+      } else {
+        await voucherApi.create({
+          voucher_type: activeTab,
+          voucher_date: formDate,
+          branch_id: formBranch || undefined,
+          financial_year_id: formFinYear || undefined,
+          description: formDesc,
+          entries: validEntries.map((e) => ({
+            account_id: e.account_id,
+            debit: e.debit,
+            credit: e.credit,
+            narration: e.narration,
+          })),
+          submit: submitForApproval,
+        });
+        toast({ title: "Voucher created successfully" });
+      }
       setDialogOpen(false);
+      setEditingVoucher(null);
       fetchData();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -255,7 +339,7 @@ const AccountingVouchers = () => {
                       <TableHead>Description</TableHead>
                       <TableHead className="text-right">Amount</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead className="w-48">Actions</TableHead>
+                      <TableHead className="w-56">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -277,40 +361,42 @@ const AccountingVouchers = () => {
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-1">
-                            {/* Print button - always visible */}
+                            {/* View - always visible */}
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openView(v)} title="View">
+                              <Eye className="w-3.5 h-3.5" />
+                            </Button>
+                            {/* Edit - based on role & status */}
+                            {canEditVoucher(v) && (
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(v)} title="Edit">
+                                <Pencil className="w-3.5 h-3.5" />
+                              </Button>
+                            )}
+                            {/* Print - always visible */}
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openPrintVoucher(v)} title="Print">
                               <Printer className="w-3.5 h-3.5" />
                             </Button>
+                            {/* Reverse - approved vouchers, super admin or admin */}
+                            {v.status === "approved" && isSuperAdmin && (
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openSuperAdminAction("reverse", v)} title="Reverse">
+                                <ArrowLeftRight className="w-3.5 h-3.5 text-primary" />
+                              </Button>
+                            )}
+                            {/* Delete - based on role & status */}
+                            {canDeleteVoucher(v) && (
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openSuperAdminAction("delete", v)} title="Delete">
+                                <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                              </Button>
+                            )}
                             {/* Admin: Approve/Reject pending */}
                             {v.status === "pending" && isAdmin && (
                               <>
-                                <Button variant="ghost" size="icon" onClick={() => handleApprove(v)} title="Approve">
-                                  <Check className="w-4 h-4 text-green-600" />
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleApprove(v)} title="Approve">
+                                  <Check className="w-3.5 h-3.5 text-emerald-600" />
                                 </Button>
-                                <Button variant="ghost" size="icon" onClick={() => handleReject(v)} title="Reject">
-                                  <X className="w-4 h-4 text-destructive" />
-                                </Button>
-                              </>
-                            )}
-                            {/* Super Admin: Actions on approved vouchers */}
-                            {v.status === "approved" && isSuperAdmin && (
-                              <>
-                                <Button variant="ghost" size="icon" onClick={() => openSuperAdminAction("reopen", v)} title="Reopen">
-                                  <RotateCcw className="w-4 h-4 text-amber-600" />
-                                </Button>
-                                <Button variant="ghost" size="icon" onClick={() => openSuperAdminAction("reverse", v)} title="Reverse">
-                                  <ArrowLeftRight className="w-4 h-4 text-blue-600" />
-                                </Button>
-                                <Button variant="ghost" size="icon" onClick={() => openSuperAdminAction("delete", v)} title="Delete">
-                                  <Trash2 className="w-4 h-4 text-destructive" />
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleReject(v)} title="Reject">
+                                  <X className="w-3.5 h-3.5 text-destructive" />
                                 </Button>
                               </>
-                            )}
-                            {/* Super Admin: Reopen rejected */}
-                            {v.status === "rejected" && isSuperAdmin && (
-                              <Button variant="ghost" size="icon" onClick={() => openSuperAdminAction("reopen", v)} title="Reopen">
-                                <RotateCcw className="w-4 h-4 text-amber-600" />
-                              </Button>
                             )}
                           </div>
                         </TableCell>
@@ -324,11 +410,14 @@ const AccountingVouchers = () => {
         ))}
       </Tabs>
 
-      {/* Create Voucher Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      {/* Create/Edit Voucher Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) setEditingVoucher(null); }}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>New {VOUCHER_TYPES.find((v) => v.id === activeTab)?.label}</DialogTitle>
+            <DialogTitle>
+              {editingVoucher ? `Edit ${VOUCHER_TYPES.find((v) => v.id === editingVoucher.voucher_type)?.label || "Voucher"} — ${editingVoucher.voucher_number}` : `New ${VOUCHER_TYPES.find((v) => v.id === activeTab)?.label}`}
+              {editingVoucher?.status === "approved" && isSuperAdmin && <Badge variant="outline" className="ml-2 text-xs">Super Admin Override</Badge>}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-3 gap-4">
@@ -427,9 +516,15 @@ const AccountingVouchers = () => {
             <Button variant="outline" size="sm" onClick={addEntry}><Plus className="w-4 h-4 mr-1" />Add Entry</Button>
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button variant="secondary" onClick={() => handleSave(false)} disabled={saving || !isBalanced}>Save as Draft</Button>
-            <Button onClick={() => handleSave(true)} disabled={saving || !isBalanced}>Submit for Approval</Button>
+            <Button variant="outline" onClick={() => { setDialogOpen(false); setEditingVoucher(null); }}>Cancel</Button>
+            {editingVoucher?.status === "approved" ? (
+              <Button onClick={() => handleSave(false)} disabled={saving || !isBalanced}>Save Changes</Button>
+            ) : (
+              <>
+                <Button variant="secondary" onClick={() => handleSave(false)} disabled={saving || !isBalanced}>Save as Draft</Button>
+                <Button onClick={() => handleSave(true)} disabled={saving || !isBalanced}>Submit for Approval</Button>
+              </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -514,6 +609,62 @@ const AccountingVouchers = () => {
           </div>
         </PrintLayout>
       )}
+      {/* View Voucher Dialog */}
+      <Dialog open={!!viewVoucher} onOpenChange={() => setViewVoucher(null)}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {viewVoucher && VOUCHER_TYPES.find((vt) => vt.id === viewVoucher.voucher_type)?.label} — {viewVoucher?.voucher_number}
+              {viewVoucher && statusBadge(viewVoucher.status)}
+            </DialogTitle>
+          </DialogHeader>
+          {viewVoucher && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-4 text-sm">
+                <div><span className="text-muted-foreground">Date:</span> <span className="font-medium">{viewVoucher.voucher_date}</span></div>
+                <div><span className="text-muted-foreground">Branch:</span> <span className="font-medium">{viewVoucher.branch_id ? branchMap.get(viewVoucher.branch_id) || "—" : "—"}</span></div>
+                <div><span className="text-muted-foreground">Amount:</span> <span className="font-medium">{fc(viewVoucher.total_amount)}</span></div>
+              </div>
+              {viewVoucher.description && (
+                <div className="text-sm"><span className="text-muted-foreground">Description:</span> {viewVoucher.description}</div>
+              )}
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>#</TableHead>
+                    <TableHead>Account Code</TableHead>
+                    <TableHead>Account Name</TableHead>
+                    <TableHead className="text-right">Debit</TableHead>
+                    <TableHead className="text-right">Credit</TableHead>
+                    <TableHead>Narration</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {viewEntries.map((e: any, i: number) => (
+                    <TableRow key={i}>
+                      <TableCell>{i + 1}</TableCell>
+                      <TableCell className="font-geist-mono text-xs">{e.account_code}</TableCell>
+                      <TableCell>{e.account_name}</TableCell>
+                      <TableCell className="text-right tabular-nums">{Number(e.debit) > 0 ? fc(Number(e.debit)) : ""}</TableCell>
+                      <TableCell className="text-right tabular-nums">{Number(e.credit) > 0 ? fc(Number(e.credit)) : ""}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{e.narration || ""}</TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow className="bg-muted/50 font-medium">
+                    <TableCell colSpan={3} className="text-right">Total</TableCell>
+                    <TableCell className="text-right tabular-nums">{fc(viewEntries.reduce((s: number, e: any) => s + Number(e.debit), 0))}</TableCell>
+                    <TableCell className="text-right tabular-nums">{fc(viewEntries.reduce((s: number, e: any) => s + Number(e.credit), 0))}</TableCell>
+                    <TableCell />
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewVoucher(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
