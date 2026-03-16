@@ -116,6 +116,81 @@ export type Database = {
         }
         Relationships: []
       }
+      backup_history: {
+        Row: {
+          backup_type: string
+          created_at: string
+          created_by: string | null
+          error_message: string | null
+          file_name: string
+          file_size: number
+          format: string
+          id: string
+          records_count: number
+          status: string
+          storage_path: string | null
+          tables_count: number
+        }
+        Insert: {
+          backup_type?: string
+          created_at?: string
+          created_by?: string | null
+          error_message?: string | null
+          file_name: string
+          file_size?: number
+          format?: string
+          id?: string
+          records_count?: number
+          status?: string
+          storage_path?: string | null
+          tables_count?: number
+        }
+        Update: {
+          backup_type?: string
+          created_at?: string
+          created_by?: string | null
+          error_message?: string | null
+          file_name?: string
+          file_size?: number
+          format?: string
+          id?: string
+          records_count?: number
+          status?: string
+          storage_path?: string | null
+          tables_count?: number
+        }
+        Relationships: []
+      }
+      backup_settings: {
+        Row: {
+          auto_backup_enabled: boolean
+          id: string
+          last_auto_backup_at: string | null
+          retention_days: number
+          schedule_interval: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          auto_backup_enabled?: boolean
+          id?: string
+          last_auto_backup_at?: string | null
+          retention_days?: number
+          schedule_interval?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          auto_backup_enabled?: boolean
+          id?: string
+          last_auto_backup_at?: string | null
+          retention_days?: number
+          schedule_interval?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       bill_of_materials: {
         Row: {
           created_at: string
