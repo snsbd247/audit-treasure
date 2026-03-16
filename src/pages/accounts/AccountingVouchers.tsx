@@ -42,6 +42,7 @@ type SuperAdminAction = "delete" | "reopen" | "reverse" | null;
 const AccountingVouchers = () => {
   const { user, isAdmin, isSuperAdmin } = useAuth();
   const { toast } = useToast();
+  const { fc } = useCurrency();
   const [activeTab, setActiveTab] = useState("journal");
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
