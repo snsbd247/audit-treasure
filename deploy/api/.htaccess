@@ -1,0 +1,25 @@
+RewriteEngine On
+RewriteBase /api/
+
+# Serve existing files directly
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Route all API requests to index.php
+RewriteRule ^(.*)$ index.php [QSA,L]
+
+# Deny access to config files
+<Files "config.php">
+    Order Allow,Deny
+    Deny from all
+</Files>
+
+<Files "db.php">
+    Order Allow,Deny
+    Deny from all
+</Files>
+
+<Files "auth.php">
+    Order Allow,Deny
+    Deny from all
+</Files>
