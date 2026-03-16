@@ -11,7 +11,7 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { Users, Calendar, FileText, DollarSign } from "lucide-react";
 
 export default function HrReportsPage() {
-  const { formatAmount } = useCurrency();
+  const { fc: formatAmount } = useCurrency();
   const [employees, setEmployees] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
   const [designations, setDesignations] = useState<any[]>([]);

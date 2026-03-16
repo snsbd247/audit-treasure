@@ -22,7 +22,7 @@ const months = ["January","February","March","April","May","June","July","August
 
 export default function PayrollPage() {
   const { isAdmin, user } = useAuth();
-  const { formatAmount } = useCurrency();
+  const { fc: formatAmount } = useCurrency();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [structures, setStructures] = useState<SalaryStructure[]>([]);
   const [payroll, setPayroll] = useState<PayrollRecord[]>([]);

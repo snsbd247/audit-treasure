@@ -46,7 +46,7 @@ const defaultForm = {
 
 export default function EmployeesPage() {
   const { user, isAdmin } = useAuth();
-  const { activeBranchId } = useBranch();
+  
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [designations, setDesignations] = useState<Designation[]>([]);
