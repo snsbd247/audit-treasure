@@ -43,6 +43,7 @@ type SuperAdminAction = "delete" | "reopen" | "reverse" | null;
 
 const AccountingVouchers = () => {
   const { user, profile, isAdmin, isSuperAdmin, hasPermission } = useAuth();
+  const { toast } = useToast();
   const canEdit = hasPermission("accounts", "can_edit") || isSuperAdmin;
   const { fc } = useCurrency();
   const [activeTab, setActiveTab] = useState("journal");
