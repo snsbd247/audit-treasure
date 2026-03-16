@@ -64,10 +64,16 @@ const Login = () => {
       <div className="hidden lg:flex lg:w-1/2 bg-primary relative items-center justify-center p-12">
         <div className="absolute inset-0 bg-gradient-to-br from-primary to-primary/80" />
         <div className="relative z-10 text-center space-y-6 max-w-md">
-          <div className="w-16 h-16 bg-primary-foreground/20 rounded-2xl flex items-center justify-center mx-auto">
-            <Building2 className="w-8 h-8 text-primary-foreground" />
-          </div>
-          <h1 className="text-3xl font-bold text-primary-foreground">ERP System</h1>
+          {branding.login_logo_url ? (
+            <img src={branding.login_logo_url} alt="Logo" className="h-16 mx-auto" />
+          ) : branding.company_logo_url ? (
+            <img src={branding.company_logo_url} alt="Logo" className="h-16 mx-auto" />
+          ) : (
+            <div className="w-16 h-16 bg-primary-foreground/20 rounded-2xl flex items-center justify-center mx-auto">
+              <Building2 className="w-8 h-8 text-primary-foreground" />
+            </div>
+          )}
+          <h1 className="text-3xl font-bold text-primary-foreground">{branding.software_name || "ERP System"}</h1>
           <p className="text-primary-foreground/80 text-sm leading-relaxed">
             Complete enterprise resource planning for manufacturing companies.
             Manage accounting, inventory, sales, purchases, and production — all in one place.
@@ -81,6 +87,9 @@ const Login = () => {
               </div>
             ))}
           </div>
+          {!branding.white_label_mode && branding.developer_name && (
+            <p className="text-primary-foreground/50 text-xs mt-4">Developed by {branding.developer_name}</p>
+          )}
         </div>
       </div>
 

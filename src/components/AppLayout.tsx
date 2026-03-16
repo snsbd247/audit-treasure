@@ -3,6 +3,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { TopNavbar } from "@/components/TopNavbar";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { CommandPalette } from "@/components/CommandPalette";
+import { BrandingFooter } from "@/components/BrandingFooter";
 
 export const AppLayout = () => {
   return (
@@ -14,6 +15,7 @@ export const AppLayout = () => {
         <main className="flex-1 overflow-auto">
           <Outlet />
         </main>
+        <BrandingFooter />
       </div>
       <CommandPalette />
     </div>
