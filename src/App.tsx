@@ -75,12 +75,18 @@ const App = () => (
                 <Route path="/sales" element={<SalesPage />} />
                 <Route path="/sales/returns" element={<SalesPage />} />
                 <Route path="/inventory" element={<InventoryPage />} />
+                <Route path="/inventory/items" element={<ItemMasterPage />} />
+                <Route path="/inventory/categories" element={<ItemCategoriesPage />} />
+                <Route path="/inventory/units" element={<UnitsPage />} />
+                <Route path="/inventory/warehouses" element={<WarehousesPage />} />
+                <Route path="/inventory/transfers" element={<StockTransferPage />} />
                 <Route path="/manufacturing/materials" element={<RawMaterialsPage />} />
                 <Route path="/manufacturing/bom" element={<BOMPage />} />
                 <Route path="/manufacturing/production" element={<ProductionPage />} />
                 <Route path="/manufacturing/reports" element={<ManufacturingReports />} />
                 <Route path="/reports/financial" element={<FinancialReports />} />
                 <Route path="/reports/stock-ledger" element={<StockLedger />} />
+                <Route path="/reports/stock-reports" element={<StockReportsPage />} />
                 <Route path="/reports/low-stock" element={<LowStockPage />} />
                 <Route path="/reports/sales" element={<FinancialReports />} />
                 <Route path="/reports/purchase" element={<FinancialReports />} />
