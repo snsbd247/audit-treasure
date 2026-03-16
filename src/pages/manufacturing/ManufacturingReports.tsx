@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { BarChart3, Search } from "lucide-react";
 import { ReportHeader } from "@/components/ReportHeader";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 const ManufacturingReports = () => {
   const [tab, setTab] = useState("production");
