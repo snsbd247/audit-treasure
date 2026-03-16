@@ -61,10 +61,10 @@ const StockAdjustmentPage = () => {
     setLoading(true);
     const [aRes, pRes, wRes] = await Promise.all([
       supabase.from("stock_adjustments" as any).select("*").order("created_at", { ascending: false }).limit(200),
-      supabase.from("products").select("id, product_name, product_code, cost_price").eq("status", "active"),
+      supabase.from("item_master").select("id, item_name, item_code, cost_price").eq("status", "active"),
       supabase.from("warehouses" as any).select("id, warehouse_name, warehouse_code").eq("status", "active"),
     ]);
-    const prods = (pRes.data || []) as Product[];
+    const prods = (pRes.data || []).map((i: any) => ({ id: i.id, product_name: i.item_name, product_code: i.item_code, cost_price: i.cost_price })) as Product[];
     setProducts(prods);
     setWarehouses((wRes.data || []) as any);
     setAdjustments((aRes.data || []).map((a: any) => ({

@@ -23,7 +23,6 @@ import GeneralSettingsPage from "./pages/admin/GeneralSettingsPage";
 import DocumentNumberingPage from "./pages/admin/DocumentNumberingPage";
 import ChartOfAccounts from "./pages/accounts/ChartOfAccounts";
 import AccountingVouchers from "./pages/accounts/AccountingVouchers";
-import ProductsPage from "./pages/inventory/ProductsPage";
 import PurchasesPage from "./pages/purchase/PurchasesPage";
 import SalesPage from "./pages/sales/SalesPage";
 import InventoryPage from "./pages/inventory/InventoryPage";
@@ -32,7 +31,6 @@ import ItemCategoriesPage from "./pages/inventory/ItemCategoriesPage";
 import ItemMasterPage from "./pages/inventory/ItemMasterPage";
 import WarehousesPage from "./pages/inventory/WarehousesPage";
 import StockTransferPage from "./pages/inventory/StockTransferPage";
-import RawMaterialsPage from "./pages/manufacturing/RawMaterialsPage";
 import BOMPage from "./pages/manufacturing/BOMPage";
 import ProductionPage from "./pages/manufacturing/ProductionPage";
 import ManufacturingReports from "./pages/manufacturing/ManufacturingReports";
@@ -74,7 +72,7 @@ const App = () => (
                 <Route path="/accounts/vouchers" element={<AccountingVouchers />} />
                 <Route path="/customers" element={<CustomersPage />} />
                 <Route path="/suppliers" element={<SuppliersPage />} />
-                <Route path="/products" element={<ProductsPage />} />
+                <Route path="/products" element={<ItemMasterPage />} />
                 <Route path="/purchase" element={<PurchasesPage />} />
                 <Route path="/purchase/returns" element={<PurchasesPage />} />
                 <Route path="/sales" element={<SalesPage />} />
@@ -86,7 +84,7 @@ const App = () => (
                 <Route path="/inventory/warehouses" element={<WarehousesPage />} />
                 <Route path="/inventory/transfers" element={<StockTransferPage />} />
                 <Route path="/inventory/adjustments" element={<StockAdjustmentPage />} />
-                <Route path="/manufacturing/materials" element={<RawMaterialsPage />} />
+                <Route path="/manufacturing/materials" element={<ItemMasterPage />} />
                 <Route path="/manufacturing/bom" element={<BOMPage />} />
                 <Route path="/manufacturing/production" element={<ProductionPage />} />
                 <Route path="/manufacturing/reports" element={<ManufacturingReports />} />

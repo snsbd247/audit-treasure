@@ -34,12 +34,12 @@ const BOMPage = () => {
     setLoading(true);
     const [bRes, pRes, mRes] = await Promise.all([
       supabase.from("bill_of_materials").select("*").order("created_at", { ascending: false }),
-      supabase.from("products").select("id, product_name, product_code").eq("status", "active"),
-      supabase.from("raw_materials").select("*").eq("status", "active").order("material_name"),
+      supabase.from("item_master").select("id, item_name, item_code").eq("status", "active").in("item_type", ["product", "finished_goods"]),
+      supabase.from("item_master").select("id, item_name, item_code, cost_price, item_type").eq("status", "active").eq("item_type", "raw_material"),
     ]);
-    const prods = (pRes.data || []) as Product[];
+    const prods = (pRes.data || []).map((i: any) => ({ id: i.id, product_name: i.item_name, product_code: i.item_code })) as Product[];
     setProducts(prods);
-    setMaterials((mRes.data || []) as RawMaterial[]);
+    setMaterials((mRes.data || []).map((i: any) => ({ id: i.id, material_name: i.item_name, material_code: i.item_code, unit: "pcs", cost_price: i.cost_price })) as RawMaterial[]);
     setBoms((bRes.data || []).map((b: any) => ({ ...b, product_name: prods.find((p) => p.id === b.product_id)?.product_name })));
     setLoading(false);
   };

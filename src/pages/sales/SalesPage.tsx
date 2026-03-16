@@ -115,14 +115,14 @@ const SalesPage = () => {
   const fetchData = async () => {
     setLoading(true);
     const [pRes, cRes, bRes, sRes, srRes] = await Promise.all([
-      supabase.from("products").select("id, product_name, product_code, selling_price").eq("status", "active"),
+      supabase.from("item_master").select("id, item_name, item_code, selling_price, item_type").eq("status", "active").in("item_type", ["product", "finished_goods", "service"]),
       supabase.from("customers").select("*").eq("status", "active"),
       supabase.from("branches").select("id, name").eq("status", "active"),
       supabase.from("sales_invoices").select("*").order("created_at", { ascending: false }),
       supabase.from("sales_returns").select("*").order("created_at", { ascending: false }),
     ]);
     const custList = (cRes.data || []) as Customer[];
-    setProducts((pRes.data || []) as Product[]);
+    setProducts((pRes.data || []).map((i: any) => ({ id: i.id, product_name: i.item_name, product_code: i.item_code, selling_price: i.selling_price })) as Product[]);
     setCustomers(custList);
     setBranches((bRes.data || []) as Branch[]);
     setInvoices((sRes.data || []).map((s: any) => ({ ...s, customer_name: custList.find((c) => c.id === s.customer_id)?.name })));

@@ -112,14 +112,14 @@ const PurchasesPage = () => {
   const fetchData = async () => {
     setLoading(true);
     const [pRes, sRes, bRes, purRes, prRes] = await Promise.all([
-      supabase.from("products").select("id, product_name, product_code, cost_price").eq("status", "active"),
+      supabase.from("item_master").select("id, item_name, item_code, cost_price, item_type").eq("status", "active").in("item_type", ["product", "raw_material", "finished_goods"]),
       supabase.from("suppliers").select("*").eq("status", "active"),
       supabase.from("branches").select("id, name").eq("status", "active"),
       supabase.from("purchases").select("*").order("created_at", { ascending: false }),
       supabase.from("purchase_returns").select("*").order("created_at", { ascending: false }),
     ]);
     const supList = (sRes.data || []) as Supplier[];
-    setProducts((pRes.data || []) as Product[]);
+    setProducts((pRes.data || []).map((i: any) => ({ id: i.id, product_name: i.item_name, product_code: i.item_code, cost_price: i.cost_price })) as Product[]);
     setSuppliers(supList);
     setBranches((bRes.data || []) as Branch[]);
     setPurchases((purRes.data || []).map((p: any) => ({ ...p, supplier_name: supList.find((s) => s.id === p.supplier_id)?.name })));
