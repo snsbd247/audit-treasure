@@ -8,7 +8,7 @@ import { Warehouse, AlertTriangle, Package } from "lucide-react";
 
 interface Product {
   id: string; product_name: string; product_code: string;
-  unit: string; low_stock_threshold: number; category_name?: string;
+  unit: string; low_stock_threshold: number; category_name?: string; item_type?: string;
 }
 
 interface StockSummary {
