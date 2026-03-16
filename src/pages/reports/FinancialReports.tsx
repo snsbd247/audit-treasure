@@ -212,9 +212,9 @@ const FinancialReports = () => {
               <CardContent className="p-0">
                 <Table><TableBody>
                   {plData.income.map((i) => (
-                    <TableRow key={i.id}><TableCell>{i.account_name}</TableCell><TableCell className="text-right tabular-nums">{Math.abs(i.balance).toLocaleString()}</TableCell></TableRow>
+                    <TableRow key={i.id}><TableCell>{i.account_name}</TableCell><TableCell className="text-right tabular-nums">{fc(Math.abs(i.balance))}</TableCell></TableRow>
                   ))}
-                  <TableRow className="bg-muted/50 font-bold"><TableCell>Total Income</TableCell><TableCell className="text-right tabular-nums">{plData.totalIncome.toLocaleString()}</TableCell></TableRow>
+                  <TableRow className="bg-muted/50 font-bold"><TableCell>Total Income</TableCell><TableCell className="text-right tabular-nums">{fc(plData.totalIncome)}</TableCell></TableRow>
                 </TableBody></Table>
               </CardContent>
             </Card>
