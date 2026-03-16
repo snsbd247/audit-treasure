@@ -19,6 +19,7 @@ const Login = () => {
   const [forgotMode, setForgotMode] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const { signIn } = useAuth();
+  const { branding } = useBranding();
   const navigate = useNavigate();
   const { toast } = useToast();
 
