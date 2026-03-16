@@ -265,6 +265,93 @@ const BackupPage = () => {
     toast({ title: "Settings saved" });
   };
 
+  const handleCloudBackup = async () => {
+    setCloudUploading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+
+      // First create a backup
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const backupRes = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/create-backup`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ format: "json", backup_type: "cloud" }),
+        }
+      );
+      const backupResult = await backupRes.json();
+      if (!backupResult.success) throw new Error(backupResult.error);
+
+      // Upload to Google Drive
+      const driveRes = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/google-drive-backup`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            action: "upload",
+            backup_content: backupResult.content,
+            backup_file_name: backupResult.file_name,
+          }),
+        }
+      );
+      const driveResult = await driveRes.json();
+      if (!driveResult.success) {
+        if (driveResult.needs_setup) {
+          setCloudConfigured(false);
+          toast({ title: "Google Drive not configured", description: driveResult.error, variant: "destructive" });
+        } else {
+          throw new Error(driveResult.error);
+        }
+        return;
+      }
+
+      setCloudConfigured(true);
+      toast({ title: "Cloud backup successful", description: `Uploaded ${driveResult.file_name} to Google Drive` });
+      fetchCloudFiles();
+    } catch (err: any) {
+      toast({ title: "Cloud backup failed", description: err.message, variant: "destructive" });
+    } finally {
+      setCloudUploading(false);
+    }
+  };
+
+  const fetchCloudFiles = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const res = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/google-drive-backup`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ action: "list" }),
+        }
+      );
+      const result = await res.json();
+      if (result.success) {
+        setCloudConfigured(true);
+        setCloudFiles(result.files || []);
+      } else if (result.needs_setup) {
+        setCloudConfigured(false);
+      }
+    } catch {
+      // silently fail
+    }
+  };
+
   const statusBadge = (status: string) => {
     switch (status) {
       case "completed":
