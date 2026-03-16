@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 interface NavGroup {
   label: string;
   icon: any;
+  module?: string; // maps to role_permissions.module for access control
   children: { to: string; label: string; icon: any; end?: boolean }[];
   adminOnly?: boolean;
 }
