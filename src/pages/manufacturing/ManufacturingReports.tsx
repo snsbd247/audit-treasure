@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { BarChart3, Search } from "lucide-react";
+import { ReportHeader } from "@/components/ReportHeader";
 
 const ManufacturingReports = () => {
   const [tab, setTab] = useState("production");
