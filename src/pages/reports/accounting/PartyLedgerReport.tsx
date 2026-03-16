@@ -39,7 +39,7 @@ const PartyLedgerReport = () => {
     const numberField = partyType === "customer" ? "invoice_number" : "purchase_number";
     const dateField = partyType === "customer" ? "invoice_date" : "purchase_date";
 
-    let query = supabase.from(table).select("*")
+    let query = (supabase.from(table) as any).select("*")
       .eq(partyField, selectedParty)
       .gte(dateField, dateFrom)
       .lte(dateField, dateTo)
