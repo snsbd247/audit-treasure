@@ -8,6 +8,7 @@ import {
   FileText, ShoppingCart, Receipt, UserPlus, Truck, Plus,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell,
