@@ -136,9 +136,24 @@ const NavItem = ({ to, label, icon: Icon, end }: { to: string; label: string; ic
   </NavLink>
 );
 
-const CollapsibleGroup = ({ group }: { group: NavGroup }) => {
+// Map routes to required modules for child-level filtering
+const routeModuleMap: Record<string, ModuleKey[]> = {
+  "/manufacturing/reports": ["manufacturing"],
+  "/reports/stock-ledger": ["inventory"],
+  "/inventory/warehouses": ["multi_warehouse"],
+};
+
+const CollapsibleGroup = ({ group, isModuleEnabled }: { group: NavGroup; isModuleEnabled: (key: ModuleKey) => boolean }) => {
   const [open, setOpen] = useState(false);
   const Icon = group.icon;
+
+  const filteredChildren = group.children.filter((item) => {
+    const required = routeModuleMap[item.to];
+    if (required && required.some((m) => !isModuleEnabled(m))) return false;
+    return true;
+  });
+
+  if (filteredChildren.length === 0) return null;
 
   return (
     <div>
@@ -154,7 +169,7 @@ const CollapsibleGroup = ({ group }: { group: NavGroup }) => {
       </button>
       {open && (
         <div className="ml-2 pl-3 border-l border-border/50 space-y-0.5 mt-0.5 mb-1">
-          {group.children.map((item) => (
+          {filteredChildren.map((item) => (
             <NavItem key={item.to + item.label} {...item} />
           ))}
         </div>
