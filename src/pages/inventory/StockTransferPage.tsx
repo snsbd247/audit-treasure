@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBranch } from "@/contexts/BranchContext";
-import { nextNumber } from "@/lib/db-utils";
+import { createStockTransfer } from "@/lib/transaction-service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -64,37 +64,9 @@ const StockTransferPage = () => {
 
     setSaving(true);
     try {
-      const transferNum = await nextNumber("stock_transfer");
-
-      // Create transfer record
-      const { error: tErr } = await supabase.from("stock_transfers" as any).insert({
-        transfer_number: transferNum,
-        from_warehouse_id: fromWH,
-        to_warehouse_id: toWH,
-        item_id: itemId,
-        quantity,
-        notes: notes || null,
-        created_by: user?.id,
-      } as any);
-      if (tErr) throw tErr;
-
-      // Update warehouse stock: decrement from source
-      const { data: srcStock } = await supabase.from("warehouse_stock" as any).select("*").eq("item_id", itemId).eq("warehouse_id", fromWH).single();
-      if (srcStock) {
-        await supabase.from("warehouse_stock" as any).update({ quantity: (srcStock as any).quantity - quantity, updated_at: new Date().toISOString() } as any).eq("id", (srcStock as any).id);
-      } else {
-        await supabase.from("warehouse_stock" as any).insert({ item_id: itemId, warehouse_id: fromWH, quantity: -quantity } as any);
-      }
-
-      // Update warehouse stock: increment at destination
-      const { data: dstStock } = await supabase.from("warehouse_stock" as any).select("*").eq("item_id", itemId).eq("warehouse_id", toWH).single();
-      if (dstStock) {
-        await supabase.from("warehouse_stock" as any).update({ quantity: (dstStock as any).quantity + quantity, updated_at: new Date().toISOString() } as any).eq("id", (dstStock as any).id);
-      } else {
-        await supabase.from("warehouse_stock" as any).insert({ item_id: itemId, warehouse_id: toWH, quantity } as any);
-      }
-
-      toast({ title: `Transfer ${transferNum} completed` });
+      const ctx = { date: new Date().toISOString().slice(0, 10), branchId: userBranchId, userId: user?.id };
+      const result = await createStockTransfer(ctx, fromWH, toWH, itemId, quantity, notes);
+      toast({ title: `Transfer ${result.transferNumber} completed` });
       setDialogOpen(false);
       setFromWH(""); setToWH(""); setItemId(""); setQty("1"); setNotes("");
       fetchData();

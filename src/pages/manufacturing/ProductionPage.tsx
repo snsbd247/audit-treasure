@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { nextNumber } from "@/lib/db-utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBranch } from "@/contexts/BranchContext";
-import { validateFinancialYear } from "@/lib/financial-year-utils";
+import { createProductionEntry } from "@/lib/transaction-service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,13 +11,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Factory, Trash2 } from "lucide-react";
+import { Plus, Factory } from "lucide-react";
 
 interface Product { id: string; product_name: string; product_code: string; }
 interface Branch { id: string; name: string; }
 interface RawMaterial { id: string; material_name: string; material_code: string; unit: string; cost_price: number; }
 interface BOM { id: string; product_id: string; name: string; }
-interface BOMItem { material_id: string; quantity: number; }
 interface MatRow { id: string; material_id: string; quantity: number; cost: number; unit: string; }
 
 interface ProdEntry {
@@ -101,48 +99,19 @@ const ProductionPage = () => {
   const handleSave = async () => {
     if (!formProduct || matRows.length === 0) { toast({ title: "Select product and BOM", variant: "destructive" }); return; }
 
-    const fyResult = await validateFinancialYear(formDate);
-    if (!fyResult.valid) { toast({ title: "Financial Year Error", description: fyResult.error, variant: "destructive" }); return; }
-
-    const branchId = formBranch || userBranchId || null;
-
     setSaving(true);
     try {
-      const numData = await nextNumber("production");
-      const { data, error } = await supabase.from("production_entries").insert({
-        production_number: numData as string,
-        production_date: formDate, product_id: formProduct, bom_id: formBom || null,
-        quantity: parseFloat(formQty) || 1, branch_id: branchId,
-        raw_material_cost: rawMaterialCost, labor_cost: parseFloat(formLabor) || 0,
-        electricity_cost: parseFloat(formElec) || 0, total_cost: totalCost,
-        notes: formNotes, created_by: user?.id,
-      }).select().single();
-      if (error) throw error;
-
-      // Save consumed materials
-      const prodMatRows = matRows.map((r) => ({
-        production_id: (data as any).id, material_id: r.material_id, quantity: r.quantity, cost: r.cost,
-      }));
-      await supabase.from("production_materials").insert(prodMatRows);
-
-      // Stock movements: decrease raw materials
-      const decreaseMovements = matRows.map((r) => ({
-        product_id: r.material_id, branch_id: branchId,
-        movement_type: "production_out" as const, reference_type: "production", reference_id: (data as any).id,
-        quantity: -r.quantity,
-      }));
-      // Stock movement: increase finished product
-      const increaseMovement = {
-        product_id: formProduct, branch_id: branchId,
-        movement_type: "production_in" as const, reference_type: "production", reference_id: (data as any).id,
-        quantity: parseFloat(formQty) || 1,
-      };
-      await supabase.from("stock_movements").insert([...decreaseMovements, increaseMovement]);
-
-      toast({ title: `Production ${numData} recorded` });
+      const ctx = { date: formDate, branchId: formBranch || userBranchId || null, userId: user?.id };
+      const result = await createProductionEntry(
+        ctx, formProduct, formBom || null, parseFloat(formQty) || 1,
+        parseFloat(formLabor) || 0, parseFloat(formElec) || 0, rawMaterialCost, formNotes,
+        matRows.map((r) => ({ material_id: r.material_id, quantity: r.quantity, cost: r.cost }))
+      );
+      toast({ title: `Production ${result.productionNumber} recorded` });
       setDialogOpen(false); fetchData();
-    } catch (err: any) { toast({ title: "Error", description: err.message, variant: "destructive" }); }
-    finally { setSaving(false); }
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally { setSaving(false); }
   };
 
   return (
