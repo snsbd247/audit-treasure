@@ -13,6 +13,7 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 
 const ManufacturingReports = () => {
   const [tab, setTab] = useState("production");
+  const { fc } = useCurrency();
   const [productions, setProductions] = useState<any[]>([]);
   const [consumptions, setConsumptions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
