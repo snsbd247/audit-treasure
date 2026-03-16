@@ -55,7 +55,7 @@ export default function MyProfilePage() {
   ];
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
+    <div className="p-4 lg:p-6 space-y-6 max-w-2xl mx-auto">
       <div><h1 className="text-2xl font-bold text-foreground">My Profile</h1><p className="text-muted-foreground">{companyName}</p></div>
 
       <Card>

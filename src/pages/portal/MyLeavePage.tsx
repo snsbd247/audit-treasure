@@ -62,7 +62,7 @@ export default function MyLeavePage() {
   if (!employee) return <div className="text-center py-16 text-muted-foreground">No employee profile linked.</div>;
 
   return (
-    <div className="space-y-6">
+    <div className="p-4 lg:p-6 space-y-6 max-w-[1600px] mx-auto">
       <div className="flex items-center justify-between">
         <div><h1 className="text-2xl font-bold text-foreground">My Leave</h1></div>
         <Button onClick={() => { setForm({ leave_type_id: "", start_date: "", end_date: "", reason: "" }); setDialogOpen(true); }}><Plus className="w-4 h-4 mr-2" />Apply Leave</Button>

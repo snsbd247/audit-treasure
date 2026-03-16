@@ -29,7 +29,7 @@ export default function MyPayslipsPage() {
   if (!employee) return <div className="text-center py-16 text-muted-foreground">No employee profile linked.</div>;
 
   return (
-    <div className="space-y-6">
+    <div className="p-4 lg:p-6 space-y-6 max-w-[1600px] mx-auto">
       <div><h1 className="text-2xl font-bold text-foreground">My Payslips</h1></div>
       <Card><CardContent className="pt-6">
         <Table>

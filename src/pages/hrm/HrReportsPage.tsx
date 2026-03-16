@@ -45,14 +45,20 @@ export default function HrReportsPage() {
   const totalSalaryExpense = payroll.filter(p => p.status === "approved").reduce((sum, p) => sum + p.net_salary, 0);
 
   return (
-    <div className="space-y-6">
-      <div><h1 className="text-2xl font-bold text-foreground">HR Reports</h1><p className="text-muted-foreground">Employee, attendance, and payroll reports</p></div>
+    <div className="p-4 lg:p-6 space-y-6 max-w-[1600px] mx-auto">
+      <div className="flex items-center gap-2">
+        <FileText className="w-5 h-5 text-primary" />
+        <div>
+          <h1 className="text-xl font-semibold text-foreground">HR Reports</h1>
+          <p className="text-sm text-muted-foreground">Employee, attendance, and payroll reports</p>
+        </div>
+      </div>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <Card><CardContent className="pt-6 text-center"><Users className="w-8 h-8 mx-auto text-primary mb-2" /><p className="text-2xl font-bold">{employees.length}</p><p className="text-sm text-muted-foreground">Total Employees</p></CardContent></Card>
-        <Card><CardContent className="pt-6 text-center"><Users className="w-8 h-8 mx-auto text-green-600 mb-2" /><p className="text-2xl font-bold">{employees.filter(e => e.status === "active").length}</p><p className="text-sm text-muted-foreground">Active</p></CardContent></Card>
-        <Card><CardContent className="pt-6 text-center"><Calendar className="w-8 h-8 mx-auto text-blue-600 mb-2" /><p className="text-2xl font-bold">{departments.length}</p><p className="text-sm text-muted-foreground">Departments</p></CardContent></Card>
-        <Card><CardContent className="pt-6 text-center"><DollarSign className="w-8 h-8 mx-auto text-amber-600 mb-2" /><p className="text-2xl font-bold">{formatAmount(totalSalaryExpense)}</p><p className="text-sm text-muted-foreground">Total Salary Expense</p></CardContent></Card>
+        <Card><CardContent className="pt-6 text-center"><Users className="w-8 h-8 mx-auto text-success mb-2" /><p className="text-2xl font-bold">{employees.filter(e => e.status === "active").length}</p><p className="text-sm text-muted-foreground">Active</p></CardContent></Card>
+        <Card><CardContent className="pt-6 text-center"><Calendar className="w-8 h-8 mx-auto text-primary mb-2" /><p className="text-2xl font-bold">{departments.length}</p><p className="text-sm text-muted-foreground">Departments</p></CardContent></Card>
+        <Card><CardContent className="pt-6 text-center"><DollarSign className="w-8 h-8 mx-auto text-warning mb-2" /><p className="text-2xl font-bold">{formatAmount(totalSalaryExpense)}</p><p className="text-sm text-muted-foreground">Total Salary Expense</p></CardContent></Card>
       </div>
 
       <div className="flex gap-4 items-end">
