@@ -60,6 +60,7 @@ const App = () => (
       <ThemeProvider>
         <AuthProvider>
           <BranchProvider>
+          <CurrencyProvider>
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<Login />} />
