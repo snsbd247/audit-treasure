@@ -34,8 +34,6 @@ const navGroups: NavGroup[] = [
       { to: "/accounts/vouchers?type=payment", label: "Payment Voucher", icon: CreditCard },
       { to: "/accounts/vouchers?type=receipt", label: "Receipt Voucher", icon: Receipt },
       { to: "/accounts/vouchers?type=contra", label: "Contra Voucher", icon: ArrowLeftRight },
-      { to: "/customers", label: "Customers", icon: UserCheck },
-      { to: "/suppliers", label: "Suppliers", icon: Truck },
     ],
   },
   {
@@ -46,6 +44,7 @@ const navGroups: NavGroup[] = [
       { to: "/sales", label: "Sales Invoice", icon: Receipt },
       { to: "/sales/returns", label: "Sales Return", icon: ArrowLeftRight },
       { to: "/reports/sales", label: "Sales Report", icon: BarChart3 },
+      { to: "/customers", label: "Customers", icon: UserCheck },
     ],
   },
   {
@@ -55,26 +54,14 @@ const navGroups: NavGroup[] = [
     children: [
       { to: "/purchase", label: "Purchase Entry", icon: ShoppingCart },
       { to: "/purchase/returns", label: "Purchase Return", icon: ArrowLeftRight },
+      { to: "/suppliers", label: "Suppliers", icon: Truck },
       { to: "/reports/purchase", label: "Purchase Report", icon: BarChart3 },
-    ],
-  },
-  {
-    label: "Manufacturing",
-    icon: Factory,
-    module: "manufacturing",
-    requiredModules: ["manufacturing"],
-    children: [
-      { to: "/products", label: "Products", icon: Package },
-      { to: "/manufacturing/materials", label: "Raw Materials", icon: Layers },
-      { to: "/manufacturing/bom", label: "Bill of Materials", icon: ClipboardList },
-      { to: "/manufacturing/production", label: "Production Entry", icon: Factory },
     ],
   },
   {
     label: "Inventory",
     icon: Warehouse,
     module: "inventory",
-    requiredModules: ["inventory"],
     children: [
       { to: "/inventory/items", label: "Item Master", icon: Package },
       { to: "/inventory/categories", label: "Item Categories", icon: Layers },
@@ -86,6 +73,17 @@ const navGroups: NavGroup[] = [
       { to: "/reports/stock-ledger", label: "Stock Ledger", icon: ScrollText },
       { to: "/reports/stock-reports", label: "Stock Reports", icon: BarChart3 },
       { to: "/reports/low-stock", label: "Low Stock Alert", icon: CircleDot },
+    ],
+  },
+  {
+    label: "Manufacturing",
+    icon: Factory,
+    module: "manufacturing",
+    requiredModules: ["manufacturing"],
+    children: [
+      { to: "/manufacturing/bom", label: "Bill of Materials", icon: ClipboardList },
+      { to: "/manufacturing/production", label: "Production Entry", icon: Factory },
+      { to: "/manufacturing/reports", label: "Production Report", icon: BarChart3 },
     ],
   },
   {
