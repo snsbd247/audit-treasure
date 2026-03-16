@@ -355,9 +355,13 @@ const SalesPage = () => {
               </TableRow></TableHeader>
               <TableBody>
                 {loading ? <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
-                : invoices.length === 0 ? <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">No invoices yet</TableCell></TableRow>
-                : invoices.map((inv) => (
-                  <TableRow key={inv.id}>
+                : invoices.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">No invoices yet</TableCell></TableRow>
+                : invoices.map((inv) => {
+                  const statusCfg = getDocumentStatusConfig(inv.status);
+                  const isLocked = (inv.status === "approved" || inv.status === "completed") && !isSuperAdmin;
+                  const isCancelled = inv.status === "cancelled";
+                  return (
+                  <TableRow key={inv.id} className={isCancelled ? "opacity-60" : ""}>
                     <TableCell className="font-geist-mono text-xs font-medium">{inv.invoice_number}</TableCell>
                     <TableCell>{inv.invoice_date}</TableCell>
                     <TableCell>{inv.customer_name || "—"}</TableCell>
@@ -365,10 +369,30 @@ const SalesPage = () => {
                     <TableCell className="text-right tabular-nums">{fc(inv.discount)}</TableCell>
                     <TableCell className="text-right tabular-nums font-medium">{fc(inv.net_amount)}</TableCell>
                     <TableCell>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusCfg.className}`}>
+                        {statusCfg.label}
+                      </span>
+                    </TableCell>
+                    <TableCell>
                       <div className="flex gap-1">
-                        {canEdit && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(inv)} title="Edit">
-                            <Pencil className="w-3.5 h-3.5" />
+                        {!isCancelled && (inv.status === "draft" || inv.status === "completed") && (isAdmin || isSuperAdmin) && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={() => { setActionTarget(inv); setActionType("approve"); setActionDialogOpen(true); }} title="Approve">
+                            <Check className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                        {!isCancelled && !isLocked && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(inv)} title={isLocked ? "Locked" : "Edit"}>
+                            {isLocked ? <Lock className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
+                          </Button>
+                        )}
+                        {isSuperAdmin && (inv.status === "approved" || inv.status === "completed") && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-amber-600" onClick={() => openEdit(inv)} title="Super Admin Edit">
+                            <ShieldAlert className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                        {!isCancelled && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => { setActionTarget(inv); setActionType("cancel"); setActionDialogOpen(true); }} title="Cancel">
+                            <X className="w-3.5 h-3.5" />
                           </Button>
                         )}
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openPrint(inv)} title="Print">
@@ -377,7 +401,8 @@ const SalesPage = () => {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent></Card>
