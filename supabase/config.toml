@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.google-drive-backup]
 verify_jwt = false
+
+[functions.backup-settings]
+verify_jwt = false
