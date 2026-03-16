@@ -324,8 +324,8 @@ const PurchasesPage = () => {
             <Table>
               <TableHeader><TableRow>
                 <TableHead>Purchase #</TableHead><TableHead>Date</TableHead><TableHead>Supplier</TableHead>
-                <TableHead className="text-right">Amount</TableHead><TableHead>Payment</TableHead>
-                <TableHead className="w-24">Actions</TableHead>
+                <TableHead className="text-right">Amount</TableHead><TableHead>Payment</TableHead><TableHead>Status</TableHead>
+                <TableHead className="w-32">Actions</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {loading ? <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
