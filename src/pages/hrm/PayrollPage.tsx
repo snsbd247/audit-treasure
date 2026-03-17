@@ -46,7 +46,7 @@ const LATE_PENALTY = 50; // Configurable late penalty amount
 export default function PayrollPage() {
   const { isAdmin, user } = useAuth();
   const { fc: formatAmount } = useCurrency();
-  const { activeBranch } = useBranch();
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [structures, setStructures] = useState<SalaryStructure[]>([]);
   const [payroll, setPayroll] = useState<PayrollRecord[]>([]);
