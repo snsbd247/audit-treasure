@@ -17,7 +17,7 @@ interface ConversationItem {
   id: string;
   subject: string | null;
   updated_at: string;
-  participants: { id: string; name: string; username: string | null; is_online: boolean; last_seen_at: string | null }[];
+  participants: { id: string; name: string; username: string | null; is_online: boolean; last_seen_at: string | null; photo_url: string | null }[];
   latest_message: { message: string; sender_name: string } | null;
   unread_count: number;
 }
