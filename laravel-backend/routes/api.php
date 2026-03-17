@@ -2,6 +2,16 @@
 
 use Illuminate\Support\Facades\Route;
 
+// ─── Installation Routes (blocked after setup) ─────────────
+Route::prefix('install')->middleware(\App\Http\Middleware\InstallCheck::class)->group(function () {
+    Route::get('status', [\App\Http\Controllers\Install\InstallController::class, 'status']);
+    Route::get('check-environment', [\App\Http\Controllers\Install\InstallController::class, 'checkEnvironment']);
+    Route::post('test-database', [\App\Http\Controllers\Install\InstallController::class, 'testDatabase']);
+    Route::post('run-setup', [\App\Http\Controllers\Install\InstallController::class, 'runSetup']);
+});
+// Status check is also available without middleware (for redirect logic)
+Route::get('install/status', [\App\Http\Controllers\Install\InstallController::class, 'status'])->withoutMiddleware(\App\Http\Middleware\InstallCheck::class);
+
 // Auth (public)
 Route::prefix('auth')->group(function () {
     Route::post('login', [\App\Http\Controllers\Auth\AuthController::class, 'login']);
