@@ -16,7 +16,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search, Pencil, Check, X, Lock, ShieldAlert } from "lucide-react";
+import { Plus, Search, Pencil, Check, X, Lock, ShieldAlert, Eye } from "lucide-react";
 
 interface Customer {
   id: string;
