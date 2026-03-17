@@ -64,7 +64,7 @@ export function useDocumentRules(
   return {
     canEdit: userCanEdit,
     canDelete: userCanDelete,
-    canApprove: isAdmin || isSuperAdmin,
+    canApprove: isSuperAdmin || userCanEdit,
     canCancel: userCanEdit,
     isOverrideEdit: false,
     lockReason: userCanEdit ? null : "You don't have permission to edit",
