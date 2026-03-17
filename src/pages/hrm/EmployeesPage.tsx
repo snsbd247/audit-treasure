@@ -111,6 +111,7 @@ export default function EmployeesPage() {
       department_id: form.department_id || null,
       designation_id: form.designation_id || null,
       branch_id: form.branch_id || null,
+      user_id: form.user_id || null,
       updated_at: new Date().toISOString(),
     };
 
