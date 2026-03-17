@@ -220,8 +220,9 @@ class InstallController extends BaseController
                 ]);
             }
 
-            // 9. Create storage link
-            $steps[] = 'Creating storage link...';
+            // 9. Create storage link + backup directory
+            $steps[] = 'Creating storage link & backup directory...';
+            @mkdir(storage_path('app/backups'), 0775, true);
             try {
                 Artisan::call('storage:link');
             } catch (\Exception $e) {
