@@ -74,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .eq("user_id", userId);
 
         if (customRoleLinks && customRoleLinks.length > 0) {
-          const roleIds = customRoleLinks.map((r: any) => r.custom_role_id);
+          const roleIds = customRoleLinks.map((r: any) => r.role_id);
           const { data: perms } = await supabase
             .from("role_permissions")
             .select("*")
