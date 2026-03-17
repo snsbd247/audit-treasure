@@ -89,7 +89,7 @@ const UsersPage = () => {
   const openCreate = () => {
     setEditUser(null);
     setFormName(""); setFormUsername(""); setFormEmail(""); setFormPhone("");
-    setFormPassword(""); setFormRole("staff"); setFormBranch(""); setFormStatus("active");
+    setFormPassword(""); setFormRole("user"); setFormBranch(""); setFormStatus("active");
     setFormCustomRole("");
     setDialogOpen(true);
   };
