@@ -207,7 +207,7 @@ export default function InstallPage() {
                           {check.ok ? <CheckCircle2 className="w-5 h-5 text-green-600" /> : <XCircle className="w-5 h-5 text-destructive" />}
                           <span className="text-sm font-medium">{check.label}</span>
                         </div>
-                        <span className={`text-xs px-2 py-1 rounded ${check.ok ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"}`}>{check.value}</span>
+                        <span className={`text-xs px-2 py-1 rounded ${check.ok ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}>{check.value}</span>
                       </div>
                     ))}
                   </div>
