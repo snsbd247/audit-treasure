@@ -34,6 +34,7 @@ class AuthController extends BaseController
         }
 
         $token = $user->createToken('api')->plainTextToken;
+        $user->update(['is_online' => true, 'last_seen_at' => now()]);
         $roles = $user->roles()->with('permissions')->get();
         $permissions = $user->getAllPermissions();
 
@@ -61,6 +62,7 @@ class AuthController extends BaseController
 
     public function logout(Request $request)
     {
+        $request->user()->update(['is_online' => false, 'last_seen_at' => now()]);
         $this->activityService->logLogout($request->user()->id, $request);
         $request->user()->currentAccessToken()->delete();
         return $this->success(null, 'Logged out');
