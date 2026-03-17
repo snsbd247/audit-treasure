@@ -194,8 +194,7 @@ const UsersPage = () => {
           <SelectContent>
             <SelectItem value="all">All Roles</SelectItem>
             <SelectItem value="super_admin">Super Admin</SelectItem>
-            <SelectItem value="admin">Admin</SelectItem>
-            <SelectItem value="staff">Staff</SelectItem>
+            <SelectItem value="user">User</SelectItem>
           </SelectContent>
         </Select>
         <Select value={filterStatus} onValueChange={setFilterStatus}>
