@@ -168,7 +168,7 @@ const navGroups: NavGroup[] = [
   {
     label: "Administration",
     icon: Shield,
-    adminOnly: true,
+    module: "administration",
     children: [
       { to: "/admin/branches", label: "Branches", icon: Building2 },
       { to: "/admin/financial-years", label: "Financial Years", icon: Calendar },
