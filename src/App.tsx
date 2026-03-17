@@ -196,18 +196,20 @@ const App = () => (
                 <Route path="/portal/leave" element={<MyLeavePage />} />
                 <Route path="/portal/payslips" element={<MyPayslipsPage />} />
                 <Route path="/portal/documents" element={<MyDocumentsPage />} />
+                {/* Messaging */}
+                <Route path="/messaging" element={<MessagingPage />} />
                 {/* Admin Routes */}
-                <Route path="/admin/users" element={<ProtectedRoute requireAdmin><UsersPage /></ProtectedRoute>} />
-                <Route path="/admin/roles" element={<ProtectedRoute requireAdmin><RolesPage /></ProtectedRoute>} />
-                <Route path="/admin/branches" element={<ProtectedRoute requireAdmin><BranchesPage /></ProtectedRoute>} />
-                <Route path="/admin/financial-years" element={<ProtectedRoute requireAdmin><FinancialYearsPage /></ProtectedRoute>} />
-                <Route path="/admin/audit-log" element={<ProtectedRoute requireAdmin><AuditLogPage /></ProtectedRoute>} />
-                <Route path="/admin/backup" element={<ProtectedRoute requireAdmin><BackupPage /></ProtectedRoute>} />
-                <Route path="/admin/settings" element={<ProtectedRoute requireAdmin><GeneralSettingsPage /></ProtectedRoute>} />
-                <Route path="/admin/numbering" element={<ProtectedRoute requireAdmin><DocumentNumberingPage /></ProtectedRoute>} />
-                <Route path="/admin/shortcuts" element={<ProtectedRoute requireAdmin><ShortcutsPage /></ProtectedRoute>} />
-                <Route path="/admin/branding" element={<ProtectedRoute requireAdmin><BrandingPage /></ProtectedRoute>} />
-                <Route path="/admin/sms" element={<ProtectedRoute requireAdmin><SmsSettingsPage /></ProtectedRoute>} />
+                <Route path="/admin/users" element={<ProtectedRoute requiredPermission="users.view"><UsersPage /></ProtectedRoute>} />
+                <Route path="/admin/roles" element={<ProtectedRoute requiredPermission="roles.view"><RolesPage /></ProtectedRoute>} />
+                <Route path="/admin/branches" element={<ProtectedRoute requiredPermission="branches.view"><BranchesPage /></ProtectedRoute>} />
+                <Route path="/admin/financial-years" element={<ProtectedRoute requiredPermission="financial_years.view"><FinancialYearsPage /></ProtectedRoute>} />
+                <Route path="/admin/audit-log" element={<ProtectedRoute requiredPermission="audit_log.view"><AuditLogPage /></ProtectedRoute>} />
+                <Route path="/admin/backup" element={<ProtectedRoute requiredPermission="backup.view"><BackupPage /></ProtectedRoute>} />
+                <Route path="/admin/settings" element={<ProtectedRoute requiredPermission="settings.view"><GeneralSettingsPage /></ProtectedRoute>} />
+                <Route path="/admin/numbering" element={<ProtectedRoute requiredPermission="settings.view"><DocumentNumberingPage /></ProtectedRoute>} />
+                <Route path="/admin/shortcuts" element={<ProtectedRoute requiredPermission="settings.view"><ShortcutsPage /></ProtectedRoute>} />
+                <Route path="/admin/branding" element={<ProtectedRoute requiredPermission="settings.view"><BrandingPage /></ProtectedRoute>} />
+                <Route path="/admin/sms" element={<ProtectedRoute requiredPermission="settings.view"><SmsSettingsPage /></ProtectedRoute>} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
