@@ -164,7 +164,10 @@ const CustomersPage = () => {
                       </span>
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-1">
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => navigate(`/customers/${c.id}`)} title="View Profile">
+                            <Eye className="w-3.5 h-3.5" />
+                          </Button>
                         {(c.status === "active" || c.status === "draft") && (isAdmin || isSuperAdmin) && (
                           <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={() => { setActionTarget(c); setActionType("approve"); setActionDialogOpen(true); }} title="Approve">
                             <Check className="w-3.5 h-3.5" />
