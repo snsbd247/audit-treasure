@@ -228,6 +228,21 @@ export default function EmployeesPage() {
                 <SelectContent>{branches.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
+            <div>
+              <Label>Link User Account</Label>
+              <Select value={form.user_id} onValueChange={v => setForm({...form, user_id: v})}>
+                <SelectTrigger><SelectValue placeholder="None (no portal access)" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {userProfiles.filter(p => {
+                    // Only show users not already linked to another employee
+                    const alreadyLinked = employees.some(e => e.user_id === p.id && e.id !== editId);
+                    return !alreadyLinked;
+                  }).map(p => <SelectItem key={p.id} value={p.id}>{p.name} {p.email ? `(${p.email})` : p.username ? `(${p.username})` : ""}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <p className="text-[10px] text-muted-foreground mt-1">Links this employee to a user for Employee Portal access</p>
+            </div>
             <div><Label>Joining Date</Label><Input type="date" value={form.joining_date} onChange={e => setForm({...form, joining_date: e.target.value})} /></div>
             <div><Label>Salary</Label><Input type="number" value={form.salary} onChange={e => setForm({...form, salary: Number(e.target.value)})} /></div>
             <div>
