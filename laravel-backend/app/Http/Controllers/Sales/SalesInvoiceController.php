@@ -2,6 +2,7 @@
 namespace App\Http\Controllers\Sales;
 use App\Http\Controllers\BaseController;
 use App\Services\SalesService;
+use App\Services\SmsService;
 use App\Models\SalesInvoice;
 use Illuminate\Http\Request;
 
@@ -29,7 +30,18 @@ class SalesInvoiceController extends BaseController
             'items.*.total' => 'required|numeric',
         ]);
         $data = array_merge($request->only('invoice_date', 'customer_id', 'branch_id', 'discount', 'notes'), ['user_id' => $request->user()->id]);
-        return $this->created($this->service->createInvoice($data, $request->items));
+        $invoice = $this->service->createInvoice($data, $request->items);
+
+        // Send SMS to customer
+        if ($invoice->customer && $invoice->customer->phone) {
+            try {
+                app(SmsService::class)->sendInvoiceSms($invoice->customer->phone, $invoice->total_amount);
+            } catch (\Exception $e) {
+                \Log::error('Invoice SMS failed: ' . $e->getMessage());
+            }
+        }
+
+        return $this->created($invoice);
     }
 
     public function show(string $id)
