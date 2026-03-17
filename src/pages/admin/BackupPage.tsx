@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -13,7 +14,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Download, Upload, Database, Clock, FileText, Trash2, AlertTriangle, CheckCircle, XCircle, Settings, RefreshCw, Shield, Cloud, HardDrive } from "lucide-react";
 
-const API_BASE = import.meta.env.VITE_API_URL || "/api";
+const API_BASE = import.meta.env.VITE_API_URL || "";
+const USE_LARAVEL = !!import.meta.env.VITE_API_URL;
 
 interface BackupRecord {
   id: string; file_name: string; file_size: number; backup_type: string; format: string;
@@ -47,7 +49,7 @@ function getAuthHeaders(): Record<string, string> {
   };
 }
 
-async function apiCall(url: string, options: RequestInit = {}) {
+async function laravelApiCall(url: string, options: RequestInit = {}) {
   const res = await fetch(`${API_BASE}${url}`, {
     ...options,
     headers: { ...getAuthHeaders(), ...(options.headers || {}) },
@@ -77,18 +79,47 @@ const BackupPage = () => {
   const fetchHistory = useCallback(async () => {
     setLoadingHistory(true);
     try {
-      const res = await apiCall("/v1/backups");
-      const result = await res.json();
-      setHistory(result.data || []);
+      if (USE_LARAVEL) {
+        const res = await laravelApiCall("/v1/backups");
+        const result = await res.json();
+        setHistory(result.data || []);
+      } else {
+        const { data, error } = await supabase
+          .from("backup_history")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(50);
+        if (error) throw error;
+        setHistory((data || []) as BackupRecord[]);
+      }
     } catch { /* ignore */ }
     setLoadingHistory(false);
   }, []);
 
   const fetchSettings = useCallback(async () => {
     try {
-      const res = await apiCall("/v1/backups/settings");
-      const result = await res.json();
-      if (result.data) setSettings(result.data);
+      if (USE_LARAVEL) {
+        const res = await laravelApiCall("/v1/backups/settings");
+        const result = await res.json();
+        if (result.data) setSettings(result.data);
+      } else {
+        const { data, error } = await supabase
+          .from("backup_settings")
+          .select("*")
+          .eq("id", "default")
+          .maybeSingle();
+        if (error) throw error;
+        if (data) {
+          setSettings({
+            auto_backup_enabled: data.auto_backup_enabled,
+            schedule_interval: data.schedule_interval,
+            retention_days: data.retention_days,
+            last_auto_backup_at: data.last_auto_backup_at,
+          });
+        } else {
+          setSettings({ auto_backup_enabled: false, schedule_interval: "daily", retention_days: 30, last_auto_backup_at: null });
+        }
+      }
     } catch { /* ignore */ }
   }, []);
 
@@ -102,10 +133,32 @@ const BackupPage = () => {
     setProgress(20);
     try {
       setProgress(50);
-      const res = await apiCall("/v1/backups/create", { method: "POST", headers: { "Content-Type": "application/json" } });
-      const result = await res.json();
+      if (USE_LARAVEL) {
+        const res = await laravelApiCall("/v1/backups/create", { method: "POST", headers: { "Content-Type": "application/json" } });
+        const result = await res.json();
+        toast({ title: "Backup created", description: `${result.data?.file_name || "Backup"} created successfully.` });
+      } else {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) throw new Error("Not authenticated");
+        const { data, error } = await supabase.functions.invoke("create-backup", {
+          body: { format: "sql", backup_type: "manual" },
+        });
+        if (error) throw error;
+        if (data && !data.success) throw new Error(data.error || "Backup failed");
+
+        // Download the SQL content
+        if (data?.content) {
+          const blob = new Blob([data.content], { type: "text/sql" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = data.file_name || "backup.sql";
+          a.click();
+          URL.revokeObjectURL(url);
+        }
+        toast({ title: "Backup created", description: `${data?.file_name || "Backup"} created successfully.` });
+      }
       setProgress(100);
-      toast({ title: "Backup created", description: `${result.data?.file_name || "Backup"} created successfully.` });
       fetchHistory();
     } catch (err: any) {
       toast({ title: "Backup failed", description: err.message, variant: "destructive" });
@@ -116,15 +169,22 @@ const BackupPage = () => {
 
   const handleDownload = async (record: BackupRecord) => {
     try {
-      const res = await fetch(`${API_BASE}/v1/backups/${record.id}/download`, {
-        headers: getAuthHeaders(),
-      });
-      if (!res.ok) throw new Error("Download failed");
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url; a.download = record.file_name; a.click();
-      URL.revokeObjectURL(url);
+      if (USE_LARAVEL) {
+        const res = await fetch(`${API_BASE}/v1/backups/${record.id}/download`, { headers: getAuthHeaders() });
+        if (!res.ok) throw new Error("Download failed");
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url; a.download = record.file_name; a.click();
+        URL.revokeObjectURL(url);
+      } else if (record.storage_path) {
+        const { data, error } = await supabase.storage.from("backups").download(record.storage_path);
+        if (error) throw error;
+        const url = URL.createObjectURL(data);
+        const a = document.createElement("a");
+        a.href = url; a.download = record.file_name; a.click();
+        URL.revokeObjectURL(url);
+      }
     } catch (err: any) {
       toast({ title: "Download failed", description: err.message, variant: "destructive" });
     }
@@ -148,16 +208,27 @@ const BackupPage = () => {
     setRestoring(true);
     setProgress(20);
     try {
-      const formData = new FormData();
-      formData.append("sql_file", restoreFile);
-      setProgress(50);
-      const res = await fetch(`${API_BASE}/v1/backups/restore`, {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: formData,
-      });
-      const result = await res.json();
-      if (!result.success) throw new Error(result.message);
+      if (USE_LARAVEL) {
+        const formData = new FormData();
+        formData.append("sql_file", restoreFile);
+        setProgress(50);
+        const res = await fetch(`${API_BASE}/v1/backups/restore`, {
+          method: "POST",
+          headers: getAuthHeaders(),
+          body: formData,
+        });
+        const result = await res.json();
+        if (!result.success) throw new Error(result.message);
+      } else {
+        // Read file content and invoke edge function
+        const content = await restoreFile.text();
+        setProgress(50);
+        const { data, error } = await supabase.functions.invoke("restore-backup", {
+          body: { sql_content: content, file_name: restoreFile.name },
+        });
+        if (error) throw error;
+        if (data && !data.success) throw new Error(data.error || "Restore failed");
+      }
       setProgress(100);
       toast({ title: "Restore completed", description: "Database has been restored successfully." });
       fetchHistory();
@@ -170,7 +241,17 @@ const BackupPage = () => {
 
   const handleDeleteBackup = async (id: string) => {
     try {
-      await apiCall(`/v1/backups/${id}`, { method: "DELETE" });
+      if (USE_LARAVEL) {
+        await laravelApiCall(`/v1/backups/${id}`, { method: "DELETE" });
+      } else {
+        // Get storage path first, then delete
+        const record = history.find(r => r.id === id);
+        if (record?.storage_path) {
+          await supabase.storage.from("backups").remove([record.storage_path]);
+        }
+        const { error } = await supabase.from("backup_history").delete().eq("id", id);
+        if (error) throw error;
+      }
       setConfirmDelete(null);
       fetchHistory();
       toast({ title: "Backup deleted" });
@@ -182,11 +263,19 @@ const BackupPage = () => {
   const saveScheduleSettings = async (updates: Partial<BackupSettings>) => {
     setSavingSettings(true);
     try {
-      await apiCall("/v1/backups/settings", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updates),
-      });
+      if (USE_LARAVEL) {
+        await laravelApiCall("/v1/backups/settings", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updates),
+        });
+      } else {
+        const { error } = await supabase
+          .from("backup_settings")
+          .update({ ...updates, updated_at: new Date().toISOString() } as any)
+          .eq("id", "default");
+        if (error) throw error;
+      }
       setSettings(prev => prev ? { ...prev, ...updates } : null);
       toast({ title: "Settings saved" });
     } catch (err: any) {
