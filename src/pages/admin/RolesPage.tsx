@@ -40,7 +40,7 @@ interface Permission {
 }
 
 const defaultPermissions = (): Permission[] =>
-  MODULES.map((m) => ({ module: m, can_view: false, can_add: false, can_edit: false, can_delete: false }));
+  MODULES.map((m) => ({ module: m.key, can_view: false, can_add: false, can_edit: false, can_delete: false }));
 
 const RolesPage = () => {
   const [roles, setRoles] = useState<CustomRole[]>([]);
