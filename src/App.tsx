@@ -73,6 +73,7 @@ import EmployeeProfilePage from "./pages/hrm/EmployeeProfilePage";
 import StockLedgerPage from "./pages/inventory/StockLedgerPage";
 
 // Employee Portal Pages
+import MyDashboardPage from "./pages/portal/MyDashboardPage";
 import MyProfilePage from "./pages/portal/MyProfilePage";
 import MyAttendancePage from "./pages/portal/MyAttendancePage";
 import MyLeavePage from "./pages/portal/MyLeavePage";
