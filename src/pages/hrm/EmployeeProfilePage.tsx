@@ -363,7 +363,7 @@ export default function EmployeeProfilePage() {
                 <div>
                   <Label>Total Salary</Label>
                   <div className="h-10 flex items-center px-3 rounded-md border border-input bg-muted text-foreground font-semibold">
-                    {formatCurrency(salaryForm.total_salary)}
+                    {fc(salaryForm.total_salary)}
                   </div>
                 </div>
               </div>
