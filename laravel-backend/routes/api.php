@@ -167,6 +167,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\BranchScope::class, \App
         });
         Route::middleware('permission:hrm.create')->group(function () {
             Route::post('employees', [\App\Http\Controllers\HRM\EmployeeController::class, 'store']);
+            Route::post('employees/{id}/upload-photo', [\App\Http\Controllers\HRM\EmployeeController::class, 'uploadPhoto']);
             Route::post('attendance', [\App\Http\Controllers\HRM\AttendanceController::class, 'store']);
             Route::post('attendance/bulk', [\App\Http\Controllers\HRM\AttendanceController::class, 'bulkStore']);
             Route::post('departments', [\App\Http\Controllers\HRM\DepartmentController::class, 'store']);
