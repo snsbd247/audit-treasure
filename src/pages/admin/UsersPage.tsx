@@ -33,6 +33,7 @@ const UsersPage = () => {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [customRoles, setCustomRoles] = useState<CustomRole[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [editUser, setEditUser] = useState<UserRow | null>(null);
