@@ -17,12 +17,13 @@ class PayrollService
 
     /**
      * Process payroll for given month/year.
-     * Net Salary = Basic + Allowances + Overtime(1.5x) - Deductions - (Absent × DailySalary)
+     * Net Salary = Basic + Allowances + OvertimePay - AbsentDeduction - LateDeduction
      */
-    public function process(int $month, int $year, array $employeeIds = []): array
+    public function process(int $month, int $year, array $employeeIds = [], ?string $branchId = null): array
     {
         $query = Employee::where('status', 'active');
         if (!empty($employeeIds)) $query->whereIn('id', $employeeIds);
+        if ($branchId) $query->where('branch_id', $branchId);
         $employees = $query->get();
 
         $results = [];
@@ -33,29 +34,45 @@ class PayrollService
                 if (Payroll::where('employee_id', $emp->id)->where('month', $month)->where('year', $year)->exists()) continue;
 
                 $salary = SalaryStructure::where('employee_id', $emp->id)
-                    ->where('effective_from', '<=', "{$year}-{$month}-28")
+                    ->where('effective_from', '<=', sprintf('%04d-%02d-28', $year, $month))
                     ->orderByDesc('effective_from')->first();
 
-                $basic = $salary ? $salary->basic_salary : $emp->salary;
-                $allowances = $salary ? $salary->allowances : 0;
-                $deductions = $salary ? $salary->deductions : 0;
+                $basic = $salary ? (float) $salary->basic_salary : (float) $emp->salary;
+                $allowances = $salary
+                    ? (float) $salary->house_rent + (float) $salary->medical_allowance + (float) $salary->other_allowance
+                    : 0;
+                $totalSalary = $salary ? (float) $salary->total_salary : ($basic + $allowances);
 
-                // Count absences
+                // Working days in month
                 $workDays = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+                $dailySalary = $totalSalary / $workDays;
+
+                // Count absences & lates
                 $absentDays = Attendance::where('employee_id', $emp->id)
                     ->whereMonth('date', $month)->whereYear('date', $year)
                     ->where('status', 'absent')->count();
 
-                $dailySalary = $basic / $workDays;
+                $lateDays = Attendance::where('employee_id', $emp->id)
+                    ->whereMonth('date', $month)->whereYear('date', $year)
+                    ->where('status', 'late')->count();
+
+                $leaveDays = Attendance::where('employee_id', $emp->id)
+                    ->whereMonth('date', $month)->whereYear('date', $year)
+                    ->where('status', 'leave')->count();
 
                 // Overtime
                 $otHours = (float) OvertimeRecord::where('employee_id', $emp->id)
                     ->whereMonth('date', $month)->whereYear('date', $year)
                     ->where('status', 'approved')->sum('hours');
                 $hourlyRate = $basic / ($workDays * 8);
-                $otPay = $otHours * $hourlyRate * 1.5;
+                $otPay = round($otHours * $hourlyRate * 1.5, 2);
 
-                $netSalary = $basic + $allowances + $otPay - $deductions - ($absentDays * $dailySalary);
+                // Deductions
+                $absentDeduction = round($absentDays * $dailySalary, 2);
+                $lateDeduction = round($lateDays * 50, 2); // ৳50 per late
+                $totalDeductions = $absentDeduction + $lateDeduction;
+
+                $netSalary = $totalSalary + $otPay - $totalDeductions;
 
                 $payroll = Payroll::create([
                     'employee_id' => $emp->id,
@@ -63,7 +80,7 @@ class PayrollService
                     'year' => $year,
                     'basic_salary' => $basic,
                     'allowances' => $allowances + $otPay,
-                    'deductions' => $deductions + ($absentDays * $dailySalary),
+                    'deductions' => $totalDeductions,
                     'net_salary' => max(0, round($netSalary, 2)),
                     'status' => 'draft',
                 ]);
@@ -92,5 +109,19 @@ class PayrollService
             ]);
 
         return $payroll;
+    }
+
+    /**
+     * Approve all draft payroll for a month/year.
+     */
+    public function approveAll(int $month, int $year, string $userId): int
+    {
+        $drafts = Payroll::where('month', $month)->where('year', $year)->where('status', 'draft')->get();
+
+        foreach ($drafts as $payroll) {
+            $this->approve($payroll->id, $userId);
+        }
+
+        return $drafts->count();
     }
 }
