@@ -2,6 +2,14 @@
 
 use Illuminate\Support\Facades\Route;
 
+// ─── Installer Routes (public, blocked after install) ────────────
+Route::prefix('install')->group(function () {
+    Route::get('status', [\App\Http\Controllers\InstallController::class, 'status']);
+    Route::get('check-environment', [\App\Http\Controllers\InstallController::class, 'checkEnvironment']);
+    Route::post('test-database', [\App\Http\Controllers\InstallController::class, 'testDatabase']);
+    Route::post('run', [\App\Http\Controllers\InstallController::class, 'install']);
+});
+
 // Auth (public)
 Route::prefix('auth')->group(function () {
     Route::post('login', [\App\Http\Controllers\Auth\AuthController::class, 'login']);
