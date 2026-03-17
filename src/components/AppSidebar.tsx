@@ -147,6 +147,7 @@ const navGroups: NavGroup[] = [
     icon: User,
     module: "hrm",
     requiredModules: ["hrm"],
+    portalOnly: true,
     children: [
       { to: "/portal/profile", label: "My Profile", icon: User },
       { to: "/portal/attendance", label: "My Attendance", icon: Clock },
