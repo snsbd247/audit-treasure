@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
     if (!roleCheck?.length) throw new Error("Admin access required");
 
     const body = await req.json().catch(() => ({}));
-    const format = body.format || "json"; // 'json' or 'sql'
+    const format = "sql"; // SQL-only backup system
     const backupType = body.backup_type || "manual";
 
     // Export all tables
