@@ -54,7 +54,7 @@ export function useDocumentRules(
       canEdit: isSuperAdmin,
       canDelete: isSuperAdmin,
       canApprove: false,
-      canCancel: isSuperAdmin || isAdmin,
+      canCancel: isSuperAdmin,
       isOverrideEdit: isSuperAdmin,
       lockReason: isSuperAdmin ? null : "Only Super Admin can modify approved documents",
     };
