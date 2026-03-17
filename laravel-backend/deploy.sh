@@ -18,17 +18,17 @@ echo "============================================"
 
 # Step 1: Install Laravel dependencies (production)
 echo ""
-echo "[1/6] Installing Laravel dependencies..."
+echo "[1/7] Installing Laravel dependencies..."
 cd "$LARAVEL_DIR"
 if command -v composer &>/dev/null; then
     composer install --no-dev --optimize-autoloader --no-interaction
 else
-    echo "⚠ Composer not found. Skipping..."
+    echo "⚠ Composer not found. Make sure vendor/ is included."
 fi
 
 # Step 2: Build React frontend
 echo ""
-echo "[2/6] Building React frontend..."
+echo "[2/7] Building React frontend..."
 cd "$PROJECT_ROOT"
 if [ -f "package.json" ]; then
     npm install --legacy-peer-deps 2>/dev/null || npm install
@@ -39,12 +39,15 @@ fi
 
 # Step 3: Copy React build to Laravel public folder
 echo ""
-echo "[3/6] Copying frontend build to Laravel public/..."
+echo "[3/7] Copying frontend build to Laravel public/..."
 if [ -d "dist" ]; then
+    # Clean old frontend assets
     rm -rf "$LARAVEL_DIR/public/assets"
+    # Copy new assets
     cp -r dist/assets "$LARAVEL_DIR/public/" 2>/dev/null || true
     cp dist/index.html "$LARAVEL_DIR/public/" 2>/dev/null || true
     [ -f dist/favicon.ico ] && cp dist/favicon.ico "$LARAVEL_DIR/public/" || true
+    [ -f dist/robots.txt ] && cp dist/robots.txt "$LARAVEL_DIR/public/" || true
     echo "✓ Frontend files copied"
 else
     echo "⚠ No dist/ folder found. Run 'npm run build' first."
@@ -52,21 +55,27 @@ fi
 
 # Step 4: Create storage directories
 echo ""
-echo "[4/6] Setting up storage directories..."
+echo "[4/7] Setting up storage directories..."
 cd "$LARAVEL_DIR"
 mkdir -p storage/app/public/employees
 mkdir -p storage/framework/{cache/data,sessions,views}
 mkdir -p storage/logs
 mkdir -p bootstrap/cache
 
-# Step 5: Create storage symlink
+# Step 5: Remove install lock (so installer works on fresh deploy)
 echo ""
-echo "[5/6] Creating storage link..."
-php artisan storage:link 2>/dev/null || echo "⚠ Storage link skipped (run on server)"
+echo "[5/7] Preparing for fresh install..."
+rm -f storage/installed
+rm -f .env
 
-# Step 6: Create deployment package
+# Step 6: Set permissions
 echo ""
-echo "[6/6] Creating deployment package..."
+echo "[6/7] Setting file permissions..."
+chmod -R 775 storage bootstrap/cache 2>/dev/null || true
+
+# Step 7: Create deployment package
+echo ""
+echo "[7/7] Creating deployment package..."
 cd "$PROJECT_ROOT"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 PACKAGE_NAME="smarterp_${TIMESTAMP}.zip"
@@ -79,6 +88,7 @@ zip -r "$PACKAGE_NAME" laravel-backend/ \
     -x "laravel-backend/storage/framework/cache/data/*" \
     -x "laravel-backend/storage/framework/sessions/*" \
     -x "laravel-backend/storage/framework/views/*" \
+    -x "laravel-backend/storage/installed" \
     -x "laravel-backend/deploy.sh" \
     -x "laravel-backend/.env"
 
@@ -87,18 +97,16 @@ echo "============================================"
 echo "  ✅ Package created: $PACKAGE_NAME"
 echo "============================================"
 echo ""
-echo "DEPLOYMENT STEPS:"
-echo "  1. Upload & extract to server"
-echo "  2. Set document root → /public"
-echo "  3. Create MySQL database"
-echo "  4. cp .env.example .env && edit .env"
-echo "  5. php artisan key:generate"
-echo "  6. php artisan migrate --force"
-echo "  7. php artisan db:seed --force"
-echo "  8. php artisan storage:link"
-echo "  9. chmod -R 775 storage bootstrap/cache"
-echo " 10. php artisan config:cache && php artisan route:cache"
+echo "ONE-CLICK DEPLOYMENT STEPS:"
+echo "  1. Upload $PACKAGE_NAME to your cPanel"
+echo "  2. Extract the ZIP file"
+echo "  3. Set document root → laravel-backend/public"
+echo "  4. Create an empty MySQL database in cPanel"
+echo "  5. Open https://yourdomain.com/install"
+echo "  6. Follow the setup wizard (no manual .env editing!)"
 echo ""
-echo "DEFAULT LOGIN: admin / admin123"
-echo "⚠ Change password after first login!"
+echo "OPTIONAL CRON JOB (in cPanel → Cron Jobs):"
+echo "  * * * * * php /home/USERNAME/public_html/artisan schedule:run >> /dev/null 2>&1"
+echo ""
+echo "That's it! The installer handles everything else."
 echo ""
