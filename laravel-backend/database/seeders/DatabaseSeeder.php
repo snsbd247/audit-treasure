@@ -14,11 +14,19 @@ class DatabaseSeeder extends Seeder
         // Branch
         $branch = Branch::create(['code' => 'HQ', 'name' => 'Head Office', 'phone' => '+1234567890', 'address' => '123 Main St']);
 
-        // All permission modules (granular)
+        // All permission modules (must match frontend MODULES list & route middleware)
         $allModules = [
-            'dashboard', 'accounts', 'journal', 'payment', 'receipt', 'contra',
-            'sales', 'purchase', 'inventory',
-            'manufacturing', 'bank', 'hrm', 'reports',
+            // Core
+            'dashboard',
+            // Accounting
+            'accounts', 'journal', 'payment', 'receipt', 'contra',
+            // Business
+            'sales', 'purchase', 'inventory', 'manufacturing', 'bank',
+            // HRM
+            'hrm',
+            // Reports
+            'reports',
+            // Administration
             'branches', 'users', 'roles', 'financial_years',
             'settings', 'audit_log', 'backup',
         ];
@@ -29,9 +37,9 @@ class DatabaseSeeder extends Seeder
             RolePermission::create(['custom_role_id' => $superAdmin->id, 'module' => $mod, 'can_view' => 1, 'can_add' => 1, 'can_edit' => 1, 'can_delete' => 1]);
         }
 
-        // Staff role (limited)
+        // Staff role (limited — business modules only, no delete)
         $staff = CustomRole::create(['name' => 'Staff', 'description' => 'Standard staff access']);
-        foreach (['dashboard', 'accounts', 'sales', 'purchase', 'inventory', 'reports'] as $mod) {
+        foreach (['dashboard', 'accounts', 'journal', 'payment', 'receipt', 'contra', 'sales', 'purchase', 'inventory', 'reports'] as $mod) {
             RolePermission::create(['custom_role_id' => $staff->id, 'module' => $mod, 'can_view' => 1, 'can_add' => 1, 'can_edit' => 1, 'can_delete' => 0]);
         }
 

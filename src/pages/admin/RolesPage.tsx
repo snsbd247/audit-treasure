@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { usePermission } from "@/hooks/usePermission";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,23 +11,34 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2, Shield } from "lucide-react";
 
-const MODULES: { key: string; label: string }[] = [
-  { key: "dashboard", label: "Dashboard" },
-  { key: "accounts", label: "Accounts" },
-  { key: "sales", label: "Sales" },
-  { key: "purchase", label: "Purchase" },
-  { key: "inventory", label: "Inventory" },
-  { key: "manufacturing", label: "Manufacturing" },
-  { key: "bank", label: "Bank & Cash" },
-  { key: "hrm", label: "HRM & Payroll" },
-  { key: "reports", label: "Reports" },
-  { key: "branches", label: "Branches" },
-  { key: "users", label: "Users" },
-  { key: "roles", label: "Roles" },
-  { key: "financial_years", label: "Financial Years" },
-  { key: "settings", label: "Settings" },
-  { key: "audit_log", label: "Audit Log" },
-  { key: "backup", label: "Backup" },
+/** All permission modules — must match backend seeder & route middleware */
+const MODULES: { key: string; label: string; group: string }[] = [
+  // Core
+  { key: "dashboard", label: "Dashboard", group: "Core" },
+  // Accounting
+  { key: "accounts", label: "Chart of Accounts", group: "Accounting" },
+  { key: "journal", label: "Journal Voucher", group: "Accounting" },
+  { key: "payment", label: "Payment Voucher", group: "Accounting" },
+  { key: "receipt", label: "Receipt Voucher", group: "Accounting" },
+  { key: "contra", label: "Contra Voucher", group: "Accounting" },
+  // Business
+  { key: "sales", label: "Sales", group: "Business" },
+  { key: "purchase", label: "Purchase", group: "Business" },
+  { key: "inventory", label: "Inventory", group: "Business" },
+  { key: "manufacturing", label: "Manufacturing", group: "Business" },
+  { key: "bank", label: "Bank & Cash", group: "Business" },
+  // HRM
+  { key: "hrm", label: "HRM & Payroll", group: "HRM" },
+  // Reports
+  { key: "reports", label: "Reports", group: "Reports" },
+  // Administration
+  { key: "branches", label: "Branches", group: "Administration" },
+  { key: "users", label: "Users", group: "Administration" },
+  { key: "roles", label: "Roles", group: "Administration" },
+  { key: "financial_years", label: "Financial Years", group: "Administration" },
+  { key: "settings", label: "Settings", group: "Administration" },
+  { key: "audit_log", label: "Audit Log", group: "Administration" },
+  { key: "backup", label: "Backup", group: "Administration" },
 ];
 
 const PERMISSION_KEYS = ["can_view", "can_add", "can_edit", "can_delete"] as const;
@@ -58,6 +70,7 @@ const RolesPage = () => {
   const [permissions, setPermissions] = useState<Permission[]>(defaultPermissions());
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
+  const { canCreate, canEdit, canDelete } = usePermission();
 
   const fetchRoles = async () => {
     setLoading(true);
@@ -80,7 +93,6 @@ const RolesPage = () => {
     setEditRole(role);
     setFormName(role.name);
     setFormDesc(role.description || "");
-    // Fetch permissions
     const { data } = await supabase.from("role_permissions").select("*").eq("custom_role_id", role.id);
     const perms = defaultPermissions();
     (data || []).forEach((p: any) => {
@@ -115,7 +127,6 @@ const RolesPage = () => {
         roleId = (data as any).id;
       }
 
-      // Insert permissions
       const permRows = permissions.map((p) => ({
         custom_role_id: roleId,
         module: p.module,
@@ -144,11 +155,16 @@ const RolesPage = () => {
     else fetchRoles();
   };
 
+  // Group modules for display
+  const groups = Array.from(new Set(MODULES.map((m) => m.group)));
+
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold text-foreground">Roles & Permissions</h1>
-        <Button onClick={openCreate} size="sm"><Plus className="w-4 h-4 mr-1" />Add Role</Button>
+        {canCreate("roles") && (
+          <Button onClick={openCreate} size="sm"><Plus className="w-4 h-4 mr-1" />Add Role</Button>
+        )}
       </div>
 
       <Card>
@@ -173,8 +189,12 @@ const RolesPage = () => {
                   </TableCell>
                   <TableCell className="text-muted-foreground">{r.description || "—"}</TableCell>
                   <TableCell className="flex gap-1">
-                    <Button variant="ghost" size="icon" onClick={() => openEdit(r)}><Pencil className="w-4 h-4" /></Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(r.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+                    {canEdit("roles") && (
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(r)}><Pencil className="w-4 h-4" /></Button>
+                    )}
+                    {canDelete("roles") && (
+                      <Button variant="ghost" size="icon" onClick={() => handleDelete(r.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
@@ -184,7 +204,7 @@ const RolesPage = () => {
       </Card>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editRole ? "Edit Role" : "Create Role"}</DialogTitle>
           </DialogHeader>
@@ -200,43 +220,49 @@ const RolesPage = () => {
               </div>
             </div>
 
-            <Card>
-              <CardHeader className="py-3 px-4">
-                <CardTitle className="text-sm">Module Permissions</CardTitle>
-                <CardDescription className="text-xs">Set access levels per module</CardDescription>
-              </CardHeader>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Module</TableHead>
-                      <TableHead className="text-center w-20">View</TableHead>
-                      <TableHead className="text-center w-20">Add</TableHead>
-                      <TableHead className="text-center w-20">Edit</TableHead>
-                      <TableHead className="text-center w-20">Delete</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {permissions.map((p, i) => {
-                      const mod = MODULES.find((m) => m.key === p.module);
-                      return (
-                        <TableRow key={p.module}>
-                          <TableCell className="font-medium text-sm">{mod?.label || p.module}</TableCell>
-                          {PERMISSION_KEYS.map((key) => (
-                            <TableCell key={key} className="text-center">
-                              <Checkbox
-                                checked={p[key]}
-                                onCheckedChange={() => togglePerm(i, key)}
-                              />
-                            </TableCell>
-                          ))}
+            {groups.map((groupName) => {
+              const groupModules = MODULES.filter((m) => m.group === groupName);
+              const groupPermissions = permissions.filter((p) => groupModules.some((m) => m.key === p.module));
+              return (
+                <Card key={groupName}>
+                  <CardHeader className="py-3 px-4">
+                    <CardTitle className="text-sm">{groupName}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Module</TableHead>
+                          <TableHead className="text-center w-20">View</TableHead>
+                          <TableHead className="text-center w-20">Add</TableHead>
+                          <TableHead className="text-center w-20">Edit</TableHead>
+                          <TableHead className="text-center w-20">Delete</TableHead>
                         </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+                      </TableHeader>
+                      <TableBody>
+                        {groupPermissions.map((p) => {
+                          const globalIdx = permissions.findIndex((pp) => pp.module === p.module);
+                          const mod = MODULES.find((m) => m.key === p.module);
+                          return (
+                            <TableRow key={p.module}>
+                              <TableCell className="font-medium text-sm">{mod?.label || p.module}</TableCell>
+                              {PERMISSION_KEYS.map((key) => (
+                                <TableCell key={key} className="text-center">
+                                  <Checkbox
+                                    checked={p[key]}
+                                    onCheckedChange={() => togglePerm(globalIdx, key)}
+                                  />
+                                </TableCell>
+                              ))}
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>

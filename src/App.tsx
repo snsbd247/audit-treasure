@@ -100,6 +100,11 @@ import FinancialSummaryDashboard from "./pages/reports/accounting/FinancialSumma
 
 const queryClient = new QueryClient();
 
+/** Helper: wraps a page with permission check */
+const P = ({ perm, children }: { perm: string; children: React.ReactNode }) => (
+  <ProtectedRoute requiredPermission={perm}>{children}</ProtectedRoute>
+);
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -117,99 +122,113 @@ const App = () => (
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/employee/verify/:code" element={<EmployeeVerifyPage />} />
               <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+                {/* Dashboard — all authenticated users */}
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/vouchers" element={<VouchersPage />} />
                 <Route path="/profile" element={<Profile />} />
-                <Route path="/accounts/chart" element={<ChartOfAccounts />} />
-                <Route path="/accounts/vouchers" element={<AccountingVouchers />} />
-                <Route path="/customers" element={<CustomersPage />} />
-                <Route path="/suppliers" element={<SuppliersPage />} />
-                <Route path="/products" element={<ItemMasterPage />} />
-                <Route path="/purchase" element={<PurchasesPage />} />
-                <Route path="/purchase/returns" element={<PurchasesPage />} />
-                <Route path="/sales" element={<SalesPage />} />
-                <Route path="/sales/returns" element={<SalesPage />} />
-                <Route path="/inventory" element={<InventoryPage />} />
-                <Route path="/inventory/items" element={<ItemMasterPage />} />
-                <Route path="/inventory/categories" element={<ItemCategoriesPage />} />
-                <Route path="/inventory/units" element={<UnitsPage />} />
-                <Route path="/inventory/warehouses" element={<WarehousesPage />} />
-                <Route path="/inventory/transfers" element={<StockTransferPage />} />
-                <Route path="/inventory/adjustments" element={<StockAdjustmentPage />} />
-                <Route path="/manufacturing/materials" element={<ItemMasterPage />} />
-                <Route path="/manufacturing/bom" element={<BOMPage />} />
-                <Route path="/manufacturing/production" element={<ProductionPage />} />
-                <Route path="/manufacturing/reports" element={<ManufacturingReports />} />
-                {/* Accounting Reports */}
-                <Route path="/reports/financial" element={<FinancialReports />} />
-                <Route path="/reports/trial-balance" element={<TrialBalanceReport />} />
-                <Route path="/reports/profit-loss" element={<ProfitLossReport />} />
-                <Route path="/reports/balance-sheet" element={<BalanceSheetReport />} />
-                <Route path="/reports/general-ledger" element={<GeneralLedgerReport />} />
-                <Route path="/reports/account-ledger" element={<AccountLedgerReport />} />
-                <Route path="/reports/party-ledger" element={<PartyLedgerReport />} />
-                <Route path="/reports/cash-book" element={<CashBookReport />} />
-                <Route path="/reports/bank-book" element={<BankBookReport />} />
-                <Route path="/reports/bank-reconciliation" element={<BankReconciliationReport />} />
-                <Route path="/reports/journal-vouchers" element={<JournalVoucherReport />} />
-                <Route path="/reports/payment-vouchers" element={<PaymentVoucherReport />} />
-                <Route path="/reports/receipt-vouchers" element={<ReceiptVoucherReport />} />
-                <Route path="/reports/contra-vouchers" element={<ContraVoucherReport />} />
-                <Route path="/reports/accounts-receivable" element={<AccountsReceivableReport />} />
-                <Route path="/reports/accounts-payable" element={<AccountsPayableReport />} />
-                <Route path="/reports/ar-aging" element={<ARAgingReport />} />
-                <Route path="/reports/ap-aging" element={<APAgingReport />} />
-                <Route path="/reports/expense-analysis" element={<ExpenseAnalysisReport />} />
-                <Route path="/reports/income-analysis" element={<IncomeAnalysisReport />} />
-                <Route path="/reports/financial-summary" element={<FinancialSummaryDashboard />} />
-                {/* Other reports */}
-                <Route path="/reports/stock-ledger" element={<StockLedger />} />
-                <Route path="/reports/stock-reports" element={<StockReportsPage />} />
-                <Route path="/reports/low-stock" element={<LowStockPage />} />
-                <Route path="/reports/sales" element={<FinancialReports />} />
-                <Route path="/reports/purchase" element={<FinancialReports />} />
                 <Route path="/change-password" element={<ChangePasswordPage />} />
-                <Route path="/bank/accounts" element={<BankAccountsPage />} />
-                <Route path="/bank/cashbook" element={<CashBookPage />} />
-                {/* HRM Routes */}
-                <Route path="/hrm/dashboard" element={<HrDashboardPage />} />
-                <Route path="/hrm/employees" element={<EmployeesPage />} />
-                <Route path="/hrm/employees/:id" element={<EmployeeProfilePage />} />
-                <Route path="/hrm/departments" element={<DepartmentsPage />} />
-                <Route path="/hrm/designations" element={<DesignationsPage />} />
-                <Route path="/hrm/attendance" element={<AttendancePage />} />
-                <Route path="/hrm/biometric" element={<BiometricImportPage />} />
-                <Route path="/hrm/face-attendance" element={<FaceAttendancePage />} />
-                <Route path="/hrm/shifts" element={<ShiftsPage />} />
-                <Route path="/hrm/overtime" element={<OvertimePage />} />
-                <Route path="/hrm/leave" element={<LeavePage />} />
-                <Route path="/hrm/payroll" element={<PayrollPage />} />
-                <Route path="/hrm/documents" element={<DocumentsPage />} />
-                <Route path="/hrm/id-cards" element={<IdCardsPage />} />
-                <Route path="/hrm/reports" element={<HrReportsPage />} />
-                {/* Stock Ledger */}
-                <Route path="/inventory/stock-ledger" element={<StockLedgerPage />} />
-                {/* Employee Portal Routes */}
+                <Route path="/messaging" element={<MessagingPage />} />
+
+                {/* ─── Accounts ─────────────────────────────────── */}
+                <Route path="/accounts/chart" element={<P perm="accounts.view"><ChartOfAccounts /></P>} />
+                <Route path="/accounts/vouchers" element={<AccountingVouchers />} />
+
+                {/* ─── Sales ────────────────────────────────────── */}
+                <Route path="/sales" element={<P perm="sales.view"><SalesPage /></P>} />
+                <Route path="/sales/returns" element={<P perm="sales.view"><SalesPage /></P>} />
+                <Route path="/customers" element={<P perm="sales.view"><CustomersPage /></P>} />
+
+                {/* ─── Purchase ─────────────────────────────────── */}
+                <Route path="/purchase" element={<P perm="purchase.view"><PurchasesPage /></P>} />
+                <Route path="/purchase/returns" element={<P perm="purchase.view"><PurchasesPage /></P>} />
+                <Route path="/suppliers" element={<P perm="purchase.view"><SuppliersPage /></P>} />
+
+                {/* ─── Inventory ────────────────────────────────── */}
+                <Route path="/inventory" element={<P perm="inventory.view"><InventoryPage /></P>} />
+                <Route path="/inventory/items" element={<P perm="inventory.view"><ItemMasterPage /></P>} />
+                <Route path="/inventory/categories" element={<P perm="inventory.view"><ItemCategoriesPage /></P>} />
+                <Route path="/inventory/units" element={<P perm="inventory.view"><UnitsPage /></P>} />
+                <Route path="/inventory/warehouses" element={<P perm="inventory.view"><WarehousesPage /></P>} />
+                <Route path="/inventory/transfers" element={<P perm="inventory.view"><StockTransferPage /></P>} />
+                <Route path="/inventory/adjustments" element={<P perm="inventory.view"><StockAdjustmentPage /></P>} />
+                <Route path="/inventory/stock-ledger" element={<P perm="inventory.view"><StockLedgerPage /></P>} />
+                <Route path="/products" element={<P perm="inventory.view"><ItemMasterPage /></P>} />
+
+                {/* ─── Manufacturing ────────────────────────────── */}
+                <Route path="/manufacturing/materials" element={<P perm="manufacturing.view"><ItemMasterPage /></P>} />
+                <Route path="/manufacturing/bom" element={<P perm="manufacturing.view"><BOMPage /></P>} />
+                <Route path="/manufacturing/production" element={<P perm="manufacturing.view"><ProductionPage /></P>} />
+                <Route path="/manufacturing/reports" element={<P perm="manufacturing.view"><ManufacturingReports /></P>} />
+
+                {/* ─── Bank & Cash ──────────────────────────────── */}
+                <Route path="/bank/accounts" element={<P perm="bank.view"><BankAccountsPage /></P>} />
+                <Route path="/bank/cashbook" element={<P perm="bank.view"><CashBookPage /></P>} />
+
+                {/* ─── HRM ──────────────────────────────────────── */}
+                <Route path="/hrm/dashboard" element={<P perm="hrm.view"><HrDashboardPage /></P>} />
+                <Route path="/hrm/employees" element={<P perm="hrm.view"><EmployeesPage /></P>} />
+                <Route path="/hrm/employees/:id" element={<P perm="hrm.view"><EmployeeProfilePage /></P>} />
+                <Route path="/hrm/departments" element={<P perm="hrm.view"><DepartmentsPage /></P>} />
+                <Route path="/hrm/designations" element={<P perm="hrm.view"><DesignationsPage /></P>} />
+                <Route path="/hrm/shifts" element={<P perm="hrm.view"><ShiftsPage /></P>} />
+                <Route path="/hrm/attendance" element={<P perm="hrm.view"><AttendancePage /></P>} />
+                <Route path="/hrm/biometric" element={<P perm="hrm.view"><BiometricImportPage /></P>} />
+                <Route path="/hrm/face-attendance" element={<P perm="hrm.view"><FaceAttendancePage /></P>} />
+                <Route path="/hrm/overtime" element={<P perm="hrm.view"><OvertimePage /></P>} />
+                <Route path="/hrm/leave" element={<P perm="hrm.view"><LeavePage /></P>} />
+                <Route path="/hrm/payroll" element={<P perm="hrm.view"><PayrollPage /></P>} />
+                <Route path="/hrm/documents" element={<P perm="hrm.view"><DocumentsPage /></P>} />
+                <Route path="/hrm/id-cards" element={<P perm="hrm.view"><IdCardsPage /></P>} />
+                <Route path="/hrm/reports" element={<P perm="hrm.view"><HrReportsPage /></P>} />
+
+                {/* ─── Employee Portal (own data — no module permission needed) ── */}
                 <Route path="/portal/dashboard" element={<MyDashboardPage />} />
                 <Route path="/portal/profile" element={<MyProfilePage />} />
                 <Route path="/portal/attendance" element={<MyAttendancePage />} />
                 <Route path="/portal/leave" element={<MyLeavePage />} />
                 <Route path="/portal/payslips" element={<MyPayslipsPage />} />
                 <Route path="/portal/documents" element={<MyDocumentsPage />} />
-                {/* Messaging */}
-                <Route path="/messaging" element={<MessagingPage />} />
-                {/* Admin Routes */}
-                <Route path="/admin/users" element={<ProtectedRoute requiredPermission="users.view"><UsersPage /></ProtectedRoute>} />
-                <Route path="/admin/roles" element={<ProtectedRoute requiredPermission="roles.view"><RolesPage /></ProtectedRoute>} />
-                <Route path="/admin/branches" element={<ProtectedRoute requiredPermission="branches.view"><BranchesPage /></ProtectedRoute>} />
-                <Route path="/admin/financial-years" element={<ProtectedRoute requiredPermission="financial_years.view"><FinancialYearsPage /></ProtectedRoute>} />
-                <Route path="/admin/audit-log" element={<ProtectedRoute requiredPermission="audit_log.view"><AuditLogPage /></ProtectedRoute>} />
-                <Route path="/admin/backup" element={<ProtectedRoute requiredPermission="backup.view"><BackupPage /></ProtectedRoute>} />
-                <Route path="/admin/settings" element={<ProtectedRoute requiredPermission="settings.view"><GeneralSettingsPage /></ProtectedRoute>} />
-                <Route path="/admin/numbering" element={<ProtectedRoute requiredPermission="settings.view"><DocumentNumberingPage /></ProtectedRoute>} />
-                <Route path="/admin/shortcuts" element={<ProtectedRoute requiredPermission="settings.view"><ShortcutsPage /></ProtectedRoute>} />
-                <Route path="/admin/branding" element={<ProtectedRoute requiredPermission="settings.view"><BrandingPage /></ProtectedRoute>} />
-                <Route path="/admin/sms" element={<ProtectedRoute requiredPermission="settings.view"><SmsSettingsPage /></ProtectedRoute>} />
+
+                {/* ─── Reports ──────────────────────────────────── */}
+                <Route path="/reports/financial" element={<P perm="reports.view"><FinancialReports /></P>} />
+                <Route path="/reports/financial-summary" element={<P perm="reports.view"><FinancialSummaryDashboard /></P>} />
+                <Route path="/reports/trial-balance" element={<P perm="accounts.view"><TrialBalanceReport /></P>} />
+                <Route path="/reports/profit-loss" element={<P perm="accounts.view"><ProfitLossReport /></P>} />
+                <Route path="/reports/balance-sheet" element={<P perm="accounts.view"><BalanceSheetReport /></P>} />
+                <Route path="/reports/general-ledger" element={<P perm="accounts.view"><GeneralLedgerReport /></P>} />
+                <Route path="/reports/account-ledger" element={<P perm="accounts.view"><AccountLedgerReport /></P>} />
+                <Route path="/reports/party-ledger" element={<P perm="reports.view"><PartyLedgerReport /></P>} />
+                <Route path="/reports/cash-book" element={<P perm="bank.view"><CashBookReport /></P>} />
+                <Route path="/reports/bank-book" element={<P perm="bank.view"><BankBookReport /></P>} />
+                <Route path="/reports/bank-reconciliation" element={<P perm="bank.view"><BankReconciliationReport /></P>} />
+                <Route path="/reports/journal-vouchers" element={<P perm="journal.view"><JournalVoucherReport /></P>} />
+                <Route path="/reports/payment-vouchers" element={<P perm="payment.view"><PaymentVoucherReport /></P>} />
+                <Route path="/reports/receipt-vouchers" element={<P perm="receipt.view"><ReceiptVoucherReport /></P>} />
+                <Route path="/reports/contra-vouchers" element={<P perm="contra.view"><ContraVoucherReport /></P>} />
+                <Route path="/reports/accounts-receivable" element={<P perm="sales.view"><AccountsReceivableReport /></P>} />
+                <Route path="/reports/ar-aging" element={<P perm="sales.view"><ARAgingReport /></P>} />
+                <Route path="/reports/income-analysis" element={<P perm="sales.view"><IncomeAnalysisReport /></P>} />
+                <Route path="/reports/accounts-payable" element={<P perm="purchase.view"><AccountsPayableReport /></P>} />
+                <Route path="/reports/ap-aging" element={<P perm="purchase.view"><APAgingReport /></P>} />
+                <Route path="/reports/expense-analysis" element={<P perm="purchase.view"><ExpenseAnalysisReport /></P>} />
+                <Route path="/reports/stock-ledger" element={<P perm="inventory.view"><StockLedger /></P>} />
+                <Route path="/reports/stock-reports" element={<P perm="inventory.view"><StockReportsPage /></P>} />
+                <Route path="/reports/low-stock" element={<P perm="inventory.view"><LowStockPage /></P>} />
+                <Route path="/reports/sales" element={<P perm="sales.view"><FinancialReports /></P>} />
+                <Route path="/reports/purchase" element={<P perm="purchase.view"><FinancialReports /></P>} />
+
+                {/* ─── Administration ──────────────────────────── */}
+                <Route path="/admin/users" element={<P perm="users.view"><UsersPage /></P>} />
+                <Route path="/admin/roles" element={<P perm="roles.view"><RolesPage /></P>} />
+                <Route path="/admin/branches" element={<P perm="branches.view"><BranchesPage /></P>} />
+                <Route path="/admin/financial-years" element={<P perm="financial_years.view"><FinancialYearsPage /></P>} />
+                <Route path="/admin/audit-log" element={<P perm="audit_log.view"><AuditLogPage /></P>} />
+                <Route path="/admin/backup" element={<P perm="backup.view"><BackupPage /></P>} />
+                <Route path="/admin/settings" element={<P perm="settings.view"><GeneralSettingsPage /></P>} />
+                <Route path="/admin/numbering" element={<P perm="settings.view"><DocumentNumberingPage /></P>} />
+                <Route path="/admin/shortcuts" element={<P perm="settings.view"><ShortcutsPage /></P>} />
+                <Route path="/admin/branding" element={<P perm="settings.view"><BrandingPage /></P>} />
+                <Route path="/admin/sms" element={<P perm="settings.view"><SmsSettingsPage /></P>} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

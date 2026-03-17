@@ -22,10 +22,11 @@ import { cn } from "@/lib/utils";
 interface NavGroup {
   label: string;
   icon: any;
-  /** Permission required to see this group (e.g. "sales.view") */
+  /** Permission required to see this group. Comma-separated = OR logic. Omit = always visible. */
   permission?: string;
   requiredModules?: ModuleKey[];
   children: { to: string; label: string; icon: any; end?: boolean; permission?: string }[];
+  /** Only show if user has an employee record or is HR admin */
   portalOnly?: boolean;
 }
 
@@ -36,17 +37,17 @@ const navGroups: NavGroup[] = [
     permission: "accounts.view",
     requiredModules: ["accounts"],
     children: [
-      { to: "/accounts/chart", label: "Chart of Accounts", icon: BookOpen },
+      { to: "/accounts/chart", label: "Chart of Accounts", icon: BookOpen, permission: "accounts.view" },
       { to: "/accounts/vouchers", label: "Accounting Vouchers", icon: FileText, permission: "journal.view,payment.view,receipt.view,contra.view" },
-      { to: "/reports/trial-balance", label: "Trial Balance", icon: FileText },
-      { to: "/reports/profit-loss", label: "Profit & Loss", icon: TrendingUp },
-      { to: "/reports/balance-sheet", label: "Balance Sheet", icon: FileText },
-      { to: "/reports/general-ledger", label: "General Ledger", icon: BookOpen },
-      { to: "/reports/account-ledger", label: "Account Ledger", icon: ScrollText },
-      { to: "/reports/journal-vouchers", label: "Journal Report", icon: FileText },
-      { to: "/reports/payment-vouchers", label: "Payment Report", icon: CreditCard },
-      { to: "/reports/receipt-vouchers", label: "Receipt Report", icon: Receipt },
-      { to: "/reports/contra-vouchers", label: "Contra Report", icon: ArrowLeftRight },
+      { to: "/reports/trial-balance", label: "Trial Balance", icon: FileText, permission: "accounts.view" },
+      { to: "/reports/profit-loss", label: "Profit & Loss", icon: TrendingUp, permission: "accounts.view" },
+      { to: "/reports/balance-sheet", label: "Balance Sheet", icon: FileText, permission: "accounts.view" },
+      { to: "/reports/general-ledger", label: "General Ledger", icon: BookOpen, permission: "accounts.view" },
+      { to: "/reports/account-ledger", label: "Account Ledger", icon: ScrollText, permission: "accounts.view" },
+      { to: "/reports/journal-vouchers", label: "Journal Report", icon: FileText, permission: "journal.view" },
+      { to: "/reports/payment-vouchers", label: "Payment Report", icon: CreditCard, permission: "payment.view" },
+      { to: "/reports/receipt-vouchers", label: "Receipt Report", icon: Receipt, permission: "receipt.view" },
+      { to: "/reports/contra-vouchers", label: "Contra Report", icon: ArrowLeftRight, permission: "contra.view" },
     ],
   },
   {
@@ -55,12 +56,12 @@ const navGroups: NavGroup[] = [
     permission: "sales.view",
     requiredModules: ["sales"],
     children: [
-      { to: "/sales", label: "Sales Invoice", icon: Receipt },
-      { to: "/sales/returns", label: "Sales Return", icon: ArrowLeftRight },
-      { to: "/customers", label: "Customers", icon: UserCheck },
-      { to: "/reports/accounts-receivable", label: "Accounts Receivable", icon: UserCheck },
-      { to: "/reports/ar-aging", label: "AR Aging", icon: Clock },
-      { to: "/reports/income-analysis", label: "Income Analysis", icon: TrendingUp },
+      { to: "/sales", label: "Sales Invoice", icon: Receipt, permission: "sales.view" },
+      { to: "/sales/returns", label: "Sales Return", icon: ArrowLeftRight, permission: "sales.view" },
+      { to: "/customers", label: "Customers", icon: UserCheck, permission: "sales.view" },
+      { to: "/reports/accounts-receivable", label: "Accounts Receivable", icon: UserCheck, permission: "sales.view" },
+      { to: "/reports/ar-aging", label: "AR Aging", icon: Clock, permission: "sales.view" },
+      { to: "/reports/income-analysis", label: "Income Analysis", icon: TrendingUp, permission: "sales.view" },
     ],
   },
   {
@@ -69,12 +70,12 @@ const navGroups: NavGroup[] = [
     permission: "purchase.view",
     requiredModules: ["purchase"],
     children: [
-      { to: "/purchase", label: "Purchase Entry", icon: ShoppingCart },
-      { to: "/purchase/returns", label: "Purchase Return", icon: ArrowLeftRight },
-      { to: "/suppliers", label: "Suppliers", icon: Truck },
-      { to: "/reports/accounts-payable", label: "Accounts Payable", icon: Truck },
-      { to: "/reports/ap-aging", label: "AP Aging", icon: Clock },
-      { to: "/reports/expense-analysis", label: "Expense Analysis", icon: FileText },
+      { to: "/purchase", label: "Purchase Entry", icon: ShoppingCart, permission: "purchase.view" },
+      { to: "/purchase/returns", label: "Purchase Return", icon: ArrowLeftRight, permission: "purchase.view" },
+      { to: "/suppliers", label: "Suppliers", icon: Truck, permission: "purchase.view" },
+      { to: "/reports/accounts-payable", label: "Accounts Payable", icon: Truck, permission: "purchase.view" },
+      { to: "/reports/ap-aging", label: "AP Aging", icon: Clock, permission: "purchase.view" },
+      { to: "/reports/expense-analysis", label: "Expense Analysis", icon: FileText, permission: "purchase.view" },
     ],
   },
   {
@@ -83,16 +84,16 @@ const navGroups: NavGroup[] = [
     permission: "inventory.view",
     requiredModules: ["inventory"],
     children: [
-      { to: "/inventory/items", label: "Item Master", icon: Package },
-      { to: "/inventory/categories", label: "Item Categories", icon: Layers },
-      { to: "/inventory/units", label: "Units", icon: CircleDot },
-      { to: "/inventory/warehouses", label: "Warehouses", icon: Warehouse },
-      { to: "/inventory", label: "Stock Overview", icon: Warehouse },
-      { to: "/inventory/transfers", label: "Stock Transfer", icon: ArrowLeftRight },
-      { to: "/inventory/adjustments", label: "Stock Adjustment", icon: ClipboardList },
-      { to: "/inventory/stock-ledger", label: "Stock Ledger", icon: ScrollText },
-      { to: "/reports/stock-reports", label: "Stock Reports", icon: BarChart3 },
-      { to: "/reports/low-stock", label: "Low Stock Alert", icon: CircleDot },
+      { to: "/inventory/items", label: "Item Master", icon: Package, permission: "inventory.view" },
+      { to: "/inventory/categories", label: "Item Categories", icon: Layers, permission: "inventory.view" },
+      { to: "/inventory/units", label: "Units", icon: CircleDot, permission: "inventory.view" },
+      { to: "/inventory/warehouses", label: "Warehouses", icon: Warehouse, permission: "inventory.view" },
+      { to: "/inventory", label: "Stock Overview", icon: Warehouse, permission: "inventory.view" },
+      { to: "/inventory/transfers", label: "Stock Transfer", icon: ArrowLeftRight, permission: "inventory.view" },
+      { to: "/inventory/adjustments", label: "Stock Adjustment", icon: ClipboardList, permission: "inventory.view" },
+      { to: "/inventory/stock-ledger", label: "Stock Ledger", icon: ScrollText, permission: "inventory.view" },
+      { to: "/reports/stock-reports", label: "Stock Reports", icon: BarChart3, permission: "inventory.view" },
+      { to: "/reports/low-stock", label: "Low Stock Alert", icon: CircleDot, permission: "inventory.view" },
     ],
   },
   {
@@ -101,9 +102,9 @@ const navGroups: NavGroup[] = [
     permission: "manufacturing.view",
     requiredModules: ["manufacturing"],
     children: [
-      { to: "/manufacturing/bom", label: "Bill of Materials", icon: ClipboardList },
-      { to: "/manufacturing/production", label: "Production Entry", icon: Factory },
-      { to: "/manufacturing/reports", label: "Production Report", icon: BarChart3 },
+      { to: "/manufacturing/bom", label: "Bill of Materials", icon: ClipboardList, permission: "manufacturing.view" },
+      { to: "/manufacturing/production", label: "Production Entry", icon: Factory, permission: "manufacturing.view" },
+      { to: "/manufacturing/reports", label: "Production Report", icon: BarChart3, permission: "manufacturing.view" },
     ],
   },
   {
@@ -112,11 +113,11 @@ const navGroups: NavGroup[] = [
     permission: "bank.view",
     requiredModules: ["bank"],
     children: [
-      { to: "/bank/accounts", label: "Bank Accounts", icon: Landmark },
-      { to: "/bank/cashbook", label: "Cash Book", icon: PiggyBank },
-      { to: "/reports/cash-book", label: "Cash Book Report", icon: FileText },
-      { to: "/reports/bank-book", label: "Bank Book Report", icon: Landmark },
-      { to: "/reports/bank-reconciliation", label: "Bank Reconciliation", icon: ArrowLeftRight },
+      { to: "/bank/accounts", label: "Bank Accounts", icon: Landmark, permission: "bank.view" },
+      { to: "/bank/cashbook", label: "Cash Book", icon: PiggyBank, permission: "bank.view" },
+      { to: "/reports/cash-book", label: "Cash Book Report", icon: FileText, permission: "bank.view" },
+      { to: "/reports/bank-book", label: "Bank Book Report", icon: Landmark, permission: "bank.view" },
+      { to: "/reports/bank-reconciliation", label: "Bank Reconciliation", icon: ArrowLeftRight, permission: "bank.view" },
     ],
   },
   {
@@ -125,28 +126,27 @@ const navGroups: NavGroup[] = [
     permission: "hrm.view",
     requiredModules: ["hrm"],
     children: [
-      { to: "/hrm/dashboard", label: "HR Dashboard", icon: Gauge },
-      { to: "/hrm/employees", label: "Employees", icon: Users },
-      { to: "/hrm/departments", label: "Departments", icon: Building2 },
-      { to: "/hrm/designations", label: "Designations", icon: Briefcase },
-      { to: "/hrm/shifts", label: "Shift Management", icon: Timer },
-      { to: "/hrm/attendance", label: "Attendance", icon: Clock },
-      { to: "/hrm/biometric", label: "Biometric Import", icon: Fingerprint },
-      { to: "/hrm/face-attendance", label: "Face Recognition", icon: ScanFace },
-      { to: "/hrm/overtime", label: "Overtime", icon: Clock },
-      { to: "/hrm/leave", label: "Leave Management", icon: CalendarDays },
-      { to: "/hrm/payroll", label: "Payroll", icon: DollarSign },
-      { to: "/hrm/documents", label: "Documents", icon: FileCheck },
-      { to: "/hrm/id-cards", label: "Employee ID Cards", icon: BadgeCheck },
-      { to: "/hrm/reports", label: "HR Reports", icon: BarChart3 },
+      { to: "/hrm/dashboard", label: "HR Dashboard", icon: Gauge, permission: "hrm.view" },
+      { to: "/hrm/employees", label: "Employees", icon: Users, permission: "hrm.view" },
+      { to: "/hrm/departments", label: "Departments", icon: Building2, permission: "hrm.view" },
+      { to: "/hrm/designations", label: "Designations", icon: Briefcase, permission: "hrm.view" },
+      { to: "/hrm/shifts", label: "Shift Management", icon: Timer, permission: "hrm.view" },
+      { to: "/hrm/attendance", label: "Attendance", icon: Clock, permission: "hrm.view" },
+      { to: "/hrm/biometric", label: "Biometric Import", icon: Fingerprint, permission: "hrm.view" },
+      { to: "/hrm/face-attendance", label: "Face Recognition", icon: ScanFace, permission: "hrm.view" },
+      { to: "/hrm/overtime", label: "Overtime", icon: Clock, permission: "hrm.view" },
+      { to: "/hrm/leave", label: "Leave Management", icon: CalendarDays, permission: "hrm.view" },
+      { to: "/hrm/payroll", label: "Payroll", icon: DollarSign, permission: "hrm.view" },
+      { to: "/hrm/documents", label: "Documents", icon: FileCheck, permission: "hrm.view" },
+      { to: "/hrm/id-cards", label: "Employee ID Cards", icon: BadgeCheck, permission: "hrm.view" },
+      { to: "/hrm/reports", label: "HR Reports", icon: BarChart3, permission: "hrm.view" },
     ],
   },
   {
     label: "Employee Portal",
     icon: User,
-    permission: "hrm.view",
-    requiredModules: ["hrm"],
     portalOnly: true,
+    requiredModules: ["hrm"],
     children: [
       { to: "/portal/dashboard", label: "My Dashboard", icon: LayoutDashboard },
       { to: "/portal/profile", label: "My Profile", icon: User },
@@ -162,14 +162,15 @@ const navGroups: NavGroup[] = [
     permission: "reports.view",
     requiredModules: ["reports"],
     children: [
-      { to: "/reports/financial", label: "All Reports", icon: BarChart3 },
-      { to: "/reports/financial-summary", label: "Financial Summary", icon: Gauge },
-      { to: "/reports/party-ledger", label: "Party Ledger", icon: Users },
+      { to: "/reports/financial", label: "All Reports", icon: BarChart3, permission: "reports.view" },
+      { to: "/reports/financial-summary", label: "Financial Summary", icon: Gauge, permission: "reports.view" },
+      { to: "/reports/party-ledger", label: "Party Ledger", icon: Users, permission: "reports.view" },
     ],
   },
   {
     label: "Administration",
     icon: Shield,
+    // No group-level permission — filtered by children
     children: [
       { to: "/admin/branches", label: "Branches", icon: Building2, permission: "branches.view" },
       { to: "/admin/financial-years", label: "Financial Years", icon: Calendar, permission: "financial_years.view" },
@@ -224,6 +225,12 @@ const NavItem = ({ to, label, icon: Icon, end }: { to: string; label: string; ic
   </NavLink>
 );
 
+/** Check if user has ANY of the comma-separated permissions */
+const hasAnyPermission = (permStr: string, hasPermission: (p: string) => boolean) => {
+  const perms = permStr.split(",");
+  return perms.some((p) => hasPermission(p.trim()));
+};
+
 const CollapsibleGroup = ({ group, isModuleEnabled, hasPermission }: { group: NavGroup; isModuleEnabled: (key: ModuleKey) => boolean; hasPermission: (perm: string) => boolean }) => {
   const [open, setOpen] = useState(false);
   const Icon = group.icon;
@@ -231,11 +238,7 @@ const CollapsibleGroup = ({ group, isModuleEnabled, hasPermission }: { group: Na
   const filteredChildren = group.children.filter((item) => {
     const required = routeModuleMap[item.to];
     if (required && required.some((m) => !isModuleEnabled(m))) return false;
-    // Check per-item permission — support comma-separated OR logic (any match = visible)
-    if (item.permission) {
-      const perms = item.permission.split(",");
-      if (!perms.some((p) => hasPermission(p.trim()))) return false;
-    }
+    if (item.permission && !hasAnyPermission(item.permission, hasPermission)) return false;
     return true;
   });
 
@@ -314,10 +317,12 @@ export const AppSidebar = () => {
           <NavItem to="/messaging" label="Messages" icon={Mail} />
           <div className="my-2 border-t border-sidebar-border" />
           {navGroups.map((group) => {
+            // Check required modules
             if (group.requiredModules && group.requiredModules.some((m) => !isModuleEnabled(m))) return null;
+            // Portal: only show if user has employee record or is HR admin
             if (group.portalOnly && !hasEmployeeRecord && !isHrAdmin) return null;
-            // Check group-level permission
-            if (group.permission && !hasPermission(group.permission)) return null;
+            // Group-level permission (OR logic for comma-separated)
+            if (group.permission && !hasAnyPermission(group.permission, hasPermission)) return null;
             return <CollapsibleGroup key={group.label} group={group} isModuleEnabled={isModuleEnabled} hasPermission={hasPermission} />;
           })}
         </nav>
