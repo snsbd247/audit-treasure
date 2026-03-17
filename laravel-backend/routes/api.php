@@ -260,6 +260,17 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\BranchScope::class, \App
         // Settings (view uses administration.view for backward compat)
         Route::middleware('permission:settings.view')->get('settings/company', [\App\Http\Controllers\Admin\SettingsController::class, 'show']);
 
+        // ─── Backup & Restore (Super Admin only) ─────────────────
+        Route::prefix('backups')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\BackupController::class, 'index']);
+            Route::post('create', [\App\Http\Controllers\Admin\BackupController::class, 'create']);
+            Route::get('{id}/download', [\App\Http\Controllers\Admin\BackupController::class, 'download']);
+            Route::post('restore', [\App\Http\Controllers\Admin\BackupController::class, 'restore']);
+            Route::delete('{id}', [\App\Http\Controllers\Admin\BackupController::class, 'destroy']);
+            Route::get('settings', [\App\Http\Controllers\Admin\BackupController::class, 'settings']);
+            Route::put('settings', [\App\Http\Controllers\Admin\BackupController::class, 'settings']);
+        });
+
         // ─── Audit Log (read-only) ──────────────────────────────
         Route::middleware('permission:audit_log.view')->group(function () {
             Route::get('audit-log', function (\Illuminate\Http\Request $request) {
