@@ -12,7 +12,6 @@ import { BrandingProvider } from "@/contexts/BrandingContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppLayout } from "@/components/AppLayout";
 import Login from "./pages/Login";
-import InstallPage from "./pages/InstallPage";
 import Dashboard from "./pages/Dashboard";
 import VouchersPage from "./pages/VouchersPage";
 import Profile from "./pages/Profile";
@@ -119,7 +118,6 @@ const App = () => (
           <BrandingProvider>
           <BrowserRouter>
             <Routes>
-              <Route path="/install" element={<InstallPage />} />
               <Route path="/login" element={<Login />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/employee/verify/:code" element={<EmployeeVerifyPage />} />
