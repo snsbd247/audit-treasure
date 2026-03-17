@@ -24,6 +24,7 @@ interface NavGroup {
   requiredModules?: ModuleKey[];
   children: { to: string; label: string; icon: any; end?: boolean }[];
   adminOnly?: boolean;
+  portalOnly?: boolean; // Show only if user has linked employee or is HR admin
 }
 
 const navGroups: NavGroup[] = [
