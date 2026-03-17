@@ -119,6 +119,7 @@ const App = () => (
           <BrandingProvider>
           <BrowserRouter>
             <Routes>
+              <Route path="/install" element={<InstallPage />} />
               <Route path="/login" element={<Login />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/employee/verify/:code" element={<EmployeeVerifyPage />} />
