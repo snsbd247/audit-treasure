@@ -11,8 +11,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Plus, Edit, Trash2, Search, Users, Eye } from "lucide-react";
+import { Plus, Edit, Trash2, Search, Users, Eye, KeyRound } from "lucide-react";
 
 interface Employee {
   id: string;
@@ -38,44 +39,52 @@ interface Department { id: string; name: string; }
 interface Designation { id: string; name: string; }
 interface Branch { id: string; name: string; }
 
-interface UserProfile { id: string; name: string; email: string | null; username: string | null; }
-
 const defaultForm = {
   employee_code: "", first_name: "", last_name: "", mobile: "", email: "",
   address: "", national_id: "", department_id: "", designation_id: "",
-  branch_id: "", user_id: "", joining_date: new Date().toISOString().split("T")[0],
+  branch_id: "", joining_date: new Date().toISOString().split("T")[0],
   salary: 0, employment_type: "permanent", status: "active",
+  // Login fields
+  create_login: false, username: "", password: "",
 };
 
 export default function EmployeesPage() {
-  const { user, hasPermission } = useAuth();
-  const isAdmin = hasPermission("hrm", "can_edit");
+  const { hasPermission } = useAuth();
+  const isAdmin = hasPermission("hrm.edit");
   const navigate = useNavigate();
   
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [designations, setDesignations] = useState<Designation[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
-  const [userProfiles, setUserProfiles] = useState<UserProfile[]>([]);
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(defaultForm);
   const [loading, setLoading] = useState(false);
+  const [linkedUsers, setLinkedUsers] = useState<Record<string, string>>({});
 
   const fetchAll = useCallback(async () => {
-    const [empRes, deptRes, desigRes, branchRes, profilesRes] = await Promise.all([
+    const [empRes, deptRes, desigRes, branchRes] = await Promise.all([
       supabase.from("employees" as any).select("*").order("employee_code"),
       supabase.from("departments" as any).select("id, name").eq("status", "active"),
       supabase.from("designations" as any).select("id, name").eq("status", "active"),
       supabase.from("branches").select("id, name").eq("status", "active"),
-      supabase.from("profiles").select("id, name, email, username").is("deleted_at", null).neq("status", "deleted"),
     ]);
     if (empRes.data) setEmployees(empRes.data as any);
     if (deptRes.data) setDepartments(deptRes.data as any);
     if (desigRes.data) setDesignations(desigRes.data as any);
     if (branchRes.data) setBranches(branchRes.data as any);
-    if (profilesRes.data) setUserProfiles(profilesRes.data as UserProfile[]);
+
+    // Fetch which employees have linked user accounts
+    const { data: profiles } = await supabase.from("profiles").select("id, employee_id, username").not("employee_id", "is", null);
+    if (profiles) {
+      const map: Record<string, string> = {};
+      (profiles as any[]).forEach(p => {
+        if (p.employee_id) map[p.employee_id] = p.username || "linked";
+      });
+      setLinkedUsers(map);
+    }
   }, []);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
@@ -88,14 +97,15 @@ export default function EmployeesPage() {
   const openAdd = () => { setEditId(null); setForm(defaultForm); setDialogOpen(true); };
   const openEdit = (emp: Employee) => {
     setEditId(emp.id);
+    const hasLogin = !!linkedUsers[emp.id];
     setForm({
       employee_code: emp.employee_code, first_name: emp.first_name, last_name: emp.last_name,
       mobile: emp.mobile || "", email: emp.email || "", address: emp.address || "",
       national_id: emp.national_id || "", department_id: emp.department_id || "",
       designation_id: emp.designation_id || "", branch_id: emp.branch_id || "",
-      user_id: emp.user_id || "",
       joining_date: emp.joining_date, salary: emp.salary,
       employment_type: emp.employment_type, status: emp.status,
+      create_login: hasLogin, username: hasLogin ? linkedUsers[emp.id] : "", password: "",
     });
     setDialogOpen(true);
   };
@@ -105,22 +115,74 @@ export default function EmployeesPage() {
       toast.error("Employee code, first name and last name are required");
       return;
     }
+    if (form.create_login && !editId) {
+      if (!form.username) { toast.error("Username is required for login"); return; }
+      if (!form.password || form.password.length < 6) { toast.error("Password must be at least 6 characters"); return; }
+    }
     setLoading(true);
     const payload: any = {
-      ...form,
+      employee_code: form.employee_code,
+      first_name: form.first_name,
+      last_name: form.last_name,
+      mobile: form.mobile || null,
+      email: form.email || null,
+      address: form.address || null,
+      national_id: form.national_id || null,
       department_id: form.department_id || null,
       designation_id: form.designation_id || null,
       branch_id: form.branch_id || null,
-      user_id: form.user_id || null,
+      joining_date: form.joining_date,
+      salary: form.salary,
+      employment_type: form.employment_type,
+      status: form.status,
       updated_at: new Date().toISOString(),
     };
 
     if (editId) {
       const { error } = await supabase.from("employees" as any).update(payload).eq("id", editId);
-      if (error) toast.error(error.message); else { toast.success("Employee updated"); setDialogOpen(false); fetchAll(); }
+      if (error) { toast.error(error.message); } else {
+        // Handle login account update via profiles if needed
+        if (form.create_login && form.username) {
+          // For Supabase frontend, we can update profile username
+          const { data: existingProfile } = await supabase.from("profiles").select("id").eq("employee_id", editId).single();
+          if (existingProfile) {
+            await supabase.from("profiles").update({ username: form.username }).eq("id", existingProfile.id);
+          }
+        }
+        toast.success("Employee updated");
+        setDialogOpen(false);
+        fetchAll();
+      }
     } else {
-      const { error } = await supabase.from("employees" as any).insert(payload);
-      if (error) toast.error(error.message); else { toast.success("Employee created"); setDialogOpen(false); fetchAll(); }
+      const { data, error } = await supabase.from("employees" as any).insert(payload).select().single();
+      if (error) { toast.error(error.message); } else {
+        // If create_login, create a user profile linked to this employee
+        if (form.create_login && data) {
+          // For Supabase, we'd use the admin-create-user edge function
+          try {
+            const { data: fnData, error: fnError } = await supabase.functions.invoke("admin-create-user", {
+              body: {
+                email: form.email || `${form.username}@erp.local`,
+                password: form.password,
+                name: `${form.first_name} ${form.last_name}`,
+                username: form.username,
+                employee_id: (data as any).id,
+                branch_id: form.branch_id || null,
+              },
+            });
+            if (fnError) throw fnError;
+            // Update the employee with the user_id
+            if (fnData?.user?.id) {
+              await supabase.from("employees" as any).update({ user_id: fnData.user.id }).eq("id", (data as any).id);
+            }
+          } catch (err: any) {
+            toast.error("Employee created but login account failed: " + (err.message || "Unknown error"));
+          }
+        }
+        toast.success("Employee created");
+        setDialogOpen(false);
+        fetchAll();
+      }
     }
     setLoading(false);
   };
@@ -164,7 +226,7 @@ export default function EmployeesPage() {
                 <TableHead>Department</TableHead>
                 <TableHead>Designation</TableHead>
                 <TableHead>Branch</TableHead>
-                <TableHead>Type</TableHead>
+                <TableHead>Login</TableHead>
                 <TableHead>Status</TableHead>
                 {isAdmin && <TableHead className="text-right">Actions</TableHead>}
               </TableRow>
@@ -177,7 +239,13 @@ export default function EmployeesPage() {
                   <TableCell>{getDeptName(emp.department_id)}</TableCell>
                   <TableCell>{getDesigName(emp.designation_id)}</TableCell>
                   <TableCell>{getBranchName(emp.branch_id)}</TableCell>
-                  <TableCell><Badge variant="outline" className="capitalize">{emp.employment_type}</Badge></TableCell>
+                  <TableCell>
+                    {linkedUsers[emp.id] ? (
+                      <Badge variant="outline" className="text-xs gap-1"><KeyRound className="w-3 h-3" />{linkedUsers[emp.id]}</Badge>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">No login</span>
+                    )}
+                  </TableCell>
                   <TableCell><Badge variant={emp.status === "active" ? "default" : "secondary"} className="capitalize">{emp.status}</Badge></TableCell>
                   {isAdmin && (
                     <TableCell className="text-right space-x-1">
@@ -189,7 +257,7 @@ export default function EmployeesPage() {
                 </TableRow>
               ))}
               {filtered.length === 0 && (
-                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">No employees found</TableCell></TableRow>
+                <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">No employees found</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
@@ -228,21 +296,6 @@ export default function EmployeesPage() {
                 <SelectContent>{branches.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div>
-              <Label>Link User Account</Label>
-              <Select value={form.user_id} onValueChange={v => setForm({...form, user_id: v})}>
-                <SelectTrigger><SelectValue placeholder="None (no portal access)" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  {userProfiles.filter(p => {
-                    // Only show users not already linked to another employee
-                    const alreadyLinked = employees.some(e => e.user_id === p.id && e.id !== editId);
-                    return !alreadyLinked;
-                  }).map(p => <SelectItem key={p.id} value={p.id}>{p.name} {p.email ? `(${p.email})` : p.username ? `(${p.username})` : ""}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              <p className="text-[10px] text-muted-foreground mt-1">Links this employee to a user for Employee Portal access</p>
-            </div>
             <div><Label>Joining Date</Label><Input type="date" value={form.joining_date} onChange={e => setForm({...form, joining_date: e.target.value})} /></div>
             <div><Label>Salary</Label><Input type="number" value={form.salary} onChange={e => setForm({...form, salary: Number(e.target.value)})} /></div>
             <div>
@@ -252,6 +305,7 @@ export default function EmployeesPage() {
                 <SelectContent>
                   <SelectItem value="permanent">Permanent</SelectItem>
                   <SelectItem value="contract">Contract</SelectItem>
+                  <SelectItem value="probation">Probation</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -262,10 +316,48 @@ export default function EmployeesPage() {
                 <SelectContent>
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="terminated">Terminated</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
+
+          {/* Login Account Section */}
+          <div className="border-t pt-4 mt-2 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-base font-medium flex items-center gap-2">
+                  <KeyRound className="w-4 h-4" /> Employee Login Account
+                </Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Allow this employee to login and access Employee Portal
+                </p>
+              </div>
+              <Switch checked={form.create_login} onCheckedChange={v => setForm({...form, create_login: v})} />
+            </div>
+            {form.create_login && (
+              <div className="grid grid-cols-2 gap-4 bg-muted/50 p-3 rounded-lg">
+                <div>
+                  <Label>Username *</Label>
+                  <Input
+                    value={form.username}
+                    onChange={e => setForm({...form, username: e.target.value})}
+                    placeholder={form.employee_code || "username"}
+                  />
+                </div>
+                <div>
+                  <Label>{editId && linkedUsers[editId] ? "New Password (leave blank to keep)" : "Password *"}</Label>
+                  <Input
+                    type="password"
+                    value={form.password}
+                    onChange={e => setForm({...form, password: e.target.value})}
+                    placeholder={editId ? "Leave blank to keep current" : "Min 6 characters"}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleSave} disabled={loading}>{loading ? "Saving..." : "Save"}</Button>

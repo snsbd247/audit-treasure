@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +17,7 @@ const ACCOUNT_TYPES = ["asset", "liability", "income", "expense", "equity"] as c
 
 const ChartOfAccounts = () => {
   const { toast } = useToast();
+  const { isSuperAdmin } = useAuth();
 
   // Filters
   const [financialYears, setFinancialYears] = useState<{ id: string; name: string }[]>([]);
@@ -74,19 +76,31 @@ const ChartOfAccounts = () => {
     if (!formName.trim() || !formCode.trim()) return;
     setSaving(true);
     try {
-      const payload = {
+      const payload: any = {
         account_name: formName,
         account_code: formCode,
         account_type: formType,
         parent_id: formParent || null,
-        opening_balance: parseFloat(formBalance) || 0,
-        opening_balance_type: formBalType,
         updated_at: new Date().toISOString(),
       };
+
+      // Only Super Admin can set opening balance
+      if (isSuperAdmin) {
+        payload.opening_balance = parseFloat(formBalance) || 0;
+        payload.opening_balance_type = formBalType;
+      }
+
       if (editAcc) {
         const { error } = await supabase.from("chart_of_accounts").update(payload).eq("id", editAcc.id);
         if (error) throw error;
       } else {
+        if (isSuperAdmin) {
+          payload.opening_balance = parseFloat(formBalance) || 0;
+          payload.opening_balance_type = formBalType;
+        } else {
+          payload.opening_balance = 0;
+          payload.opening_balance_type = "debit";
+        }
         const { error } = await supabase.from("chart_of_accounts").insert(payload);
         if (error) throw error;
       }
@@ -195,19 +209,27 @@ const ChartOfAccounts = () => {
                 </Select>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2"><Label>Opening Balance</Label><Input type="number" value={formBalance} onChange={(e) => setFormBalance(e.target.value)} /></div>
-              <div className="space-y-2">
-                <Label>Balance Type</Label>
-                <Select value={formBalType} onValueChange={setFormBalType}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="debit">Debit</SelectItem>
-                    <SelectItem value="credit">Credit</SelectItem>
-                  </SelectContent>
-                </Select>
+            {/* Opening Balance - Super Admin Only */}
+            {isSuperAdmin && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2"><Label>Opening Balance</Label><Input type="number" value={formBalance} onChange={(e) => setFormBalance(e.target.value)} /></div>
+                <div className="space-y-2">
+                  <Label>Balance Type</Label>
+                  <Select value={formBalType} onValueChange={setFormBalType}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="debit">Debit</SelectItem>
+                      <SelectItem value="credit">Credit</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-            </div>
+            )}
+            {!isSuperAdmin && (
+              <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+                Opening balance can only be set by Super Admin.
+              </p>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>

@@ -16,11 +16,11 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Verify calling user is admin/super_admin
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
+    // Verify calling user is authenticated
     const callerClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -29,25 +29,25 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Check caller has admin role
-    const { data: callerRoles } = await createClient(supabaseUrl, serviceKey)
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", caller.id);
+    // Check caller is Super Admin (employee_id IS NULL in profiles)
+    const adminClient = createClient(supabaseUrl, serviceKey);
+    const { data: callerProfile } = await adminClient
+      .from("profiles")
+      .select("employee_id")
+      .eq("id", caller.id)
+      .single();
 
-    const roles = (callerRoles || []).map((r: any) => r.role);
-    if (!roles.includes("super_admin") && !roles.includes("admin")) {
-      return new Response(JSON.stringify({ error: "Admin access required" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const isSuperAdmin = callerProfile && (callerProfile.employee_id === null || callerProfile.employee_id === undefined);
+    if (!isSuperAdmin) {
+      return new Response(JSON.stringify({ error: "Super Admin access required" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const body = await req.json();
-    const { email, password, name, username, phone, branch_id, status, role, custom_role_id } = body;
+    const { email, password, name, username, phone, branch_id, status, employee_id, custom_role_id } = body;
 
     if (!email || !password || !name) {
       return new Response(JSON.stringify({ error: "Email, password and name are required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-
-    const adminClient = createClient(supabaseUrl, serviceKey);
 
     // Create user with admin API (no confirmation email, no session switch)
     const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
 
     const userId = newUser.user.id;
 
-    // Upsert profile (trigger may not create it for admin-created users)
+    // Upsert profile with employee_id link
     await adminClient.from("profiles").upsert({
       id: userId,
       name: name,
@@ -71,20 +71,16 @@ Deno.serve(async (req) => {
       username: username || null,
       phone: phone || null,
       branch_id: branch_id || null,
+      employee_id: employee_id || null,
       status: status || "active",
     }, { onConflict: "id" });
 
-    // Assign system role
-    if (role) {
-      await adminClient.from("user_roles").insert({ user_id: userId, role });
-    }
-
-    // Assign custom role
+    // Assign custom role if provided
     if (custom_role_id && custom_role_id !== "none") {
-      await adminClient.from("user_custom_roles").insert({ user_id: userId, custom_role_id });
+      await adminClient.from("user_roles").insert({ user_id: userId, role_id: custom_role_id });
     }
 
-    return new Response(JSON.stringify({ success: true, user_id: userId }), {
+    return new Response(JSON.stringify({ success: true, user_id: userId, user: { id: userId } }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

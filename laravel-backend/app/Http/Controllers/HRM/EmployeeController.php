@@ -4,13 +4,15 @@ namespace App\Http\Controllers\HRM;
 
 use App\Http\Controllers\CrudController;
 use App\Models\Employee;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 
 class EmployeeController extends CrudController
 {
     protected string $modelClass = Employee::class;
     protected array $searchFields = ['employee_code', 'first_name', 'last_name', 'email'];
-    // Only load essential relations for list view (avoid N+1 without over-fetching)
     protected array $with = ['department', 'designation', 'branch', 'shift'];
     protected array $validationRules = [
         'employee_code' => 'required|unique:employees,employee_code',
@@ -25,21 +27,87 @@ class EmployeeController extends CrudController
     ];
 
     /**
+     * Override store to handle login account creation.
+     */
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'employee_code' => 'required|unique:employees,employee_code',
+            'first_name' => 'required|max:100',
+            'last_name' => 'required|max:100',
+            'joining_date' => 'required|date',
+            'department_id' => 'nullable|exists:departments,id',
+            'designation_id' => 'nullable|exists:designations,id',
+            'branch_id' => 'nullable|exists:branches,id',
+            'shift_id' => 'nullable|exists:shifts,id',
+            'salary' => 'numeric|min:0',
+            'email' => 'nullable|email',
+            'mobile' => 'nullable|string',
+            'address' => 'nullable|string',
+            'national_id' => 'nullable|string',
+            'employment_type' => 'nullable|in:permanent,contract,probation',
+            'status' => 'nullable|in:active,inactive,terminated',
+        ]);
+
+        // Validate login fields if create_login is true
+        if ($request->boolean('create_login')) {
+            $request->validate([
+                'username' => 'required|unique:users,username|max:50',
+                'password' => 'required|min:6',
+            ]);
+        }
+
+        return DB::transaction(function () use ($data, $request) {
+            $employee = Employee::create($data);
+
+            // Create user login account if requested
+            if ($request->boolean('create_login')) {
+                $user = User::create([
+                    'username' => $request->username,
+                    'name' => "{$employee->first_name} {$employee->last_name}",
+                    'email' => $employee->email,
+                    'phone' => $employee->mobile,
+                    'password' => Hash::make($request->password),
+                    'employee_id' => $employee->id,
+                    'branch_id' => $employee->branch_id,
+                    'status' => 'active',
+                ]);
+
+                $employee->update(['user_id' => $user->id]);
+
+                // Assign staff role if exists
+                $staffRole = \App\Models\CustomRole::where('name', 'Staff')->first();
+                if ($staffRole) {
+                    $user->roles()->attach($staffRole->id);
+                }
+            }
+
+            return $this->created($employee->fresh()->load('department', 'designation', 'branch', 'shift'));
+        });
+    }
+
+    /**
      * Override show to load all relations for single employee view.
      */
     public function show(string $id)
     {
-        return $this->success(
-            Employee::with([
-                'department', 'designation', 'branch', 'shift',
-                'salaryStructure', 'bankInfo', 'education',
-                'experience', 'emergencyContacts',
-            ])->findOrFail($id)
-        );
+        $employee = Employee::with([
+            'department', 'designation', 'branch', 'shift',
+            'salaryStructure', 'bankInfo', 'education',
+            'experience', 'emergencyContacts',
+        ])->findOrFail($id);
+
+        // Include linked user info
+        $linkedUser = User::where('employee_id', $id)->first(['id', 'username', 'status']);
+
+        return $this->success([
+            'employee' => $employee,
+            'linked_user' => $linkedUser,
+        ]);
     }
 
     /**
-     * Override update to allow updating existing employee_code.
+     * Override update to handle login account management.
      */
     public function update(Request $request, string $id)
     {
@@ -61,8 +129,57 @@ class EmployeeController extends CrudController
             'employment_type' => 'nullable|in:permanent,contract,probation',
             'status' => 'nullable|in:active,inactive,terminated',
         ]);
-        $employee->update($data);
-        return $this->success($employee->fresh()->load('department', 'designation', 'branch', 'shift'));
+
+        return DB::transaction(function () use ($data, $request, $employee, $id) {
+            $employee->update($data);
+
+            // Handle login account
+            if ($request->boolean('create_login')) {
+                $existingUser = User::where('employee_id', $id)->first();
+
+                if ($existingUser) {
+                    // Update existing user
+                    $updateData = [];
+                    if ($request->filled('username')) {
+                        $request->validate(['username' => "required|unique:users,username,{$existingUser->id}|max:50"]);
+                        $updateData['username'] = $request->username;
+                    }
+                    if ($request->filled('password')) {
+                        $request->validate(['password' => 'min:6']);
+                        $updateData['password'] = Hash::make($request->password);
+                    }
+                    $updateData['name'] = "{$employee->first_name} {$employee->last_name}";
+                    $updateData['email'] = $employee->email;
+                    $existingUser->update($updateData);
+                } else {
+                    // Create new user
+                    $request->validate([
+                        'username' => 'required|unique:users,username|max:50',
+                        'password' => 'required|min:6',
+                    ]);
+
+                    $user = User::create([
+                        'username' => $request->username,
+                        'name' => "{$employee->first_name} {$employee->last_name}",
+                        'email' => $employee->email,
+                        'phone' => $employee->mobile,
+                        'password' => Hash::make($request->password),
+                        'employee_id' => $employee->id,
+                        'branch_id' => $employee->branch_id,
+                        'status' => 'active',
+                    ]);
+
+                    $employee->update(['user_id' => $user->id]);
+
+                    $staffRole = \App\Models\CustomRole::where('name', 'Staff')->first();
+                    if ($staffRole) {
+                        $user->roles()->attach($staffRole->id);
+                    }
+                }
+            }
+
+            return $this->success($employee->fresh()->load('department', 'designation', 'branch', 'shift'));
+        });
     }
 
     /**
@@ -77,7 +194,6 @@ class EmployeeController extends CrudController
         $employee = Employee::findOrFail($id);
 
         if ($request->hasFile('photo')) {
-            // Delete old photo if exists
             if ($employee->photo_url) {
                 $oldPath = str_replace('/storage/', '', $employee->photo_url);
                 if (\Storage::disk('public')->exists($oldPath)) {
@@ -95,5 +211,14 @@ class EmployeeController extends CrudController
         }
 
         return $this->error('No photo provided', 400);
+    }
+
+    /**
+     * Get linked user info for an employee.
+     */
+    public function getLinkedUser(string $id)
+    {
+        $user = User::where('employee_id', $id)->first(['id', 'username', 'status', 'created_at']);
+        return $this->success($user);
     }
 }
