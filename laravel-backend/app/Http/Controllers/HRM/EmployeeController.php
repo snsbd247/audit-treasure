@@ -7,7 +7,7 @@ class EmployeeController extends CrudController
 {
     protected string $modelClass = Employee::class;
     protected array $searchFields = ['employee_code', 'first_name', 'last_name', 'email'];
-    protected array $with = ['department', 'designation', 'branch', 'shift'];
+    protected array $with = ['department', 'designation', 'branch', 'shift', 'salaryStructure', 'bankInfo', 'education', 'experience', 'emergencyContacts'];
     protected array $validationRules = [
         'employee_code' => 'required|unique:employees,employee_code',
         'first_name' => 'required|max:100',
