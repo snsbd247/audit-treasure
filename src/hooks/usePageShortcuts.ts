@@ -18,7 +18,7 @@ export function usePageShortcuts() {
   const [shortcuts, setShortcuts] = useState<PageShortcut[]>([]);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user, isAdmin, isSuperAdmin, permissions } = useAuth();
+  const { user, isSuperAdmin, hasPermission } = useAuth();
 
   const fetchShortcuts = useCallback(async () => {
     const { data } = await supabase
