@@ -163,20 +163,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Super Admin = employee_id is null (or wildcard permissions)
   const isSuperAdmin = profile?.employee_id === null || profile?.employee_id === undefined || permissions.includes("*");
+  const isAdmin = isSuperAdmin;
+
+  // Derive legacy roles array from permissions/super admin status
+  const roles: string[] = isSuperAdmin ? ["super_admin"] : [];
 
   const hasPermission = useCallback(
-    (permission: string): boolean => {
+    (moduleOrPermission: string, action?: string): boolean => {
       if (isSuperAdmin) return true;
       if (permissions.includes("*")) return true;
-      return permissions.includes(permission);
+
+      // Legacy 2-arg format: hasPermission("sales", "can_view") → "sales.view"
+      if (action) {
+        const actionMap: Record<string, string> = {
+          can_view: "view", can_add: "create", can_edit: "edit", can_delete: "delete",
+        };
+        const mapped = actionMap[action] || action;
+        return permissions.includes(`${moduleOrPermission}.${mapped}`);
+      }
+
+      // New 1-arg format: hasPermission("sales.view")
+      return permissions.includes(moduleOrPermission);
     },
     [isSuperAdmin, permissions]
   );
 
   return (
     <AuthContext.Provider value={{
-      user, session, profile, permissions, loading,
-      isSuperAdmin, hasPermission,
+      user, session, profile, roles, permissions, loading,
+      isAdmin, isSuperAdmin, hasPermission,
       signIn, signUp, signOut, refreshProfile,
     }}>
       {children}
