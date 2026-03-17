@@ -32,6 +32,7 @@ export const TopNavbar = ({ onOpenCommandPalette }: TopNavbarProps) => {
   const [searchValue, setSearchValue] = useState("");
   const [showResults, setShowResults] = useState(false);
   const { search, findByCode, addRecentPage } = usePageShortcuts();
+  const { unreadCount } = useUnreadMessages();
   const inputRef = useRef<HTMLInputElement>(null);
 
   const results = searchValue.trim() ? search(searchValue) : [];
