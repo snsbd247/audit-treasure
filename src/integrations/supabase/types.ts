@@ -276,6 +276,42 @@ export type Database = {
           },
         ]
       }
+      biometric_devices: {
+        Row: {
+          created_at: string
+          device_name: string
+          id: string
+          ip_address: string
+          last_sync_at: string | null
+          location: string | null
+          port: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          device_name: string
+          id?: string
+          ip_address: string
+          last_sync_at?: string | null
+          location?: string | null
+          port?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          device_name?: string
+          id?: string
+          ip_address?: string
+          last_sync_at?: string | null
+          location?: string | null
+          port?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       biometric_logs: {
         Row: {
           check_in_time: string | null
@@ -283,6 +319,7 @@ export type Database = {
           created_at: string
           date: string
           device_id: string
+          device_name: string | null
           employee_code: string
           id: string
           processed: boolean
@@ -293,6 +330,7 @@ export type Database = {
           created_at?: string
           date?: string
           device_id: string
+          device_name?: string | null
           employee_code: string
           id?: string
           processed?: boolean
@@ -303,6 +341,7 @@ export type Database = {
           created_at?: string
           date?: string
           device_id?: string
+          device_name?: string | null
           employee_code?: string
           id?: string
           processed?: boolean
@@ -2118,6 +2157,42 @@ export type Database = {
           shift_name?: string
           start_time?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      sms_logs: {
+        Row: {
+          created_at: string
+          event_type: string | null
+          id: string
+          message: string
+          phone: string
+          reference_id: string | null
+          response: string | null
+          sent_by: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          event_type?: string | null
+          id?: string
+          message: string
+          phone: string
+          reference_id?: string | null
+          response?: string | null
+          sent_by?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string | null
+          id?: string
+          message?: string
+          phone?: string
+          reference_id?: string | null
+          response?: string | null
+          sent_by?: string | null
+          status?: string
         }
         Relationships: []
       }
