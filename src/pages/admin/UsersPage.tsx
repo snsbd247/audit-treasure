@@ -115,30 +115,34 @@ const UsersPage = () => {
 
         // Update custom role
         await supabase.from("user_custom_roles").delete().eq("user_id", editUser.id);
-        if (formCustomRole) {
+        if (formCustomRole && formCustomRole !== "none") {
           await supabase.from("user_custom_roles").insert({ user_id: editUser.id, custom_role_id: formCustomRole });
         }
 
         toast({ title: "User updated" });
       } else {
-        const { data, error } = await supabase.auth.signUp({
-          email: formEmail,
-          password: formPassword,
-          options: { data: { name: formName, username: formUsername } },
+        // Use edge function to create user without logging out current admin
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData.session?.access_token;
+        if (!token) throw new Error("Not authenticated");
+
+        const res = await supabase.functions.invoke("admin-create-user", {
+          body: {
+            email: formEmail,
+            password: formPassword,
+            name: formName,
+            username: formUsername,
+            phone: formPhone,
+            branch_id: formBranch || null,
+            status: formStatus,
+            role: formRole,
+            custom_role_id: formCustomRole || null,
+          },
         });
-        if (error) throw error;
-        if (data.user) {
-          await supabase.from("profiles").update({
-            username: formUsername, phone: formPhone,
-            branch_id: formBranch || null, status: formStatus,
-          }).eq("id", data.user.id);
 
-          await supabase.from("user_roles").insert({ user_id: data.user.id, role: formRole as any });
+        if (res.error) throw new Error(res.error.message || "Failed to create user");
+        if (res.data?.error) throw new Error(res.data.error);
 
-          if (formCustomRole) {
-            await supabase.from("user_custom_roles").insert({ user_id: data.user.id, custom_role_id: formCustomRole });
-          }
-        }
         toast({ title: "User created" });
       }
       setDialogOpen(false);
