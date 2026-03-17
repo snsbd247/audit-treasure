@@ -211,19 +211,22 @@ const RolesPage = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {permissions.map((p, i) => (
-                      <TableRow key={p.module}>
-                        <TableCell className="font-medium text-sm">{p.module}</TableCell>
-                        {PERMISSION_KEYS.map((key) => (
-                          <TableCell key={key} className="text-center">
-                            <Checkbox
-                              checked={p[key]}
-                              onCheckedChange={() => togglePerm(i, key)}
-                            />
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))}
+                    {permissions.map((p, i) => {
+                      const mod = MODULES.find((m) => m.key === p.module);
+                      return (
+                        <TableRow key={p.module}>
+                          <TableCell className="font-medium text-sm">{mod?.label || p.module}</TableCell>
+                          {PERMISSION_KEYS.map((key) => (
+                            <TableCell key={key} className="text-center">
+                              <Checkbox
+                                checked={p[key]}
+                                onCheckedChange={() => togglePerm(i, key)}
+                              />
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </CardContent>
