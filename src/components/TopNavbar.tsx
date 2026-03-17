@@ -4,7 +4,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Moon, Sun, Search, Bell, UserCircle, KeyRound, LogOut, Command, MessageSquare } from "lucide-react";
+import { Moon, Sun, Search, Bell, UserCircle, KeyRound, LogOut, MessageSquare } from "lucide-react";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import {
   DropdownMenu,
@@ -13,11 +13,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { usePageShortcuts } from "@/hooks/usePageShortcuts";
 
@@ -68,9 +63,10 @@ export const TopNavbar = ({ onOpenCommandPalette }: TopNavbarProps) => {
   };
 
   return (
-    <header className="h-14 border-b border-border bg-card flex items-center justify-between px-4 lg:px-6 shrink-0">
-      <div className="flex items-center gap-3 flex-1">
-        <div className="relative max-w-sm w-full hidden sm:block">
+    <header className="h-12 sm:h-14 border-b border-border bg-card flex items-center justify-between px-2 sm:px-4 lg:px-6 shrink-0 gap-2">
+      {/* Search bar — hidden on mobile, show search icon instead */}
+      <div className="flex items-center gap-2 flex-1 min-w-0">
+        <div className="relative max-w-sm w-full hidden md:block">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             ref={inputRef}
@@ -108,40 +104,42 @@ export const TopNavbar = ({ onOpenCommandPalette }: TopNavbarProps) => {
             </div>
           )}
         </div>
-        {/* Mobile: just open command palette */}
+        {/* Mobile search icon */}
         <Button
           variant="ghost"
           size="icon"
-          className="h-9 w-9 sm:hidden text-muted-foreground"
+          className="h-9 w-9 md:hidden text-muted-foreground shrink-0"
           onClick={onOpenCommandPalette}
         >
           <Search className="w-4 h-4" />
         </Button>
       </div>
-      <div className="flex items-center gap-2">
+
+      {/* Right icons — consistent gap, no overlap */}
+      <div className="flex items-center gap-1 sm:gap-2 shrink-0">
         <Button
           variant="ghost"
           size="icon"
-          className="h-9 w-9 text-muted-foreground relative"
+          className="h-8 w-8 sm:h-9 sm:w-9 text-muted-foreground relative"
           onClick={() => navigate("/messaging")}
           title="Messages"
         >
           <MessageSquare className="w-4 h-4" />
           {unreadCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1 leading-none">
+            <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[16px] h-[16px] sm:min-w-[18px] sm:h-[18px] rounded-full bg-destructive text-destructive-foreground text-[9px] sm:text-[10px] font-bold px-0.5 leading-none">
               {unreadCount > 99 ? "99+" : unreadCount}
             </span>
           )}
         </Button>
-        <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground">
+        <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9 text-muted-foreground hidden sm:inline-flex">
           <Bell className="w-4 h-4" />
         </Button>
-        <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground" onClick={toggleTheme}>
+        <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9 text-muted-foreground" onClick={toggleTheme}>
           {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm ml-1 hover:ring-2 hover:ring-primary/20 transition-all cursor-pointer">
+            <button className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-xs sm:text-sm ml-0.5 hover:ring-2 hover:ring-primary/20 transition-all cursor-pointer shrink-0">
               {(profile?.name || "U").charAt(0).toUpperCase()}
             </button>
           </DropdownMenuTrigger>

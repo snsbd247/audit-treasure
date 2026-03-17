@@ -18,15 +18,14 @@ import { useBranding } from "@/contexts/BrandingContext";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { useLocation } from "react-router-dom";
 
 interface NavGroup {
   label: string;
   icon: any;
-  /** Permission required to see this group. Comma-separated = OR logic. Omit = always visible. */
   permission?: string;
   requiredModules?: ModuleKey[];
   children: { to: string; label: string; icon: any; end?: boolean; permission?: string }[];
-  /** Only show if user has an employee record or is HR admin */
   portalOnly?: boolean;
 }
 
@@ -170,7 +169,6 @@ const navGroups: NavGroup[] = [
   {
     label: "Administration",
     icon: Shield,
-    // No group-level permission — filtered by children
     children: [
       { to: "/admin/branches", label: "Branches", icon: Building2, permission: "branches.view" },
       { to: "/admin/financial-years", label: "Financial Years", icon: Calendar, permission: "financial_years.view" },
@@ -217,7 +215,7 @@ const NavItem = ({ to, label, icon: Icon, end }: { to: string; label: string; ic
   <NavLink
     to={to}
     end={end}
-    className="flex items-center gap-2.5 px-3 py-1.5 rounded-md text-[13px] text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+    className="flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
     activeClassName="bg-primary/10 text-primary font-medium"
   >
     <Icon className="w-3.5 h-3.5 shrink-0" />
@@ -225,16 +223,13 @@ const NavItem = ({ to, label, icon: Icon, end }: { to: string; label: string; ic
   </NavLink>
 );
 
-/** Check if user has ANY of the comma-separated permissions */
 const hasAnyPermission = (permStr: string, hasPermission: (p: string) => boolean) => {
   const perms = permStr.split(",");
   return perms.some((p) => hasPermission(p.trim()));
 };
 
 const CollapsibleGroup = ({ group, isModuleEnabled, hasPermission }: { group: NavGroup; isModuleEnabled: (key: ModuleKey) => boolean; hasPermission: (perm: string) => boolean }) => {
-  const [open, setOpen] = useState(false);
-  const Icon = group.icon;
-
+  const location = useLocation();
   const filteredChildren = group.children.filter((item) => {
     const required = routeModuleMap[item.to];
     if (required && required.some((m) => !isModuleEnabled(m))) return false;
@@ -242,7 +237,18 @@ const CollapsibleGroup = ({ group, isModuleEnabled, hasPermission }: { group: Na
     return true;
   });
 
+  // Auto-open group if current route is within it
+  const isActiveGroup = filteredChildren.some((item) => location.pathname.startsWith(item.to));
+  const [open, setOpen] = useState(isActiveGroup);
+
+  // Keep group open when navigating into it
+  useEffect(() => {
+    if (isActiveGroup && !open) setOpen(true);
+  }, [isActiveGroup]);
+
   if (filteredChildren.length === 0) return null;
+
+  const Icon = group.icon;
 
   return (
     <div>
@@ -250,11 +256,11 @@ const CollapsibleGroup = ({ group, isModuleEnabled, hasPermission }: { group: Na
         onClick={() => setOpen(!open)}
         className="flex items-center justify-between w-full px-3 py-2 rounded-md text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
       >
-        <span className="flex items-center gap-2.5">
+        <span className="flex items-center gap-2.5 min-w-0">
           <Icon className="w-4 h-4 shrink-0" />
-          <span>{group.label}</span>
+          <span className="truncate">{group.label}</span>
         </span>
-        {open ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />}
+        {open ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" /> : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" />}
       </button>
       {open && (
         <div className="ml-2 pl-3 border-l border-border/50 space-y-0.5 mt-0.5 mb-1">
@@ -274,6 +280,12 @@ export const AppSidebar = () => {
   const isMobile = useIsMobile();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [hasEmployeeRecord, setHasEmployeeRecord] = useState(false);
+  const location = useLocation();
+
+  // Close mobile sidebar on navigation
+  useEffect(() => {
+    if (isMobile) setMobileOpen(false);
+  }, [location.pathname]);
 
   useEffect(() => {
     if (!user) return;
@@ -287,26 +299,26 @@ export const AppSidebar = () => {
 
   const sidebarContent = (
     <>
-      <div className="p-4 border-b border-sidebar-border flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="p-3 sm:p-4 border-b border-sidebar-border flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
           {branding.company_logo_url ? (
-            <img src={branding.company_logo_url} alt="Logo" className="w-7 h-7 object-contain rounded" />
+            <img src={branding.company_logo_url} alt="Logo" className="w-7 h-7 object-contain rounded shrink-0" />
           ) : (
-            <div className="w-7 h-7 rounded bg-primary/10 flex items-center justify-center">
+            <div className="w-7 h-7 rounded bg-primary/10 flex items-center justify-center shrink-0">
               <Building2 className="w-4 h-4 text-primary" />
             </div>
           )}
-          <div>
-            <h2 className="font-bold text-sidebar-foreground text-sm tracking-tight">{branding.software_name || "ERP System"}</h2>
+          <div className="min-w-0">
+            <h2 className="font-bold text-sidebar-foreground text-sm tracking-tight truncate">{branding.software_name || "ERP System"}</h2>
             {profile && (
-              <p className="text-[10px] text-muted-foreground truncate max-w-[140px]">
+              <p className="text-[10px] text-muted-foreground truncate">
                 {profile.name || profile.email}
               </p>
             )}
           </div>
         </div>
         {isMobile && (
-          <Button variant="ghost" size="icon" onClick={() => setMobileOpen(false)} className="h-8 w-8">
+          <Button variant="ghost" size="icon" onClick={() => setMobileOpen(false)} className="h-8 w-8 shrink-0">
             <X className="w-4 h-4" />
           </Button>
         )}
@@ -317,11 +329,8 @@ export const AppSidebar = () => {
           <NavItem to="/messaging" label="Messages" icon={Mail} />
           <div className="my-2 border-t border-sidebar-border" />
           {navGroups.map((group) => {
-            // Check required modules
             if (group.requiredModules && group.requiredModules.some((m) => !isModuleEnabled(m))) return null;
-            // Portal: only show if user has employee record or is HR admin
             if (group.portalOnly && !hasEmployeeRecord && !isHrAdmin) return null;
-            // Group-level permission (OR logic for comma-separated)
             if (group.permission && !hasAnyPermission(group.permission, hasPermission)) return null;
             return <CollapsibleGroup key={group.label} group={group} isModuleEnabled={isModuleEnabled} hasPermission={hasPermission} />;
           })}
@@ -338,18 +347,21 @@ export const AppSidebar = () => {
   if (isMobile) {
     return (
       <>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="fixed top-3 left-3 z-50 h-9 w-9 lg:hidden"
-          onClick={() => setMobileOpen(true)}
-        >
-          <Menu className="w-5 h-5" />
-        </Button>
+        {/* Mobile hamburger — positioned to avoid overlap with header icons */}
+        {!mobileOpen && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="fixed top-2 left-2 z-50 h-8 w-8 lg:hidden bg-card/80 backdrop-blur-sm shadow-sm border border-border"
+            onClick={() => setMobileOpen(true)}
+          >
+            <Menu className="w-4 h-4" />
+          </Button>
+        )}
         {mobileOpen && (
           <>
-            <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40" onClick={() => setMobileOpen(false)} />
-            <aside className="fixed left-0 top-0 bottom-0 w-64 bg-sidebar border-r border-border flex flex-col h-full z-50 shadow-overlay">
+            <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 transition-opacity" onClick={() => setMobileOpen(false)} />
+            <aside className="fixed left-0 top-0 bottom-0 w-[280px] max-w-[85vw] bg-sidebar border-r border-border flex flex-col h-full z-50 shadow-overlay animate-in slide-in-from-left duration-200">
               {sidebarContent}
             </aside>
           </>
@@ -359,7 +371,7 @@ export const AppSidebar = () => {
   }
 
   return (
-    <aside className="w-60 border-r border-border bg-sidebar flex flex-col h-full shrink-0">
+    <aside className="w-60 border-r border-border bg-sidebar flex flex-col h-full shrink-0 hidden lg:flex">
       {sidebarContent}
     </aside>
   );

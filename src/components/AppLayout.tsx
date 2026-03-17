@@ -7,12 +7,12 @@ import { BrandingFooter } from "@/components/BrandingFooter";
 
 export const AppLayout = () => {
   return (
-    <div className="flex h-screen bg-background w-full">
+    <div className="flex h-screen bg-background w-full overflow-hidden">
       <AppSidebar />
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <TopNavbar />
         <Breadcrumbs />
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto overscroll-contain">
           <Outlet />
         </main>
         <BrandingFooter />
