@@ -207,6 +207,7 @@ const App = () => (
                 <Route path="/admin/numbering" element={<ProtectedRoute requireAdmin><DocumentNumberingPage /></ProtectedRoute>} />
                 <Route path="/admin/shortcuts" element={<ProtectedRoute requireAdmin><ShortcutsPage /></ProtectedRoute>} />
                 <Route path="/admin/branding" element={<ProtectedRoute requireAdmin><BrandingPage /></ProtectedRoute>} />
+                <Route path="/admin/sms" element={<ProtectedRoute requireAdmin><SmsSettingsPage /></ProtectedRoute>} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
