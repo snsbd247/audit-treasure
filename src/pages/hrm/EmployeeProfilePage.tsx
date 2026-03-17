@@ -14,7 +14,8 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { ArrowLeft, Edit, Plus, Trash2, Save, User, DollarSign, Landmark, GraduationCap, Briefcase, Phone } from "lucide-react";
+import { ArrowLeft, Edit, Plus, Trash2, Save, User, DollarSign, Landmark, GraduationCap, Briefcase, Phone, Camera, Upload } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface SalaryStructure {
   id: string;
@@ -128,6 +129,7 @@ export default function EmployeeProfilePage() {
   const [ecForm, setEcForm] = useState({ name: "", relation: "", phone: "", address: "" });
 
   const [saving, setSaving] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   const fetchAll = useCallback(async () => {
     if (!id) return;
@@ -278,13 +280,94 @@ export default function EmployeeProfilePage() {
     );
   }
 
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !id) return;
+
+    // Validate
+    if (!['image/jpeg', 'image/png', 'image/jpg'].includes(file.type)) {
+      toast.error("Only JPG and PNG images are allowed");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Image must be less than 2MB");
+      return;
+    }
+
+    setUploadingPhoto(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const filePath = `${id}/photo_${Date.now()}.${ext}`;
+
+      // Delete old photo if exists
+      if (employee.photo_url) {
+        const oldPath = employee.photo_url.split('/employee-photos/')[1];
+        if (oldPath) {
+          await supabase.storage.from('employee-photos').remove([oldPath]);
+        }
+      }
+
+      const { error: uploadError } = await supabase.storage
+        .from('employee-photos')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('employee-photos')
+        .getPublicUrl(filePath);
+
+      await supabase
+        .from("employees" as any)
+        .update({ photo_url: urlData.publicUrl })
+        .eq("id", id);
+
+      toast.success("Photo uploaded successfully");
+      fetchAll();
+    } catch (err: any) {
+      toast.error(err.message || "Upload failed");
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
   return (
     <div className="p-4 lg:p-6 space-y-6 max-w-[1200px] mx-auto">
-      {/* Header */}
+      {/* Header with Avatar */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate("/hrm/employees")}>
           <ArrowLeft className="w-5 h-5" />
         </Button>
+
+        {/* Profile Photo */}
+        <div className="relative group shrink-0">
+          <Avatar className="h-16 w-16 border-2 border-border">
+            {employee.photo_url ? (
+              <AvatarImage src={employee.photo_url} alt={`${employee.first_name} ${employee.last_name}`} className="object-cover" />
+            ) : null}
+            <AvatarFallback className="bg-primary/10 text-primary text-xl font-bold">
+              {employee.first_name[0]}{employee.last_name[0]}
+            </AvatarFallback>
+          </Avatar>
+          {isAdmin && (
+            <label className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+              <Camera className="w-5 h-5 text-white" />
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/jpg"
+                className="hidden"
+                onChange={handlePhotoUpload}
+                disabled={uploadingPhoto}
+              />
+            </label>
+          )}
+          {uploadingPhoto && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            </div>
+          )}
+        </div>
+
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-foreground">{employee.first_name} {employee.last_name}</h1>
           <p className="text-muted-foreground">{employee.employee_code} · {getDesigName(employee.designation_id)} · {getDeptName(employee.department_id)}</p>

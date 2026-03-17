@@ -2,6 +2,7 @@
 namespace App\Http\Controllers\HRM;
 use App\Http\Controllers\CrudController;
 use App\Models\Employee;
+use Illuminate\Http\Request;
 
 class EmployeeController extends CrudController
 {
@@ -19,4 +20,33 @@ class EmployeeController extends CrudController
         'shift_id' => 'nullable|exists:shifts,id',
         'salary' => 'numeric|min:0',
     ];
+
+    /**
+     * Upload employee profile photo.
+     */
+    public function uploadPhoto(Request $request, string $id)
+    {
+        $request->validate([
+            'photo' => 'required|image|mimes:jpg,jpeg,png|max:2048',
+        ]);
+
+        $employee = Employee::findOrFail($id);
+
+        if ($request->hasFile('photo')) {
+            // Delete old photo if exists
+            if ($employee->photo_url && \Storage::disk('public')->exists($employee->photo_url)) {
+                \Storage::disk('public')->delete($employee->photo_url);
+            }
+
+            $path = $request->file('photo')->store('employees', 'public');
+            $employee->update(['photo_url' => '/storage/' . $path]);
+
+            return $this->success([
+                'message' => 'Photo uploaded',
+                'photo_url' => '/storage/' . $path,
+            ]);
+        }
+
+        return $this->error('No photo provided', 400);
+    }
 }

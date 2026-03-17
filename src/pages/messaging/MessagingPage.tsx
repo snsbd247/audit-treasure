@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,7 +17,7 @@ interface ConversationItem {
   id: string;
   subject: string | null;
   updated_at: string;
-  participants: { id: string; name: string; username: string | null; is_online: boolean; last_seen_at: string | null }[];
+  participants: { id: string; name: string; username: string | null; is_online: boolean; last_seen_at: string | null; photo_url: string | null }[];
   latest_message: { message: string; sender_name: string } | null;
   unread_count: number;
 }
@@ -115,8 +115,23 @@ const MessagingPage = () => {
       const partIds = (parts as any[] || []).map((p: any) => p.user_id);
       const { data: partProfiles } = await supabase
         .from("profiles")
-        .select("id, name, username, is_online, last_seen_at")
+        .select("id, name, username, is_online, last_seen_at, employee_id")
         .in("id", partIds);
+
+      // Fetch employee photos for participants that have employee_id
+      const empIds = (partProfiles as any[] || []).filter((p: any) => p.employee_id).map((p: any) => p.employee_id);
+      let empPhotoMap = new Map<string, string>();
+      if (empIds.length > 0) {
+        const { data: empData } = await supabase
+          .from("employees" as any)
+          .select("id, photo_url")
+          .in("id", empIds);
+        if (empData) {
+          (empData as any[]).forEach((e: any) => {
+            if (e.photo_url) empPhotoMap.set(e.id, e.photo_url);
+          });
+        }
+      }
 
       const { data: latestMsg } = await supabase
         .from("messages")
@@ -151,6 +166,7 @@ const MessagingPage = () => {
           username: p.username,
           is_online: p.is_online ?? false,
           last_seen_at: p.last_seen_at,
+          photo_url: p.employee_id ? empPhotoMap.get(p.employee_id) || null : null,
         })),
         latest_message: latestMessage,
         unread_count: unreadCount || 0,
@@ -430,6 +446,7 @@ const MessagingPage = () => {
                   {/* Avatar with online indicator */}
                   <div className="relative shrink-0">
                     <Avatar className="h-11 w-11">
+                      {other?.photo_url && <AvatarImage src={other.photo_url} alt={other.name} className="object-cover" />}
                       <AvatarFallback className={cn(
                         "text-sm font-semibold",
                         isActive ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
@@ -514,6 +531,7 @@ const MessagingPage = () => {
               </Button>
               <div className="relative shrink-0">
                 <Avatar className="h-9 w-9">
+                  {otherUser?.photo_url && <AvatarImage src={otherUser.photo_url} alt={otherUser.name} className="object-cover" />}
                   <AvatarFallback className="bg-primary/15 text-primary text-xs font-semibold">
                     {otherUser ? getInitials(otherUser.name) : "?"}
                   </AvatarFallback>
