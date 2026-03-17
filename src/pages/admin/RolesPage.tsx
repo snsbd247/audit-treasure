@@ -10,15 +10,17 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2, Shield } from "lucide-react";
 
-const MODULES = [
-  "Dashboard",
-  "Accounts",
-  "Sales",
-  "Purchase",
-  "Manufacturing",
-  "Inventory",
-  "Reports",
-  "Administration",
+const MODULES: { key: string; label: string }[] = [
+  { key: "dashboard", label: "Dashboard" },
+  { key: "accounts", label: "Accounts" },
+  { key: "sales", label: "Sales" },
+  { key: "purchase", label: "Purchase" },
+  { key: "inventory", label: "Inventory" },
+  { key: "manufacturing", label: "Manufacturing" },
+  { key: "bank", label: "Bank & Cash" },
+  { key: "hrm", label: "HRM & Payroll" },
+  { key: "reports", label: "Reports" },
+  { key: "administration", label: "Administration" },
 ];
 
 const PERMISSION_KEYS = ["can_view", "can_add", "can_edit", "can_delete"] as const;
@@ -38,7 +40,7 @@ interface Permission {
 }
 
 const defaultPermissions = (): Permission[] =>
-  MODULES.map((m) => ({ module: m, can_view: false, can_add: false, can_edit: false, can_delete: false }));
+  MODULES.map((m) => ({ module: m.key, can_view: false, can_add: false, can_edit: false, can_delete: false }));
 
 const RolesPage = () => {
   const [roles, setRoles] = useState<CustomRole[]>([]);
@@ -209,19 +211,22 @@ const RolesPage = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {permissions.map((p, i) => (
-                      <TableRow key={p.module}>
-                        <TableCell className="font-medium text-sm">{p.module}</TableCell>
-                        {PERMISSION_KEYS.map((key) => (
-                          <TableCell key={key} className="text-center">
-                            <Checkbox
-                              checked={p[key]}
-                              onCheckedChange={() => togglePerm(i, key)}
-                            />
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))}
+                    {permissions.map((p, i) => {
+                      const mod = MODULES.find((m) => m.key === p.module);
+                      return (
+                        <TableRow key={p.module}>
+                          <TableCell className="font-medium text-sm">{mod?.label || p.module}</TableCell>
+                          {PERMISSION_KEYS.map((key) => (
+                            <TableCell key={key} className="text-center">
+                              <Checkbox
+                                checked={p[key]}
+                                onCheckedChange={() => togglePerm(i, key)}
+                              />
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </CardContent>
