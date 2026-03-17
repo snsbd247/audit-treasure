@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Download, Upload, Database, Clock, FileText, Trash2, AlertTriangle, CheckCircle, XCircle, Settings, RefreshCw, Shield } from "lucide-react";
+import { Download, Upload, Database, Clock, FileText, Trash2, AlertTriangle, CheckCircle, XCircle, Settings, RefreshCw, Shield, Cloud, HardDrive } from "lucide-react";
 
 const API_BASE = import.meta.env.VITE_API_URL || "/api";
 
@@ -62,7 +62,7 @@ async function apiCall(url: string, options: RequestInit = {}) {
 const BackupPage = () => {
   const { toast } = useToast();
   const { isSuperAdmin } = useAuth();
-  const [activeTab, setActiveTab] = useState("backup");
+  const [activeTab, setActiveTab] = useState("local");
   const [exporting, setExporting] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -231,27 +231,30 @@ const BackupPage = () => {
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="backup">Backup & Restore</TabsTrigger>
-          <TabsTrigger value="history">History</TabsTrigger>
-          <TabsTrigger value="schedule">Schedule</TabsTrigger>
+          <TabsTrigger value="local"><HardDrive className="w-3.5 h-3.5 mr-1.5" />Local Backup</TabsTrigger>
+          <TabsTrigger value="gdrive"><Cloud className="w-3.5 h-3.5 mr-1.5" />Google Drive</TabsTrigger>
+          <TabsTrigger value="settings"><Settings className="w-3.5 h-3.5 mr-1.5" />Settings</TabsTrigger>
+          <TabsTrigger value="history"><Clock className="w-3.5 h-3.5 mr-1.5" />History</TabsTrigger>
+          <TabsTrigger value="schedule"><RefreshCw className="w-3.5 h-3.5 mr-1.5" />Schedule</TabsTrigger>
         </TabsList>
 
-        {/* Backup & Restore Tab */}
-        <TabsContent value="backup">
+        {/* Local Backup Tab */}
+        <TabsContent value="local">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2"><Download className="w-4 h-4" />Create SQL Backup</CardTitle>
-                <CardDescription>Export full database as .sql file (mysqldump)</CardDescription>
+                <CardDescription>Export database as SQL (.sql) backup file</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="p-3 rounded-lg bg-muted/50 border border-border text-xs text-muted-foreground space-y-1">
                   <p>• Full database dump with DROP TABLE + CREATE TABLE + INSERT</p>
                   <p>• Includes all tables, triggers, and routines</p>
                   <p>• File saved to <code>storage/app/backups/</code></p>
+                  <p>• Format: <strong>erp_backup_YYYY_MM_DD_HH_MM.sql</strong></p>
                 </div>
                 <Button onClick={handleCreateBackup} disabled={exporting || restoring} className="w-full">
-                  <Download className="w-4 h-4 mr-2" />{exporting ? "Creating Backup..." : "Create & Download SQL Backup"}
+                  <Download className="w-4 h-4 mr-2" />{exporting ? "Creating Backup..." : "Create SQL Backup"}
                 </Button>
               </CardContent>
             </Card>
@@ -265,6 +268,7 @@ const BackupPage = () => {
                 <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/20 text-xs text-destructive space-y-1">
                   <p className="font-medium">⚠ Warning: Restore will overwrite existing data!</p>
                   <p>Always create a backup before restoring.</p>
+                  <p>Only <strong>.sql</strong> files are accepted.</p>
                 </div>
                 <label>
                   <input type="file" accept=".sql" onChange={handleRestoreFile} className="hidden" disabled={exporting || restoring} />
@@ -272,6 +276,77 @@ const BackupPage = () => {
                     <span><Upload className="w-4 h-4 mr-2" />{restoring ? "Restoring..." : "Upload .sql File & Restore"}</span>
                   </Button>
                 </label>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Google Drive Tab */}
+        <TabsContent value="gdrive">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2"><Cloud className="w-4 h-4" />Google Drive Backup</CardTitle>
+              <CardDescription>Upload SQL backup files to Google Drive for cloud storage</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="p-4 rounded-lg bg-muted/50 border border-border text-sm text-muted-foreground space-y-3">
+                <p className="font-medium text-foreground">How it works:</p>
+                <ul className="list-disc list-inside space-y-1 text-xs">
+                  <li>SQL backup is created locally first</li>
+                  <li>The <code>.sql</code> file is then uploaded to your connected Google Drive</li>
+                  <li>File naming: <strong>erp_backup_YYYY_MM_DD_HH_MM.sql</strong></li>
+                  <li>Configure Google Drive API credentials in Settings tab</li>
+                </ul>
+              </div>
+              <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-xs text-yellow-700 dark:text-yellow-400">
+                <p className="font-medium">⚙ Setup Required</p>
+                <p>Google Drive integration requires API credentials. Configure them in the Settings tab.</p>
+              </div>
+              <Button variant="outline" disabled className="w-full">
+                <Cloud className="w-4 h-4 mr-2" />Upload Latest Backup to Google Drive
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Settings Tab */}
+        <TabsContent value="settings">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2"><Settings className="w-4 h-4" />Backup Settings</CardTitle>
+                <CardDescription>Configure backup behavior and storage</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm">Backup Format</Label>
+                    <Badge variant="secondary">SQL Only</Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm">Storage Location</Label>
+                    <code className="text-xs bg-muted px-2 py-1 rounded">storage/app/backups/</code>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm">Naming Convention</Label>
+                    <code className="text-xs bg-muted px-2 py-1 rounded">erp_backup_YYYY_MM_DD_HH_MM.sql</code>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2"><Shield className="w-4 h-4" />Security</CardTitle>
+                <CardDescription>Access control for backup operations</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="p-3 rounded-lg bg-muted/50 border border-border text-xs text-muted-foreground space-y-1">
+                  <p>• Only <strong>Super Admin</strong> (employee_id = NULL) can manage backups</p>
+                  <p>• All backup/restore actions are logged</p>
+                  <p>• Restore requires confirmation dialog</p>
+                  <p>• Only <strong>.sql</strong> files accepted for restore</p>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -291,7 +366,7 @@ const BackupPage = () => {
               {loadingHistory ? (
                 <p className="text-sm text-muted-foreground">Loading...</p>
               ) : history.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No backup history yet. Create your first backup above.</p>
+                <p className="text-sm text-muted-foreground">No backup history yet. Create your first backup in Local Backup tab.</p>
               ) : (
                 <div className="overflow-x-auto">
                   <Table>
@@ -305,7 +380,7 @@ const BackupPage = () => {
                         <TableRow key={r.id}>
                           <TableCell className="font-mono text-xs max-w-[200px] truncate">{r.file_name}</TableCell>
                           <TableCell><Badge variant="outline" className="text-xs capitalize">{r.backup_type}</Badge></TableCell>
-                          <TableCell><Badge variant="secondary" className="text-xs uppercase">{r.format}</Badge></TableCell>
+                          <TableCell><Badge variant="secondary" className="text-xs uppercase">SQL</Badge></TableCell>
                           <TableCell className="text-xs">{formatFileSize(r.file_size)}</TableCell>
                           <TableCell className="text-xs">{r.tables_count}</TableCell>
                           <TableCell className="text-xs">{r.records_count}</TableCell>
@@ -338,7 +413,7 @@ const BackupPage = () => {
           {settings && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2"><Settings className="w-4 h-4" />Backup Schedule</CardTitle>
+                <CardTitle className="text-base flex items-center gap-2"><RefreshCw className="w-4 h-4" />Backup Schedule</CardTitle>
                 <CardDescription>Configure automatic SQL backups via cron job</CardDescription>
               </CardHeader>
               <CardContent>
@@ -386,7 +461,7 @@ const BackupPage = () => {
             <CardHeader><CardTitle className="text-base flex items-center gap-2"><FileText className="w-4 h-4" />Cron Job Setup</CardTitle></CardHeader>
             <CardContent>
               <div className="text-sm text-muted-foreground space-y-3">
-                <p>Add this cron job in cPanel → Cron Jobs for automatic backups:</p>
+                <p>Add this cron job in cPanel → Cron Jobs for automatic SQL backups:</p>
                 <div className="p-3 rounded-lg bg-muted border border-border font-mono text-xs">
                   <p className="font-semibold text-foreground mb-1">Daily at 2:00 AM:</p>
                   <code>0 2 * * * php /home/USERNAME/public_html/artisan backup:database --type=auto</code>
