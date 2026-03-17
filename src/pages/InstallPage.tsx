@@ -256,7 +256,7 @@ export default function InstallPage() {
                   </div>
                 </div>
                 {dbTested && (
-                  <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
+                  <div className="flex items-center gap-2 text-sm text-success bg-success/10 p-3 rounded-lg">
                     <CheckCircle2 className="w-4 h-4" /> Database connection verified
                   </div>
                 )}
