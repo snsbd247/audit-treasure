@@ -311,7 +311,9 @@ export const AppSidebar = () => {
           <div className="my-2 border-t border-sidebar-border" />
           {navGroups.map((group) => {
             if (group.requiredModules && group.requiredModules.some((m) => !isModuleEnabled(m))) return null;
-            // For administration module: check administration permission or super_admin
+            // Portal section: show only if user has employee record or is HR admin
+            if (group.portalOnly && !hasEmployeeRecord && !isHrAdmin) return null;
+            // For administration module: check administration permission
             if (group.adminOnly && !hasPermission("administration", "can_view")) return null;
             // For other modules: check module permission
             if (!group.adminOnly && group.module && !hasPermission(group.module, "can_view")) return null;
