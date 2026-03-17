@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import UserDeleteDialog from "@/components/admin/UserDeleteDialog";
 
 interface UserRow {
   id: string;
