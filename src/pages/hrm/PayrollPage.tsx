@@ -47,7 +47,6 @@ export default function PayrollPage() {
   const { isAdmin, user } = useAuth();
   const { fc: formatAmount } = useCurrency();
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>([]);
   const [structures, setStructures] = useState<SalaryStructure[]>([]);
   const [payroll, setPayroll] = useState<PayrollRecord[]>([]);
   const [selMonth, setSelMonth] = useState(new Date().getMonth() + 1);
