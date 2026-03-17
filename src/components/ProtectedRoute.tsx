@@ -5,11 +5,13 @@ import { Navigate } from "react-router-dom";
 interface Props {
   children: React.ReactNode;
   requireAdmin?: boolean;
+  requiredModule?: string;
+  requiredAction?: "can_view" | "can_add" | "can_edit" | "can_delete";
 }
 
 export const ProtectedRoute = forwardRef<HTMLDivElement, Props>(
-  ({ children, requireAdmin }, ref) => {
-    const { user, loading, isAdmin } = useAuth();
+  ({ children, requireAdmin, requiredModule, requiredAction = "can_view" }, ref) => {
+    const { user, loading, isSuperAdmin, hasPermission } = useAuth();
 
     if (loading) {
       return (
@@ -23,12 +25,26 @@ export const ProtectedRoute = forwardRef<HTMLDivElement, Props>(
     }
 
     if (!user) return <Navigate to="/login" replace />;
-    if (requireAdmin && !isAdmin) {
+
+    // Check module-based permission (super_admin bypasses via hasPermission)
+    if (requiredModule && !hasPermission(requiredModule, requiredAction)) {
       return (
         <div ref={ref} className="min-h-screen flex items-center justify-center bg-background">
           <div className="text-center space-y-2">
             <p className="text-destructive font-medium">Access Denied</p>
-            <p className="text-sm text-muted-foreground">Admin privileges required to access this page.</p>
+            <p className="text-sm text-muted-foreground">You don't have permission to access this page.</p>
+          </div>
+        </div>
+      );
+    }
+
+    // Legacy requireAdmin check — only super_admin passes
+    if (requireAdmin && !isSuperAdmin) {
+      return (
+        <div ref={ref} className="min-h-screen flex items-center justify-center bg-background">
+          <div className="text-center space-y-2">
+            <p className="text-destructive font-medium">Access Denied</p>
+            <p className="text-sm text-muted-foreground">Super Admin privileges required to access this page.</p>
           </div>
         </div>
       );

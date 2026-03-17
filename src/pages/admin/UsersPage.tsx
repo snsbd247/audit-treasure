@@ -161,7 +161,6 @@ const UsersPage = () => {
 
   const roleColor = (role: string) => {
     if (role === "super_admin") return "destructive" as const;
-    if (role === "admin") return "default" as const;
     return "secondary" as const;
   };
 

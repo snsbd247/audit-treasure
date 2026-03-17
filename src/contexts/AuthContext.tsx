@@ -143,15 +143,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   };
 
-  const isAdmin = roles.includes("admin") || roles.includes("super_admin");
   const isSuperAdmin = roles.includes("super_admin");
+  // isAdmin is now only true for super_admin — all other access is permission-based
+  const isAdmin = isSuperAdmin;
 
   const hasPermission = useCallback((module: string, action: "can_view" | "can_add" | "can_edit" | "can_delete") => {
-    // Super admin and admin have all permissions
-    if (isAdmin) return true;
+    // Super admin bypasses all permission checks
+    if (isSuperAdmin) return true;
     const perm = permissions.find((p) => p.module === module);
     return perm ? perm[action] : false;
-  }, [isAdmin, permissions]);
+  }, [isSuperAdmin, permissions]);
 
   return (
     <AuthContext.Provider value={{

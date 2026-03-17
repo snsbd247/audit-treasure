@@ -47,8 +47,10 @@ export function usePageShortcuts() {
   // Filter by permissions
   const adminPaths = ["/admin/"];
   const filteredShortcuts = shortcuts.filter((s) => {
-    if (isSuperAdmin || isAdmin) return true;
-    if (adminPaths.some((p) => s.page_url.startsWith(p))) return false;
+    if (isSuperAdmin) return true;
+    if (adminPaths.some((p) => s.page_url.startsWith(p))) {
+      return hasPermission("administration", "can_view");
+    }
     return true;
   });
 
