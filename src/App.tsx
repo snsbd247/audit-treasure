@@ -51,7 +51,7 @@ import ResetPassword from "./pages/ResetPassword";
 import ShortcutsPage from "./pages/admin/ShortcutsPage";
 import BrandingPage from "./pages/admin/BrandingPage";
 import SmsSettingsPage from "./pages/admin/SmsSettingsPage";
-
+import MessagingPage from "./pages/messaging/MessagingPage";
 // HRM Pages
 import EmployeesPage from "./pages/hrm/EmployeesPage";
 import DepartmentsPage from "./pages/hrm/DepartmentsPage";
