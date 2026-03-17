@@ -56,7 +56,7 @@ const UsersPage = () => {
   const fetchData = async () => {
     setLoading(true);
     const [profilesRes, rolesRes, branchesRes, customRolesRes, userCustomRolesRes] = await Promise.all([
-      supabase.from("profiles").select("*"),
+      supabase.from("profiles").select("*").is("deleted_at", null).neq("status", "deleted"),
       supabase.from("user_roles").select("*"),
       supabase.from("branches").select("id, name"),
       supabase.from("custom_roles").select("id, name").order("name"),
