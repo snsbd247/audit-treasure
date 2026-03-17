@@ -8,12 +8,30 @@ const corsHeaders = {
 
 const TABLES = [
   "branches",
+  "financial_years",
   "chart_of_accounts",
-  "products",
+  "company_settings",
+  "departments",
+  "designations",
+  "shifts",
+  "units",
+  "item_categories",
+  "item_master",
+  "warehouses",
   "product_categories",
+  "products",
   "raw_materials",
   "suppliers",
   "customers",
+  "custom_roles",
+  "role_permissions",
+  "profiles",
+  "employees",
+  "employee_bank_info",
+  "employee_education",
+  "employee_emergency_contacts",
+  "employee_experience",
+  "salary_structures",
   "acc_vouchers",
   "voucher_entries",
   "purchases",
@@ -25,35 +43,48 @@ const TABLES = [
   "sales_returns",
   "sales_return_items",
   "stock_movements",
-  "production_entries",
-  "production_materials",
+  "stock_ledger",
+  "stock_transfers",
   "bill_of_materials",
   "bom_items",
-  "custom_roles",
-  "role_permissions",
-  "user_custom_roles",
-  "user_roles",
-  "profiles",
-  "financial_years",
+  "production_entries",
+  "production_materials",
+  "attendance",
+  "leave_types",
+  "leave_requests",
+  "overtime_records",
+  "payroll",
   "number_sequences",
   "backup_settings",
+  "module_settings",
+  "system_settings",
+  "page_shortcuts",
 ];
 
-function escapeSQL(val: unknown): string {
+function escapeMySQL(val: unknown): string {
   if (val === null || val === undefined) return "NULL";
   if (typeof val === "number") return String(val);
-  if (typeof val === "boolean") return val ? "TRUE" : "FALSE";
-  const str = String(val).replace(/'/g, "''");
+  if (typeof val === "boolean") return val ? "1" : "0";
+  if (typeof val === "object") {
+    const str = JSON.stringify(val).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+    return `'${str}'`;
+  }
+  const str = String(val).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
   return `'${str}'`;
 }
 
-function generateInsertSQL(table: string, rows: Record<string, unknown>[]): string {
+function generateMySQLInsert(table: string, rows: Record<string, unknown>[]): string {
   if (!rows.length) return `-- No data for ${table}\n`;
+
   const cols = Object.keys(rows[0]);
+  const updateCols = cols.filter(c => c !== "id");
+  const updateClause = updateCols.map(c => `${c}=VALUES(${c})`).join(", ");
+
   const lines = rows.map((row) => {
-    const vals = cols.map((c) => escapeSQL(row[c])).join(", ");
-    return `INSERT INTO public.${table} (${cols.join(", ")}) VALUES (${vals}) ON CONFLICT (id) DO UPDATE SET ${cols.filter(c => c !== "id").map(c => `${c} = EXCLUDED.${c}`).join(", ")};`;
+    const vals = cols.map((c) => escapeMySQL(row[c])).join(", ");
+    return `INSERT INTO ${table} (${cols.join(", ")}) VALUES (${vals})\nON DUPLICATE KEY UPDATE ${updateClause};`;
   });
+
   return `-- Table: ${table} (${rows.length} rows)\n${lines.join("\n")}\n`;
 }
 
@@ -68,7 +99,6 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Verify user is admin
     const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -78,15 +108,17 @@ Deno.serve(async (req) => {
     const adminClient = createClient(supabaseUrl, serviceKey);
 
     // Check admin role
-    const { data: roleCheck } = await adminClient
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .in("role", ["admin", "super_admin"]);
-    if (!roleCheck?.length) throw new Error("Admin access required");
+    const { data: profile } = await adminClient
+      .from("profiles")
+      .select("employee_id")
+      .eq("id", user.id)
+      .single();
+
+    // Super admin check: no employee_id means super admin
+    const isSuperAdmin = !profile?.employee_id;
+    if (!isSuperAdmin) throw new Error("Super Admin access required");
 
     const body = await req.json().catch(() => ({}));
-    const format = "sql"; // SQL-only backup system
     const backupType = body.backup_type || "manual";
 
     // Export all tables
@@ -105,51 +137,35 @@ Deno.serve(async (req) => {
       if (data?.length) tablesCount++;
     }
 
-    let content: string;
-    let fileExt: string;
-    let contentType: string;
+    // Generate MySQL-compatible SQL
+    const sqlParts = [
+      `-- ERP System Database Backup (MySQL Compatible)`,
+      `-- Generated: ${new Date().toISOString()}`,
+      `-- Tables: ${tablesCount}`,
+      `-- Records: ${totalRecords}`,
+      `-- Format: SQL (INSERT with ON DUPLICATE KEY UPDATE)`,
+      ``,
+      `SET FOREIGN_KEY_CHECKS = 0;`,
+      ``,
+    ];
 
-    if (format === "sql") {
-      const sqlParts = [
-        `-- ERP System Database Backup`,
-        `-- Generated: ${new Date().toISOString()}`,
-        `-- Tables: ${tablesCount}`,
-        `-- Records: ${totalRecords}`,
-        `-- Format: SQL (INSERT with ON CONFLICT)`,
-        ``,
-        `BEGIN;`,
-        ``,
-      ];
-      for (const table of TABLES) {
-        if (allData[table]) {
-          sqlParts.push(generateInsertSQL(table, allData[table] as Record<string, unknown>[]));
-        }
+    for (const table of TABLES) {
+      if (allData[table]) {
+        sqlParts.push(generateMySQLInsert(table, allData[table] as Record<string, unknown>[]));
       }
-      sqlParts.push(`COMMIT;`);
-      content = sqlParts.join("\n");
-      fileExt = "sql";
-      contentType = "text/sql";
-    } else {
-      const meta = {
-        version: "2.0",
-        generated_at: new Date().toISOString(),
-        tables_count: tablesCount,
-        records_count: totalRecords,
-        format: "json",
-      };
-      content = JSON.stringify({ meta, data: allData }, null, 2);
-      fileExt = "json";
-      contentType = "application/json";
     }
 
-    const fileName = `backup-${new Date().toISOString().replace(/[:.]/g, "-")}.${fileExt}`;
-    const filePath = `${format}/${fileName}`;
-    const fileBlob = new Blob([content], { type: contentType });
+    sqlParts.push(`SET FOREIGN_KEY_CHECKS = 1;`);
+    const content = sqlParts.join("\n");
+
+    const fileName = `erp_backup_${new Date().toISOString().slice(0, 16).replace(/[T:]/g, "_")}.sql`;
+    const filePath = `sql/${fileName}`;
+    const fileBlob = new Blob([content], { type: "text/sql" });
 
     // Upload to storage
     const { error: uploadErr } = await adminClient.storage
       .from("backups")
-      .upload(filePath, fileBlob, { contentType, upsert: false });
+      .upload(filePath, fileBlob, { contentType: "text/sql", upsert: false });
 
     if (uploadErr) console.warn("Storage upload failed:", uploadErr.message);
 
@@ -158,7 +174,7 @@ Deno.serve(async (req) => {
       file_name: fileName,
       file_size: new Blob([content]).size,
       backup_type: backupType,
-      format,
+      format: "sql",
       status: "completed",
       tables_count: tablesCount,
       records_count: totalRecords,
@@ -172,7 +188,7 @@ Deno.serve(async (req) => {
       user_name: user.email,
       action: "backup_created",
       module: "backup",
-      details: `${format.toUpperCase()} backup created: ${fileName} (${tablesCount} tables, ${totalRecords} records)`,
+      details: `SQL backup created: ${fileName} (${tablesCount} tables, ${totalRecords} records)`,
     });
 
     return new Response(
@@ -180,7 +196,7 @@ Deno.serve(async (req) => {
         success: true,
         file_name: fileName,
         storage_path: filePath,
-        format,
+        format: "sql",
         tables_count: tablesCount,
         records_count: totalRecords,
         content,
