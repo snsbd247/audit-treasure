@@ -8,7 +8,7 @@ Route::prefix('auth')->group(function () {
 });
 
 // Protected routes
-Route::middleware(['auth:sanctum', \App\Http\Middleware\BranchScope::class])->group(function () {
+Route::middleware(['auth:sanctum', \App\Http\Middleware\BranchScope::class, \App\Http\Middleware\UpdateLastSeen::class])->group(function () {
 
     // Auth
     Route::prefix('auth')->group(function () {

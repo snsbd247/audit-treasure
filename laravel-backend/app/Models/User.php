@@ -11,7 +11,7 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasUuids, SoftDeletes;
 
-    protected $fillable = ['username', 'name', 'email', 'phone', 'password', 'branch_id', 'employee_id', 'status'];
+    protected $fillable = ['username', 'name', 'email', 'phone', 'password', 'branch_id', 'employee_id', 'status', 'is_online', 'last_seen_at'];
     protected $hidden = ['password', 'remember_token'];
 
     public function branch() { return $this->belongsTo(Branch::class); }
