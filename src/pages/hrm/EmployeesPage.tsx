@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Edit, Trash2, Search, Users } from "lucide-react";
+import { Plus, Edit, Trash2, Search, Users, Eye } from "lucide-react";
 
 interface Employee {
   id: string;
