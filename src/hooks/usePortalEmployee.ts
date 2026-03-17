@@ -28,11 +28,11 @@ export function usePortalEmployee() {
   const fetchOwnEmployee = useCallback(async () => {
     if (!user) return null;
     const { data } = await supabase
-      .from("employees" as any)
+      .from("employees")
       .select("*")
       .eq("user_id", user.id)
       .single();
-    return data as Employee | null;
+    return data as unknown as Employee | null;
   }, [user]);
 
   // Fetch all employees (for admin selector)
