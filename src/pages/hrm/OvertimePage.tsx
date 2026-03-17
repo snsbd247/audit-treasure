@@ -77,7 +77,7 @@ export default function OvertimePage() {
                   <TableCell>{r.date}</TableCell>
                   <TableCell className="text-right font-mono">{r.hours}</TableCell>
                   <TableCell><Badge variant={r.status === "approved" ? "default" : "secondary"} className="capitalize">{r.status}</Badge></TableCell>
-                  {isAdmin && (
+                  {canManage && (
                     <TableCell className="text-right">
                       {r.status === "pending" && <Button variant="ghost" size="sm" onClick={() => approve(r.id)}><CheckCircle className="w-4 h-4 mr-1" />Approve</Button>}
                     </TableCell>
