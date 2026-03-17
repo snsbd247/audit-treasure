@@ -37,10 +37,7 @@ const navGroups: NavGroup[] = [
     requiredModules: ["accounts"],
     children: [
       { to: "/accounts/chart", label: "Chart of Accounts", icon: BookOpen },
-      { to: "/accounts/vouchers?type=journal", label: "Journal Voucher", icon: FileText },
-      { to: "/accounts/vouchers?type=payment", label: "Payment Voucher", icon: CreditCard },
-      { to: "/accounts/vouchers?type=receipt", label: "Receipt Voucher", icon: Receipt },
-      { to: "/accounts/vouchers?type=contra", label: "Contra Voucher", icon: ArrowLeftRight },
+      { to: "/accounts/vouchers", label: "Accounting Vouchers", icon: FileText, permission: "journal.view" },
       { to: "/reports/trial-balance", label: "Trial Balance", icon: FileText },
       { to: "/reports/profit-loss", label: "Profit & Loss", icon: TrendingUp },
       { to: "/reports/balance-sheet", label: "Balance Sheet", icon: FileText },

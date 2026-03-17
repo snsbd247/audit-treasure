@@ -43,12 +43,32 @@ type SuperAdminAction = "delete" | "reopen" | "reverse" | null;
 
 const AccountingVouchers = () => {
   const { user, profile, isSuperAdmin, hasPermission } = useAuth();
-  const isAdmin = hasPermission("accounts", "can_edit");
   const { toast } = useToast();
-  const userCanEdit = hasPermission("accounts", "can_edit") || isSuperAdmin;
-  const userCanDelete = hasPermission("accounts", "can_delete") || isSuperAdmin;
   const { fc } = useCurrency();
-  const [activeTab, setActiveTab] = useState("journal");
+
+  // Per-voucher-type permission checks
+  const canViewJournal = isSuperAdmin || hasPermission("journal.view");
+  const canViewPayment = isSuperAdmin || hasPermission("payment.view");
+  const canViewReceipt = isSuperAdmin || hasPermission("receipt.view");
+  const canViewContra = isSuperAdmin || hasPermission("contra.view");
+
+  const voucherPermMap: Record<string, boolean> = {
+    journal: canViewJournal,
+    payment: canViewPayment,
+    receipt: canViewReceipt,
+    contra: canViewContra,
+  };
+
+  const canCreateForType = (type: string) =>
+    isSuperAdmin || hasPermission(`${type}.create`);
+  const canEditForType = (type: string) =>
+    isSuperAdmin || hasPermission(`${type}.edit`);
+  const canDeleteForType = (type: string) =>
+    isSuperAdmin || hasPermission(`${type}.delete`);
+
+  const allowedTypes = VOUCHER_TYPES.filter((vt) => voucherPermMap[vt.id]);
+  const defaultTab = allowedTypes.length > 0 ? allowedTypes[0].id : "journal";
+  const [activeTab, setActiveTab] = useState(defaultTab);
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
