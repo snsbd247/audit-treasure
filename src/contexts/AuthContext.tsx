@@ -3,8 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { logLoginAttempt, logLogout } from "@/lib/audit-utils";
 import type { User, Session } from "@supabase/supabase-js";
 
-type AppRole = "super_admin" | "admin" | "staff";
-
 interface Profile {
   id: string;
   name: string;
@@ -12,27 +10,18 @@ interface Profile {
   email: string | null;
   phone: string | null;
   branch_id: string | null;
+  employee_id: string | null;
   status: string;
-}
-
-interface Permission {
-  module: string;
-  can_view: boolean;
-  can_add: boolean;
-  can_edit: boolean;
-  can_delete: boolean;
 }
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   profile: Profile | null;
-  roles: AppRole[];
-  permissions: Permission[];
+  permissions: string[];
   loading: boolean;
-  isAdmin: boolean;
   isSuperAdmin: boolean;
-  hasPermission: (module: string, action: "can_view" | "can_add" | "can_edit" | "can_delete") => boolean;
+  hasPermission: (permission: string) => boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, meta?: Record<string, string>) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -45,46 +34,78 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [roles, setRoles] = useState<AppRole[]>([]);
-  const [permissions, setPermissions] = useState<Permission[]>([]);
+  const [permissions, setPermissions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = useCallback(async (userId: string) => {
-    const [profileRes, rolesRes] = await Promise.all([
-      supabase.from("profiles").select("*").eq("id", userId).single(),
-      supabase.from("user_roles").select("role").eq("user_id", userId),
-    ]);
-    if (profileRes.data) setProfile(profileRes.data as Profile);
-    if (rolesRes.data) setRoles(rolesRes.data.map((r: any) => r.role as AppRole));
+    // Fetch profile
+    const { data: profileData } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", userId)
+      .single();
 
-    // Fetch custom role permissions
-    const { data: customRoleLinks } = await supabase
-      .from("user_custom_roles")
-      .select("custom_role_id")
-      .eq("user_id", userId);
+    if (profileData) {
+      const p = profileData as any;
+      setProfile({
+        id: p.id,
+        name: p.name,
+        username: p.username,
+        email: p.email,
+        phone: p.phone,
+        branch_id: p.branch_id,
+        employee_id: p.employee_id ?? null,
+        status: p.status,
+      });
 
-    if (customRoleLinks && customRoleLinks.length > 0) {
-      const roleIds = customRoleLinks.map((r: any) => r.custom_role_id);
-      const { data: perms } = await supabase
-        .from("role_permissions")
-        .select("*")
-        .in("custom_role_id", roleIds);
-      if (perms) {
-        // Merge permissions across roles (OR logic - if any role grants, it's granted)
-        const merged: Record<string, Permission> = {};
-        perms.forEach((p: any) => {
-          if (!merged[p.module]) {
-            merged[p.module] = { module: p.module, can_view: false, can_add: false, can_edit: false, can_delete: false };
+      // Super Admin = employee_id is NULL
+      const isSA = p.employee_id === null || p.employee_id === undefined;
+
+      if (isSA) {
+        setPermissions(["*"]); // Wildcard = full access
+      } else {
+        // Fetch custom role permissions
+        const { data: customRoleLinks } = await supabase
+          .from("user_custom_roles")
+          .select("custom_role_id")
+          .eq("user_id", userId);
+
+        if (customRoleLinks && customRoleLinks.length > 0) {
+          const roleIds = customRoleLinks.map((r: any) => r.custom_role_id);
+          const { data: perms } = await supabase
+            .from("role_permissions")
+            .select("*")
+            .in("custom_role_id", roleIds);
+
+          if (perms) {
+            const actionMap: Record<string, string> = {
+              can_view: "view",
+              can_add: "create",
+              can_edit: "edit",
+              can_delete: "delete",
+            };
+            const merged: Record<string, Record<string, boolean>> = {};
+            perms.forEach((p: any) => {
+              if (!merged[p.module]) merged[p.module] = {};
+              Object.entries(actionMap).forEach(([col, action]) => {
+                if (p[col]) merged[p.module][action] = true;
+              });
+            });
+
+            const flatPerms: string[] = [];
+            Object.entries(merged).forEach(([mod, actions]) => {
+              Object.entries(actions).forEach(([action, granted]) => {
+                if (granted) flatPerms.push(`${mod}.${action}`);
+              });
+            });
+            setPermissions(flatPerms);
+          } else {
+            setPermissions([]);
           }
-          if (p.can_view) merged[p.module].can_view = true;
-          if (p.can_add) merged[p.module].can_add = true;
-          if (p.can_edit) merged[p.module].can_edit = true;
-          if (p.can_delete) merged[p.module].can_delete = true;
-        });
-        setPermissions(Object.values(merged));
+        } else {
+          setPermissions([]);
+        }
       }
-    } else {
-      setPermissions([]);
     }
   }, []);
 
@@ -100,7 +121,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setTimeout(() => fetchProfile(session.user.id), 0);
       } else {
         setProfile(null);
-        setRoles([]);
         setPermissions([]);
       }
       setLoading(false);
@@ -118,14 +138,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    // Log login attempt
     try {
-      await logLoginAttempt({
-        userId: data?.user?.id,
-        email,
-        success: !error,
-      });
-    } catch { /* ignore logging errors */ }
+      await logLoginAttempt({ userId: data?.user?.id, email, success: !error });
+    } catch { /* ignore */ }
     return { error: error as Error | null };
   };
 
@@ -143,21 +158,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   };
 
-  const isSuperAdmin = roles.includes("super_admin");
-  // isAdmin is now only true for super_admin — all other access is permission-based
-  const isAdmin = isSuperAdmin;
+  // Super Admin = employee_id is null (or wildcard permissions)
+  const isSuperAdmin = profile?.employee_id === null || profile?.employee_id === undefined || permissions.includes("*");
 
-  const hasPermission = useCallback((module: string, action: "can_view" | "can_add" | "can_edit" | "can_delete") => {
-    // Super admin bypasses all permission checks
-    if (isSuperAdmin) return true;
-    const perm = permissions.find((p) => p.module === module);
-    return perm ? perm[action] : false;
-  }, [isSuperAdmin, permissions]);
+  const hasPermission = useCallback(
+    (permission: string): boolean => {
+      if (isSuperAdmin) return true;
+      if (permissions.includes("*")) return true;
+      return permissions.includes(permission);
+    },
+    [isSuperAdmin, permissions]
+  );
 
   return (
     <AuthContext.Provider value={{
-      user, session, profile, roles, permissions, loading,
-      isAdmin, isSuperAdmin, hasPermission,
+      user, session, profile, permissions, loading,
+      isSuperAdmin, hasPermission,
       signIn, signUp, signOut, refreshProfile,
     }}>
       {children}

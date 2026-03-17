@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Services\UserActivityService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends BaseController
 {
@@ -18,7 +19,6 @@ class AuthController extends BaseController
 
         $user = User::where('username', $request->username)->first();
         if (!$user || !Hash::check($request->password, $user->password)) {
-            // Log failed attempt
             $this->activityService->log('failed_login', "Failed login for: {$request->username}", $request, null, [
                 'username' => $request->username,
                 'status' => 'failed',
@@ -35,9 +35,12 @@ class AuthController extends BaseController
 
         $token = $user->createToken('api')->plainTextToken;
         $roles = $user->roles()->with('permissions')->get();
+        $permissions = $user->getAllPermissions();
 
         // Log successful login
         $this->activityService->logLogin($user->id, $request, true);
+
+        Log::info("User logged in: {$user->username}, Super Admin: " . ($user->isSuperAdmin() ? 'YES' : 'NO') . ", Permissions: " . json_encode($permissions));
 
         return $this->success([
             'token' => $token,
@@ -46,8 +49,12 @@ class AuthController extends BaseController
                 'username' => $user->username,
                 'name' => $user->name,
                 'email' => $user->email,
+                'phone' => $user->phone,
                 'branch_id' => $user->branch_id,
+                'employee_id' => $user->employee_id,
+                'is_super_admin' => $user->isSuperAdmin(),
                 'roles' => $roles,
+                'permissions' => $permissions,
             ],
         ]);
     }
@@ -62,7 +69,11 @@ class AuthController extends BaseController
     public function me(Request $request)
     {
         $user = $request->user()->load('roles.permissions', 'branch');
-        return $this->success($user);
+        return $this->success([
+            'user' => $user,
+            'is_super_admin' => $user->isSuperAdmin(),
+            'permissions' => $user->getAllPermissions(),
+        ]);
     }
 
     public function changePassword(Request $request)
