@@ -58,6 +58,7 @@ echo ""
 echo "[4/7] Setting up storage directories..."
 cd "$LARAVEL_DIR"
 mkdir -p storage/app/public/employees
+mkdir -p storage/app/backups
 mkdir -p storage/framework/{cache/data,sessions,views}
 mkdir -p storage/logs
 mkdir -p bootstrap/cache
