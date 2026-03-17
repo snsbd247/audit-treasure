@@ -189,6 +189,7 @@ const App = () => (
                 {/* Stock Ledger */}
                 <Route path="/inventory/stock-ledger" element={<StockLedgerPage />} />
                 {/* Employee Portal Routes */}
+                <Route path="/portal/dashboard" element={<MyDashboardPage />} />
                 <Route path="/portal/profile" element={<MyProfilePage />} />
                 <Route path="/portal/attendance" element={<MyAttendancePage />} />
                 <Route path="/portal/leave" element={<MyLeavePage />} />
