@@ -231,8 +231,11 @@ const CollapsibleGroup = ({ group, isModuleEnabled, hasPermission }: { group: Na
   const filteredChildren = group.children.filter((item) => {
     const required = routeModuleMap[item.to];
     if (required && required.some((m) => !isModuleEnabled(m))) return false;
-    // Check per-item permission
-    if (item.permission && !hasPermission(item.permission)) return false;
+    // Check per-item permission — support comma-separated OR logic (any match = visible)
+    if (item.permission) {
+      const perms = item.permission.split(",");
+      if (!perms.some((p) => hasPermission(p.trim()))) return false;
+    }
     return true;
   });
 
