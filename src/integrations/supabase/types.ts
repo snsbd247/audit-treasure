@@ -1494,6 +1494,7 @@ export type Database = {
         Row: {
           branch_id: string | null
           created_at: string
+          deleted_at: string | null
           email: string | null
           id: string
           name: string
@@ -1505,6 +1506,7 @@ export type Database = {
         Insert: {
           branch_id?: string | null
           created_at?: string
+          deleted_at?: string | null
           email?: string | null
           id: string
           name?: string
@@ -1516,6 +1518,7 @@ export type Database = {
         Update: {
           branch_id?: string | null
           created_at?: string
+          deleted_at?: string | null
           email?: string | null
           id?: string
           name?: string

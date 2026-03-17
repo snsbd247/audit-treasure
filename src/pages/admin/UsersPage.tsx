@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import UserDeleteDialog from "@/components/admin/UserDeleteDialog";
 
 interface UserRow {
   id: string;
@@ -32,6 +33,7 @@ const UsersPage = () => {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [customRoles, setCustomRoles] = useState<CustomRole[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [editUser, setEditUser] = useState<UserRow | null>(null);
@@ -65,7 +67,7 @@ const UsersPage = () => {
     setBranches(branchList);
     setCustomRoles((customRolesRes.data || []) as CustomRole[]);
 
-    const profiles = profilesRes.data || [];
+    const profiles = (profilesRes.data || []).filter((p: any) => !p.deleted_at);
     const rolesList = rolesRes.data || [];
     const userCustomRolesList = userCustomRolesRes.data || [];
 
@@ -79,7 +81,10 @@ const UsersPage = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    fetchData();
+    supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id || null));
+  }, []);
 
   const openCreate = () => {
     setEditUser(null);
@@ -246,9 +251,17 @@ const UsersPage = () => {
                     <Badge variant={u.status === "active" ? "default" : "secondary"} className="text-xs">{u.status}</Badge>
                   </TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="icon" onClick={() => openEdit(u)} className="h-8 w-8">
-                      <Pencil className="w-3.5 h-3.5" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(u)} className="h-8 w-8">
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                      <UserDeleteDialog
+                        user={u}
+                        allUsers={users}
+                        isSuperAdmin={users.some(usr => usr.roles.includes("super_admin") && usr.id === currentUserId)}
+                        onDeleted={fetchData}
+                      />
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
