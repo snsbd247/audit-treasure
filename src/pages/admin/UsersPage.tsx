@@ -140,8 +140,8 @@ const UsersPage = () => {
           },
         });
 
-        if (res.error) throw new Error(res.error.message || "Failed to create user");
-        if (res.data?.error) throw new Error(res.data.error);
+        const errMsg = res.data?.error || res.error?.message;
+        if (errMsg) throw new Error(errMsg);
 
         toast({ title: "User created" });
       }
