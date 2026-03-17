@@ -63,13 +63,16 @@ Deno.serve(async (req) => {
 
     const userId = newUser.user.id;
 
-    // Update profile
-    await adminClient.from("profiles").update({
+    // Upsert profile (trigger may not create it for admin-created users)
+    await adminClient.from("profiles").upsert({
+      id: userId,
+      name: name,
+      email: email,
       username: username || null,
       phone: phone || null,
       branch_id: branch_id || null,
       status: status || "active",
-    }).eq("id", userId);
+    }, { onConflict: "id" });
 
     // Assign system role
     if (role) {
