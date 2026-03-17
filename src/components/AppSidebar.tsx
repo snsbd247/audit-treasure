@@ -12,6 +12,7 @@ import {
   ArrowLeftRight, Calendar, Activity, Menu, X, CircleDot, Truck, UserCheck,
   Briefcase, Clock, CalendarDays, DollarSign, FileCheck, BadgeCheck, User,
   Fingerprint, ScanFace, Timer, Gauge, Keyboard, Palette, MessageSquare,
+  Mail,
 } from "lucide-react";
 import { useBranding } from "@/contexts/BrandingContext";
 import { Button } from "@/components/ui/button";
@@ -21,18 +22,18 @@ import { cn } from "@/lib/utils";
 interface NavGroup {
   label: string;
   icon: any;
-  module?: string;
+  /** Permission required to see this group (e.g. "sales.view") */
+  permission?: string;
   requiredModules?: ModuleKey[];
-  children: { to: string; label: string; icon: any; end?: boolean }[];
-  adminOnly?: boolean;
-  portalOnly?: boolean; // Show only if user has linked employee or is HR admin
+  children: { to: string; label: string; icon: any; end?: boolean; permission?: string }[];
+  portalOnly?: boolean;
 }
 
 const navGroups: NavGroup[] = [
   {
     label: "Accounts",
     icon: BookOpen,
-    module: "accounts",
+    permission: "accounts.view",
     requiredModules: ["accounts"],
     children: [
       { to: "/accounts/chart", label: "Chart of Accounts", icon: BookOpen },
@@ -54,7 +55,7 @@ const navGroups: NavGroup[] = [
   {
     label: "Sales",
     icon: TrendingUp,
-    module: "sales",
+    permission: "sales.view",
     requiredModules: ["sales"],
     children: [
       { to: "/sales", label: "Sales Invoice", icon: Receipt },
@@ -68,7 +69,7 @@ const navGroups: NavGroup[] = [
   {
     label: "Purchase",
     icon: ShoppingCart,
-    module: "purchase",
+    permission: "purchase.view",
     requiredModules: ["purchase"],
     children: [
       { to: "/purchase", label: "Purchase Entry", icon: ShoppingCart },
@@ -82,7 +83,7 @@ const navGroups: NavGroup[] = [
   {
     label: "Inventory",
     icon: Warehouse,
-    module: "inventory",
+    permission: "inventory.view",
     requiredModules: ["inventory"],
     children: [
       { to: "/inventory/items", label: "Item Master", icon: Package },
@@ -100,7 +101,7 @@ const navGroups: NavGroup[] = [
   {
     label: "Manufacturing",
     icon: Factory,
-    module: "manufacturing",
+    permission: "manufacturing.view",
     requiredModules: ["manufacturing"],
     children: [
       { to: "/manufacturing/bom", label: "Bill of Materials", icon: ClipboardList },
@@ -111,7 +112,7 @@ const navGroups: NavGroup[] = [
   {
     label: "Bank & Cash",
     icon: Landmark,
-    module: "bank",
+    permission: "bank.view",
     requiredModules: ["bank"],
     children: [
       { to: "/bank/accounts", label: "Bank Accounts", icon: Landmark },
@@ -124,7 +125,7 @@ const navGroups: NavGroup[] = [
   {
     label: "HRM",
     icon: Users,
-    module: "hrm",
+    permission: "hrm.view",
     requiredModules: ["hrm"],
     children: [
       { to: "/hrm/dashboard", label: "HR Dashboard", icon: Gauge },
@@ -146,7 +147,7 @@ const navGroups: NavGroup[] = [
   {
     label: "Employee Portal",
     icon: User,
-    module: "hrm",
+    permission: "hrm.view",
     requiredModules: ["hrm"],
     portalOnly: true,
     children: [
@@ -161,7 +162,7 @@ const navGroups: NavGroup[] = [
   {
     label: "Reports",
     icon: BarChart3,
-    module: "reports",
+    permission: "reports.view",
     requiredModules: ["reports"],
     children: [
       { to: "/reports/financial", label: "All Reports", icon: BarChart3 },
@@ -172,19 +173,18 @@ const navGroups: NavGroup[] = [
   {
     label: "Administration",
     icon: Shield,
-    module: "administration",
     children: [
-      { to: "/admin/branches", label: "Branches", icon: Building2 },
-      { to: "/admin/financial-years", label: "Financial Years", icon: Calendar },
-      { to: "/admin/users", label: "Users", icon: Users },
-      { to: "/admin/roles", label: "Roles & Permissions", icon: Shield },
-      { to: "/admin/backup", label: "Backup & Restore", icon: Database },
-      { to: "/admin/audit-log", label: "Activity Logs", icon: Activity },
-      { to: "/admin/numbering", label: "Document Numbering", icon: ScrollText },
-      { to: "/admin/shortcuts", label: "Page Shortcuts", icon: Keyboard },
-      { to: "/admin/settings", label: "General Settings", icon: CircleDot },
-      { to: "/admin/sms", label: "SMS Integration", icon: MessageSquare },
-      { to: "/admin/branding", label: "Branding", icon: Palette },
+      { to: "/admin/branches", label: "Branches", icon: Building2, permission: "branches.view" },
+      { to: "/admin/financial-years", label: "Financial Years", icon: Calendar, permission: "financial_years.view" },
+      { to: "/admin/users", label: "Users", icon: Users, permission: "users.view" },
+      { to: "/admin/roles", label: "Roles & Permissions", icon: Shield, permission: "roles.view" },
+      { to: "/admin/backup", label: "Backup & Restore", icon: Database, permission: "backup.view" },
+      { to: "/admin/audit-log", label: "Activity Logs", icon: Activity, permission: "audit_log.view" },
+      { to: "/admin/numbering", label: "Document Numbering", icon: ScrollText, permission: "settings.view" },
+      { to: "/admin/shortcuts", label: "Page Shortcuts", icon: Keyboard, permission: "settings.view" },
+      { to: "/admin/settings", label: "General Settings", icon: CircleDot, permission: "settings.view" },
+      { to: "/admin/sms", label: "SMS Integration", icon: MessageSquare, permission: "settings.view" },
+      { to: "/admin/branding", label: "Branding", icon: Palette, permission: "settings.view" },
     ],
   },
 ];
@@ -227,13 +227,15 @@ const NavItem = ({ to, label, icon: Icon, end }: { to: string; label: string; ic
   </NavLink>
 );
 
-const CollapsibleGroup = ({ group, isModuleEnabled }: { group: NavGroup; isModuleEnabled: (key: ModuleKey) => boolean }) => {
+const CollapsibleGroup = ({ group, isModuleEnabled, hasPermission }: { group: NavGroup; isModuleEnabled: (key: ModuleKey) => boolean; hasPermission: (perm: string) => boolean }) => {
   const [open, setOpen] = useState(false);
   const Icon = group.icon;
 
   const filteredChildren = group.children.filter((item) => {
     const required = routeModuleMap[item.to];
     if (required && required.some((m) => !isModuleEnabled(m))) return false;
+    // Check per-item permission
+    if (item.permission && !hasPermission(item.permission)) return false;
     return true;
   });
 
@@ -270,7 +272,6 @@ export const AppSidebar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [hasEmployeeRecord, setHasEmployeeRecord] = useState(false);
 
-  // Check if user has a linked employee record (for portal visibility)
   useEffect(() => {
     if (!user) return;
     (async () => {
@@ -279,7 +280,7 @@ export const AppSidebar = () => {
     })();
   }, [user]);
 
-  const isHrAdmin = isSuperAdmin || hasPermission("hrm", "can_view");
+  const isHrAdmin = isSuperAdmin || hasPermission("hrm.view");
 
   const sidebarContent = (
     <>
@@ -310,16 +311,14 @@ export const AppSidebar = () => {
       <ScrollArea className="flex-1">
         <nav className="p-2 space-y-0.5">
           <NavItem to="/" label="Dashboard" icon={LayoutDashboard} end />
+          <NavItem to="/messaging" label="Messages" icon={Mail} />
           <div className="my-2 border-t border-sidebar-border" />
           {navGroups.map((group) => {
             if (group.requiredModules && group.requiredModules.some((m) => !isModuleEnabled(m))) return null;
-            // Portal section: show only if user has employee record or is HR admin
             if (group.portalOnly && !hasEmployeeRecord && !isHrAdmin) return null;
-            // For administration module: check administration permission
-            if (group.adminOnly && !hasPermission("administration", "can_view")) return null;
-            // For other modules: check module permission
-            if (!group.adminOnly && group.module && !hasPermission(group.module, "can_view")) return null;
-            return <CollapsibleGroup key={group.label} group={group} isModuleEnabled={isModuleEnabled} />;
+            // Check group-level permission
+            if (group.permission && !hasPermission(group.permission)) return null;
+            return <CollapsibleGroup key={group.label} group={group} isModuleEnabled={isModuleEnabled} hasPermission={hasPermission} />;
           })}
         </nav>
       </ScrollArea>

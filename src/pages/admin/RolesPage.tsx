@@ -20,7 +20,13 @@ const MODULES: { key: string; label: string }[] = [
   { key: "bank", label: "Bank & Cash" },
   { key: "hrm", label: "HRM & Payroll" },
   { key: "reports", label: "Reports" },
-  { key: "administration", label: "Administration" },
+  { key: "branches", label: "Branches" },
+  { key: "users", label: "Users" },
+  { key: "roles", label: "Roles" },
+  { key: "financial_years", label: "Financial Years" },
+  { key: "settings", label: "Settings" },
+  { key: "audit_log", label: "Audit Log" },
+  { key: "backup", label: "Backup" },
 ];
 
 const PERMISSION_KEYS = ["can_view", "can_add", "can_edit", "can_delete"] as const;

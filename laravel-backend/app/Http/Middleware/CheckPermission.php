@@ -4,25 +4,36 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class CheckPermission
 {
     /**
-     * Usage in routes: ->middleware('permission:accounting,view')
-     * Only super_admin bypasses. All other users checked via role_permissions.
+     * Usage in routes: ->middleware('permission:sales.view')
+     * 
+     * Rule: If user.employee_id IS NULL → Super Admin → allow all.
+     *       Otherwise → check hasPermission('module.action').
      */
-    public function handle(Request $request, Closure $next, string $module, string $action)
+    public function handle(Request $request, Closure $next, string $permission)
     {
         $user = $request->user();
         if (!$user) return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
 
-        // Only Super Admin bypasses all permission checks
-        if ($user->hasRole('Super Admin')) return $next($request);
-
-        if (!$user->hasPermission($module, $action)) {
-            return response()->json(['success' => false, 'message' => "No {$action} permission for {$module}"], 403);
+        // Super Admin: employee_id is NULL → full access
+        if ($user->isSuperAdmin()) {
+            Log::debug("Permission granted (Super Admin): {$permission} for user {$user->id}");
+            return $next($request);
         }
 
+        if (!$user->hasPermission($permission)) {
+            Log::warning("Permission denied: {$permission} for user {$user->id} ({$user->name})");
+            return response()->json([
+                'success' => false,
+                'message' => "Permission denied: {$permission}",
+            ], 403);
+        }
+
+        Log::debug("Permission granted: {$permission} for user {$user->id}");
         return $next($request);
     }
 }

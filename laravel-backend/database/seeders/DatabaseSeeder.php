@@ -14,20 +14,35 @@ class DatabaseSeeder extends Seeder
         // Branch
         $branch = Branch::create(['code' => 'HQ', 'name' => 'Head Office', 'phone' => '+1234567890', 'address' => '123 Main St']);
 
-        // Roles
+        // All permission modules (granular)
+        $allModules = [
+            'dashboard', 'accounts', 'sales', 'purchase', 'inventory',
+            'manufacturing', 'bank', 'hrm', 'reports',
+            'branches', 'users', 'roles', 'financial_years',
+            'settings', 'audit_log', 'backup',
+        ];
+
+        // Super Admin Role (all permissions)
         $superAdmin = CustomRole::create(['name' => 'Super Admin', 'description' => 'Full system access']);
-        $modules = ['dashboard', 'accounts', 'sales', 'purchase', 'inventory', 'manufacturing', 'bank', 'hrm', 'reports', 'administration'];
-        foreach ($modules as $mod) {
+        foreach ($allModules as $mod) {
             RolePermission::create(['custom_role_id' => $superAdmin->id, 'module' => $mod, 'can_view' => 1, 'can_add' => 1, 'can_edit' => 1, 'can_delete' => 1]);
         }
 
+        // Staff role (limited)
         $staff = CustomRole::create(['name' => 'Staff', 'description' => 'Standard staff access']);
         foreach (['dashboard', 'accounts', 'sales', 'purchase', 'inventory', 'reports'] as $mod) {
             RolePermission::create(['custom_role_id' => $staff->id, 'module' => $mod, 'can_view' => 1, 'can_add' => 1, 'can_edit' => 1, 'can_delete' => 0]);
         }
 
-        // Admin User
-        $admin = User::create(['username' => 'admin', 'name' => 'System Administrator', 'email' => 'admin@erp.com', 'password' => Hash::make('admin123'), 'branch_id' => $branch->id]);
+        // Admin User (employee_id = NULL → Super Admin)
+        $admin = User::create([
+            'username' => 'admin',
+            'name' => 'System Administrator',
+            'email' => 'admin@erp.com',
+            'password' => Hash::make('admin123'),
+            'branch_id' => $branch->id,
+            'employee_id' => null, // NULL = Super Admin
+        ]);
         $admin->roles()->attach($superAdmin->id);
 
         // Financial Year
