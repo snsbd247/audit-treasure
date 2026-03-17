@@ -115,8 +115,23 @@ const MessagingPage = () => {
       const partIds = (parts as any[] || []).map((p: any) => p.user_id);
       const { data: partProfiles } = await supabase
         .from("profiles")
-        .select("id, name, username, is_online, last_seen_at")
+        .select("id, name, username, is_online, last_seen_at, employee_id")
         .in("id", partIds);
+
+      // Fetch employee photos for participants that have employee_id
+      const empIds = (partProfiles as any[] || []).filter((p: any) => p.employee_id).map((p: any) => p.employee_id);
+      let empPhotoMap = new Map<string, string>();
+      if (empIds.length > 0) {
+        const { data: empData } = await supabase
+          .from("employees" as any)
+          .select("id, photo_url")
+          .in("id", empIds);
+        if (empData) {
+          (empData as any[]).forEach((e: any) => {
+            if (e.photo_url) empPhotoMap.set(e.id, e.photo_url);
+          });
+        }
+      }
 
       const { data: latestMsg } = await supabase
         .from("messages")
