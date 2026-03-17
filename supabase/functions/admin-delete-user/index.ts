@@ -178,13 +178,17 @@ Deno.serve(async (req) => {
         .eq("user_id", user_id);
 
       // Soft delete the user profile
-      await adminClient
+      const { error: profileUpdateErr } = await adminClient
         .from("profiles")
         .update({
           deleted_at: new Date().toISOString(),
           status: "deleted",
         })
         .eq("id", user_id);
+
+      if (profileUpdateErr) {
+        console.error("Profile soft-delete error:", profileUpdateErr);
+      }
 
       // Remove user roles
       await adminClient.from("user_roles").delete().eq("user_id", user_id);
@@ -236,13 +240,18 @@ Deno.serve(async (req) => {
         .single();
 
       // Soft delete
-      await adminClient
+      const { error: updateError } = await adminClient
         .from("profiles")
         .update({
           deleted_at: new Date().toISOString(),
           status: "deleted",
         })
         .eq("id", user_id);
+
+      if (updateError) {
+        console.error("Profile update error:", updateError);
+        return respond({ error: `Failed to soft-delete profile: ${updateError.message}` }, 500);
+      }
 
       // Remove roles
       await adminClient.from("user_roles").delete().eq("user_id", user_id);
