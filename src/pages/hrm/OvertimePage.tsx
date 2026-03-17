@@ -16,7 +16,8 @@ interface Employee { id: string; employee_code: string; first_name: string; last
 interface OvertimeRecord { id: string; employee_id: string; date: string; hours: number; status: string; }
 
 export default function OvertimePage() {
-  const { isAdmin, user } = useAuth();
+  const { hasPermission, user } = useAuth();
+  const canManage = hasPermission("hrm", "can_add");
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [records, setRecords] = useState<OvertimeRecord[]>([]);
   const [dialog, setDialog] = useState(false);
