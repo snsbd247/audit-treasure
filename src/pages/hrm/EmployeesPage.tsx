@@ -38,10 +38,12 @@ interface Department { id: string; name: string; }
 interface Designation { id: string; name: string; }
 interface Branch { id: string; name: string; }
 
+interface UserProfile { id: string; name: string; email: string | null; username: string | null; }
+
 const defaultForm = {
   employee_code: "", first_name: "", last_name: "", mobile: "", email: "",
   address: "", national_id: "", department_id: "", designation_id: "",
-  branch_id: "", joining_date: new Date().toISOString().split("T")[0],
+  branch_id: "", user_id: "", joining_date: new Date().toISOString().split("T")[0],
   salary: 0, employment_type: "permanent", status: "active",
 };
 
