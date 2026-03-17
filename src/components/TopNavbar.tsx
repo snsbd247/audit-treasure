@@ -119,6 +119,20 @@ export const TopNavbar = ({ onOpenCommandPalette }: TopNavbarProps) => {
         </Button>
       </div>
       <div className="flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 text-muted-foreground relative"
+          onClick={() => navigate("/messaging")}
+          title="Messages"
+        >
+          <MessageSquare className="w-4 h-4" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1 leading-none">
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
+          )}
+        </Button>
         <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground">
           <Bell className="w-4 h-4" />
         </Button>
