@@ -22,7 +22,8 @@ interface BiometricLog {
 }
 
 export default function BiometricImportPage() {
-  const { isAdmin } = useAuth();
+  const { hasPermission } = useAuth();
+  const isAdmin = hasPermission("hrm", "can_edit");
   const [logs, setLogs] = useState<BiometricLog[]>([]);
   const [processing, setProcessing] = useState(false);
 

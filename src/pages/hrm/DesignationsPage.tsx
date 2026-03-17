@@ -14,7 +14,8 @@ import { Plus, Edit, Trash2 } from "lucide-react";
 interface Desig { id: string; name: string; description: string | null; status: string; }
 
 export default function DesignationsPage() {
-  const { isAdmin } = useAuth();
+  const { hasPermission } = useAuth();
+  const isAdmin = hasPermission("hrm", "can_edit");
   const [items, setItems] = useState<Desig[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
