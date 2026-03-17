@@ -258,7 +258,7 @@ const CollapsibleGroup = ({ group, isModuleEnabled }: { group: NavGroup; isModul
 };
 
 export const AppSidebar = () => {
-  const { isAdmin, signOut, profile, hasPermission } = useAuth();
+  const { signOut, profile, hasPermission } = useAuth();
   const { isModuleEnabled } = useModules();
   const { branding } = useBranding();
   const isMobile = useIsMobile();

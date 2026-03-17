@@ -14,7 +14,8 @@ import { Plus, Edit, Trash2 } from "lucide-react";
 interface Dept { id: string; name: string; description: string | null; status: string; created_at: string; }
 
 export default function DepartmentsPage() {
-  const { isAdmin } = useAuth();
+  const { hasPermission } = useAuth();
+  const isAdmin = hasPermission("hrm", "can_edit");
   const [items, setItems] = useState<Dept[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
