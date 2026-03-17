@@ -18,10 +18,13 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   profile: Profile | null;
+  roles: string[];
   permissions: string[];
   loading: boolean;
+  isAdmin: boolean;
   isSuperAdmin: boolean;
-  hasPermission: (permission: string) => boolean;
+  /** Accepts "module.action" (new) or (module, action) legacy format */
+  hasPermission: (moduleOrPermission: string, action?: string) => boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, meta?: Record<string, string>) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
