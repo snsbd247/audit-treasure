@@ -67,7 +67,7 @@ export default function OvertimePage() {
                 <TableHead>Date</TableHead>
                 <TableHead className="text-right">Hours</TableHead>
                 <TableHead>Status</TableHead>
-                {isAdmin && <TableHead className="text-right">Actions</TableHead>}
+                {canManage && <TableHead className="text-right">Actions</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
