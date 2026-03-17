@@ -435,6 +435,7 @@ const AccountingVouchers = () => {
           </TabsContent>
         ))}
       </Tabs>
+      )}
 
       {/* Create/Edit Voucher Dialog */}
       <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) setEditingVoucher(null); }}>
