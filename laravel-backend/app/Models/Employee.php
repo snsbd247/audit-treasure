@@ -24,7 +24,11 @@ class Employee extends Model
     public function user() { return $this->belongsTo(User::class); }
     public function attendance() { return $this->hasMany(Attendance::class); }
     public function leaveRequests() { return $this->hasMany(LeaveRequest::class); }
-    public function salaryStructures() { return $this->hasMany(SalaryStructure::class); }
+    public function salaryStructure() { return $this->hasOne(SalaryStructure::class)->latestOfMany(); }
+    public function bankInfo() { return $this->hasOne(EmployeeBankInfo::class); }
+    public function education() { return $this->hasMany(EmployeeEducation::class); }
+    public function experience() { return $this->hasMany(EmployeeExperience::class); }
+    public function emergencyContacts() { return $this->hasMany(EmployeeEmergencyContact::class); }
     public function payroll() { return $this->hasMany(Payroll::class); }
 
     public function getFullNameAttribute(): string

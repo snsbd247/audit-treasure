@@ -136,6 +136,10 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\BranchScope::class])->gr
         Route::middleware('permission:hrm,view')->group(function () {
             Route::get('employees', [\App\Http\Controllers\HRM\EmployeeController::class, 'index']);
             Route::get('employees/{id}', [\App\Http\Controllers\HRM\EmployeeController::class, 'show']);
+            Route::get('employees/{id}/bank-info', fn($id) => response()->json(['success' => true, 'data' => \App\Models\EmployeeBankInfo::where('employee_id', $id)->first()]));
+            Route::get('employees/{id}/education', fn($id) => response()->json(['success' => true, 'data' => \App\Models\EmployeeEducation::where('employee_id', $id)->get()]));
+            Route::get('employees/{id}/experience', fn($id) => response()->json(['success' => true, 'data' => \App\Models\EmployeeExperience::where('employee_id', $id)->get()]));
+            Route::get('employees/{id}/emergency-contacts', fn($id) => response()->json(['success' => true, 'data' => \App\Models\EmployeeEmergencyContact::where('employee_id', $id)->get()]));
             Route::get('attendance', [\App\Http\Controllers\HRM\AttendanceController::class, 'index']);
             Route::get('departments', [\App\Http\Controllers\HRM\DepartmentController::class, 'index']);
             Route::get('departments/{id}', [\App\Http\Controllers\HRM\DepartmentController::class, 'show']);

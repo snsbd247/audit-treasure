@@ -114,10 +114,62 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->uuid('employee_id');
             $table->decimal('basic_salary', 15, 2)->default(0);
-            $table->decimal('allowances', 15, 2)->default(0);
-            $table->decimal('deductions', 15, 2)->default(0);
+            $table->decimal('house_rent', 15, 2)->default(0);
+            $table->decimal('medical_allowance', 15, 2)->default(0);
+            $table->decimal('other_allowance', 15, 2)->default(0);
+            $table->decimal('total_salary', 15, 2)->default(0);
             $table->date('effective_from');
             $table->timestamps();
+
+            $table->foreign('employee_id')->references('id')->on('employees')->cascadeOnDelete();
+        });
+
+        Schema::create('employee_bank_info', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('employee_id')->unique();
+            $table->string('bank_name', 200)->default('');
+            $table->string('account_name', 200)->default('');
+            $table->string('account_number', 100)->default('');
+            $table->string('branch_name', 200)->default('');
+            $table->string('routing_number', 100)->default('');
+            $table->timestamps();
+
+            $table->foreign('employee_id')->references('id')->on('employees')->cascadeOnDelete();
+        });
+
+        Schema::create('employee_education', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('employee_id');
+            $table->string('degree', 200)->default('');
+            $table->string('institution', 300)->default('');
+            $table->string('passing_year', 10)->default('');
+            $table->string('result', 100)->default('');
+            $table->timestamp('created_at')->useCurrent();
+
+            $table->foreign('employee_id')->references('id')->on('employees')->cascadeOnDelete();
+        });
+
+        Schema::create('employee_experience', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('employee_id');
+            $table->string('company_name', 300)->default('');
+            $table->string('designation', 200)->default('');
+            $table->date('start_date')->nullable();
+            $table->date('end_date')->nullable();
+            $table->text('job_description')->default('');
+            $table->timestamp('created_at')->useCurrent();
+
+            $table->foreign('employee_id')->references('id')->on('employees')->cascadeOnDelete();
+        });
+
+        Schema::create('employee_emergency_contacts', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('employee_id');
+            $table->string('name', 200)->default('');
+            $table->string('relation', 100)->default('');
+            $table->string('phone', 30)->default('');
+            $table->text('address')->default('');
+            $table->timestamp('created_at')->useCurrent();
 
             $table->foreign('employee_id')->references('id')->on('employees')->cascadeOnDelete();
         });
@@ -180,7 +232,12 @@ return new class extends Migration
         Schema::dropIfExists('employee_documents');
         Schema::dropIfExists('biometric_logs');
         Schema::dropIfExists('payroll');
+        Schema::dropIfExists('employee_emergency_contacts');
+        Schema::dropIfExists('employee_experience');
+        Schema::dropIfExists('employee_education');
+        Schema::dropIfExists('employee_bank_info');
         Schema::dropIfExists('salary_structures');
+        Schema::dropIfExists('overtime_records');
         Schema::dropIfExists('overtime_records');
         Schema::dropIfExists('leave_requests');
         Schema::dropIfExists('leave_types');

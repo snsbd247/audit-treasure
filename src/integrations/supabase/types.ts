@@ -593,6 +593,50 @@ export type Database = {
         }
         Relationships: []
       }
+      employee_bank_info: {
+        Row: {
+          account_name: string
+          account_number: string
+          bank_name: string
+          branch_name: string
+          created_at: string
+          employee_id: string
+          id: string
+          routing_number: string
+          updated_at: string
+        }
+        Insert: {
+          account_name?: string
+          account_number?: string
+          bank_name?: string
+          branch_name?: string
+          created_at?: string
+          employee_id: string
+          id?: string
+          routing_number?: string
+          updated_at?: string
+        }
+        Update: {
+          account_name?: string
+          account_number?: string
+          bank_name?: string
+          branch_name?: string
+          created_at?: string
+          employee_id?: string
+          id?: string
+          routing_number?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_bank_info_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: true
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employee_documents: {
         Row: {
           created_at: string
@@ -624,6 +668,123 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "employee_documents_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employee_education: {
+        Row: {
+          created_at: string
+          degree: string
+          employee_id: string
+          id: string
+          institution: string
+          passing_year: string
+          result: string
+        }
+        Insert: {
+          created_at?: string
+          degree?: string
+          employee_id: string
+          id?: string
+          institution?: string
+          passing_year?: string
+          result?: string
+        }
+        Update: {
+          created_at?: string
+          degree?: string
+          employee_id?: string
+          id?: string
+          institution?: string
+          passing_year?: string
+          result?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_education_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employee_emergency_contacts: {
+        Row: {
+          address: string
+          created_at: string
+          employee_id: string
+          id: string
+          name: string
+          phone: string
+          relation: string
+        }
+        Insert: {
+          address?: string
+          created_at?: string
+          employee_id: string
+          id?: string
+          name?: string
+          phone?: string
+          relation?: string
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          employee_id?: string
+          id?: string
+          name?: string
+          phone?: string
+          relation?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_emergency_contacts_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employee_experience: {
+        Row: {
+          company_name: string
+          created_at: string
+          designation: string
+          employee_id: string
+          end_date: string | null
+          id: string
+          job_description: string
+          start_date: string | null
+        }
+        Insert: {
+          company_name?: string
+          created_at?: string
+          designation?: string
+          employee_id: string
+          end_date?: string | null
+          id?: string
+          job_description?: string
+          start_date?: string | null
+        }
+        Update: {
+          company_name?: string
+          created_at?: string
+          designation?: string
+          employee_id?: string
+          end_date?: string | null
+          id?: string
+          job_description?: string
+          start_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_experience_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "employees"
@@ -1662,33 +1823,39 @@ export type Database = {
       }
       salary_structures: {
         Row: {
-          allowances: number
           basic_salary: number
           created_at: string
-          deductions: number
           effective_from: string
           employee_id: string
+          house_rent: number
           id: string
+          medical_allowance: number
+          other_allowance: number
+          total_salary: number
           updated_at: string
         }
         Insert: {
-          allowances?: number
           basic_salary?: number
           created_at?: string
-          deductions?: number
           effective_from?: string
           employee_id: string
+          house_rent?: number
           id?: string
+          medical_allowance?: number
+          other_allowance?: number
+          total_salary?: number
           updated_at?: string
         }
         Update: {
-          allowances?: number
           basic_salary?: number
           created_at?: string
-          deductions?: number
           effective_from?: string
           employee_id?: string
+          house_rent?: number
           id?: string
+          medical_allowance?: number
+          other_allowance?: number
+          total_salary?: number
           updated_at?: string
         }
         Relationships: [

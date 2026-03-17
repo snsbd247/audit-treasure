@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -11,7 +12,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Edit, Trash2, Search, Users } from "lucide-react";
+import { Plus, Edit, Trash2, Search, Users, Eye } from "lucide-react";
 
 interface Employee {
   id: string;
@@ -46,6 +47,7 @@ const defaultForm = {
 
 export default function EmployeesPage() {
   const { user, isAdmin } = useAuth();
+  const navigate = useNavigate();
   
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -161,7 +163,7 @@ export default function EmployeesPage() {
             </TableHeader>
             <TableBody>
               {filtered.map(emp => (
-                <TableRow key={emp.id}>
+                <TableRow key={emp.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/hrm/employees/${emp.id}`)}>
                   <TableCell className="font-mono">{emp.employee_code}</TableCell>
                   <TableCell className="font-medium">{emp.first_name} {emp.last_name}</TableCell>
                   <TableCell>{getDeptName(emp.department_id)}</TableCell>
@@ -171,8 +173,9 @@ export default function EmployeesPage() {
                   <TableCell><Badge variant={emp.status === "active" ? "default" : "secondary"} className="capitalize">{emp.status}</Badge></TableCell>
                   {isAdmin && (
                     <TableCell className="text-right space-x-1">
-                      <Button variant="ghost" size="icon" onClick={() => openEdit(emp)}><Edit className="w-4 h-4" /></Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(emp.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+                      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); navigate(`/hrm/employees/${emp.id}`); }}><Eye className="w-4 h-4" /></Button>
+                      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); openEdit(emp); }}><Edit className="w-4 h-4" /></Button>
+                      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleDelete(emp.id); }}><Trash2 className="w-4 h-4 text-destructive" /></Button>
                     </TableCell>
                   )}
                 </TableRow>
