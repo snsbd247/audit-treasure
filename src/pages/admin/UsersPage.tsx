@@ -67,7 +67,7 @@ const UsersPage = () => {
     setBranches(branchList);
     setCustomRoles((customRolesRes.data || []) as CustomRole[]);
 
-    const profiles = (profilesRes.data || []).filter((p: any) => !p.deleted_at);
+    const profiles = profilesRes.data || [];
     const rolesList = rolesRes.data || [];
     const userCustomRolesList = userCustomRolesRes.data || [];
 

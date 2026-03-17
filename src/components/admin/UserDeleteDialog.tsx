@@ -117,7 +117,7 @@ const UserDeleteDialog = ({ user, allUsers, isSuperAdmin, onDeleted }: Props) =>
         description: `${totalTransferred} records transferred successfully`,
       });
       setOpen(false);
-      onDeleted();
+      setTimeout(() => onDeleted(), 300);
     } catch (err: any) {
       toast({ title: "Transfer Failed", description: err.message, variant: "destructive" });
       setStep("has_data");
