@@ -11,6 +11,9 @@ import {
   CreditCard, Landmark, PiggyBank, TrendingUp,
   ArrowLeftRight, Calendar, Activity, Menu, X, CircleDot, Truck, UserCheck,
   Briefcase, Clock, CalendarDays, DollarSign, FileCheck, BadgeCheck, User,
+  Fingerprint, ScanFace, Timer, Gauge, Keyboard, Palette, MessageSquare,
+  ArrowLeftRight, Calendar, Activity, Menu, X, CircleDot, Truck, UserCheck,
+  Briefcase, Clock, CalendarDays, DollarSign, FileCheck, BadgeCheck, User,
   Fingerprint, ScanFace, Timer, Gauge, Keyboard, Palette,
 } from "lucide-react";
 import { useBranding } from "@/contexts/BrandingContext";
