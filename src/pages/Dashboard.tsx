@@ -51,7 +51,7 @@ const Dashboard = () => {
   // Redirect employee-only users to portal dashboard
   useEffect(() => {
     if (!user || checkedRedirect) return;
-    const isEmployeeOnly = !isSuperAdmin && !hasPermission("accounts", "can_view") && !hasPermission("sales", "can_view") && !hasPermission("administration", "can_view");
+    const isEmployeeOnly = !isSuperAdmin && !hasPermission("accounts.view") && !hasPermission("sales.view") && !hasPermission("settings.view");
     if (isEmployeeOnly) {
       (async () => {
         const { data } = await supabase.from("employees").select("id").eq("user_id", user.id).maybeSingle();
