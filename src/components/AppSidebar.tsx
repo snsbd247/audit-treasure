@@ -260,11 +260,23 @@ const CollapsibleGroup = ({ group, isModuleEnabled }: { group: NavGroup; isModul
 };
 
 export const AppSidebar = () => {
-  const { signOut, profile, hasPermission } = useAuth();
+  const { signOut, profile, hasPermission, user, isSuperAdmin } = useAuth();
   const { isModuleEnabled } = useModules();
   const { branding } = useBranding();
   const isMobile = useIsMobile();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [hasEmployeeRecord, setHasEmployeeRecord] = useState(false);
+
+  // Check if user has a linked employee record (for portal visibility)
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await supabase.from("employees").select("id").eq("user_id", user.id).maybeSingle();
+      setHasEmployeeRecord(!!data);
+    })();
+  }, [user]);
+
+  const isHrAdmin = isSuperAdmin || hasPermission("hrm", "can_view");
 
   const sidebarContent = (
     <>
