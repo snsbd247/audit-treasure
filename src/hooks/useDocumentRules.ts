@@ -30,7 +30,7 @@ export function useDocumentRules(
   module: string,
   status: DocumentStatus | string
 ): DocumentRules {
-  const { isSuperAdmin, isAdmin, hasPermission } = useAuth();
+  const { isSuperAdmin, hasPermission } = useAuth();
 
   const normalizedStatus = status?.toLowerCase() as DocumentStatus;
   const userCanEdit = hasPermission(module, "can_edit") || isSuperAdmin;
