@@ -170,13 +170,13 @@ const AccountingVouchers = () => {
   };
 
   const canEditVoucher = (v: Voucher) => {
-    if (v.status === "draft" || v.status === "rejected") return userCanEdit;
+    if (v.status === "draft" || v.status === "rejected") return canEditForType(activeTab);
     if (v.status === "approved") return isSuperAdmin;
     return false;
   };
 
   const canDeleteVoucher = (v: Voucher) => {
-    if (v.status === "draft" || v.status === "rejected") return userCanDelete;
+    if (v.status === "draft" || v.status === "rejected") return canDeleteForType(activeTab);
     if (v.status === "approved") return isSuperAdmin;
     return false;
   };
