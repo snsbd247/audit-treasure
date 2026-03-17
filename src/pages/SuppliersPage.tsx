@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { logEditAudit } from "@/lib/audit-utils";
@@ -15,9 +16,10 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search, Pencil, Check, X, ShieldAlert } from "lucide-react";
+import { Plus, Search, Pencil, Check, X, ShieldAlert, Eye } from "lucide-react";
 
 const SuppliersPage = () => {
+  const navigate = useNavigate();
   const { user, profile, hasPermission, isSuperAdmin } = useAuth();
   const isAdmin = hasPermission("purchase", "can_edit");
   const [suppliers, setSuppliers] = useState<any[]>([]);
@@ -152,6 +154,9 @@ const SuppliersPage = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => navigate(`/suppliers/${s.id}`)} title="View Profile">
+                            <Eye className="w-3.5 h-3.5" />
+                          </Button>
                         {(s.status === "active" || s.status === "draft") && (isAdmin || isSuperAdmin) && (
                           <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={() => { setActionTarget(s); setActionType("approve"); setActionDialogOpen(true); }} title="Approve">
                             <Check className="w-3.5 h-3.5" />

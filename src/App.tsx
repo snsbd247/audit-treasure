@@ -40,6 +40,8 @@ import FinancialReports from "./pages/reports/FinancialReports";
 import StockLedger from "./pages/reports/StockLedger";
 import CustomersPage from "./pages/CustomersPage";
 import SuppliersPage from "./pages/SuppliersPage";
+import CustomerProfilePage from "./pages/CustomerProfilePage";
+import SupplierProfilePage from "./pages/SupplierProfilePage";
 import FinancialYearsPage from "./pages/FinancialYearsPage";
 import ChangePasswordPage from "./pages/ChangePasswordPage";
 import BankAccountsPage from "./pages/bank/BankAccountsPage";
@@ -139,11 +141,13 @@ const App = () => (
                 <Route path="/sales" element={<P perm="sales.view"><SalesPage /></P>} />
                 <Route path="/sales/returns" element={<P perm="sales.view"><SalesPage /></P>} />
                 <Route path="/customers" element={<P perm="sales.view"><CustomersPage /></P>} />
+                <Route path="/customers/:id" element={<P perm="sales.view"><CustomerProfilePage /></P>} />
 
                 {/* ─── Purchase ─────────────────────────────────── */}
                 <Route path="/purchase" element={<P perm="purchase.view"><PurchasesPage /></P>} />
                 <Route path="/purchase/returns" element={<P perm="purchase.view"><PurchasesPage /></P>} />
                 <Route path="/suppliers" element={<P perm="purchase.view"><SuppliersPage /></P>} />
+                <Route path="/suppliers/:id" element={<P perm="purchase.view"><SupplierProfilePage /></P>} />
 
                 {/* ─── Inventory ────────────────────────────────── */}
                 <Route path="/inventory" element={<P perm="inventory.view"><InventoryPage /></P>} />

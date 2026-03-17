@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { logEditAudit } from "@/lib/audit-utils";
@@ -16,7 +17,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search, Pencil, Check, X, Lock, ShieldAlert } from "lucide-react";
+import { Plus, Search, Pencil, Check, X, Lock, ShieldAlert, Eye } from "lucide-react";
 
 interface Customer {
   id: string;
@@ -28,6 +29,7 @@ interface Customer {
 }
 
 const CustomersPage = () => {
+  const navigate = useNavigate();
   const { user, profile, hasPermission, isSuperAdmin } = useAuth();
   const isAdmin = hasPermission("sales", "can_edit");
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -162,7 +164,10 @@ const CustomersPage = () => {
                       </span>
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-1">
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => navigate(`/customers/${c.id}`)} title="View Profile">
+                            <Eye className="w-3.5 h-3.5" />
+                          </Button>
                         {(c.status === "active" || c.status === "draft") && (isAdmin || isSuperAdmin) && (
                           <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-600" onClick={() => { setActionTarget(c); setActionType("approve"); setActionDialogOpen(true); }} title="Approve">
                             <Check className="w-3.5 h-3.5" />
