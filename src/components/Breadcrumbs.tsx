@@ -87,13 +87,13 @@ export const Breadcrumbs = () => {
   if (crumbs.length === 0) return null;
 
   return (
-    <nav className="flex items-center gap-1.5 px-4 lg:px-6 py-2 text-xs text-muted-foreground border-b border-border/50 bg-muted/30">
-      <Link to="/" className="hover:text-foreground transition-colors flex items-center gap-1">
+    <nav className="flex items-center gap-1.5 px-3 sm:px-4 lg:px-6 py-1.5 sm:py-2 text-[10px] sm:text-xs text-muted-foreground border-b border-border/50 bg-muted/30 overflow-x-auto whitespace-nowrap">
+      <Link to="/" className="hover:text-foreground transition-colors flex items-center gap-1 shrink-0">
         <Home className="w-3 h-3" />
-        <span>Home</span>
+        <span className="hidden sm:inline">Home</span>
       </Link>
       {crumbs.map((crumb, i) => (
-        <span key={i} className="flex items-center gap-1.5">
+        <span key={i} className="flex items-center gap-1.5 shrink-0">
           <ChevronRight className="w-3 h-3" />
           {crumb.to ? (
             <Link to={crumb.to} className="hover:text-foreground transition-colors">{crumb.label}</Link>
