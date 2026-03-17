@@ -338,12 +338,17 @@ const AccountingVouchers = () => {
           <FileText className="w-5 h-5 text-primary" />
           <h1 className="text-xl font-semibold text-foreground">Accounting Vouchers</h1>
         </div>
-        <Button onClick={openCreate} size="sm"><Plus className="w-4 h-4 mr-1" />New Voucher</Button>
+        {canCreateForType(activeTab) && (
+          <Button onClick={openCreate} size="sm"><Plus className="w-4 h-4 mr-1" />New Voucher</Button>
+        )}
       </div>
 
+      {allowedTypes.length === 0 ? (
+        <div className="text-center text-muted-foreground py-12">You do not have permission to view any voucher types.</div>
+      ) : (
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          {VOUCHER_TYPES.map((vt) => (
+          {allowedTypes.map((vt) => (
             <TabsTrigger key={vt.id} value={vt.id}>{vt.label}</TabsTrigger>
           ))}
         </TabsList>
