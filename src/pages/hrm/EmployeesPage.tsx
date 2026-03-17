@@ -64,16 +64,18 @@ export default function EmployeesPage() {
   const [loading, setLoading] = useState(false);
 
   const fetchAll = useCallback(async () => {
-    const [empRes, deptRes, desigRes, branchRes] = await Promise.all([
+    const [empRes, deptRes, desigRes, branchRes, profilesRes] = await Promise.all([
       supabase.from("employees" as any).select("*").order("employee_code"),
       supabase.from("departments" as any).select("id, name").eq("status", "active"),
       supabase.from("designations" as any).select("id, name").eq("status", "active"),
       supabase.from("branches").select("id, name").eq("status", "active"),
+      supabase.from("profiles").select("id, name, email, username").is("deleted_at", null).neq("status", "deleted"),
     ]);
     if (empRes.data) setEmployees(empRes.data as any);
     if (deptRes.data) setDepartments(deptRes.data as any);
     if (desigRes.data) setDesignations(desigRes.data as any);
     if (branchRes.data) setBranches(branchRes.data as any);
+    if (profilesRes.data) setUserProfiles(profilesRes.data as UserProfile[]);
   }, []);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
