@@ -12,7 +12,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { useBranch } from "@/contexts/BranchContext";
 import { DollarSign, Play, CheckCircle, FileText, Printer } from "lucide-react";
 import { voucherApi } from "@/lib/voucher-api";
 
