@@ -172,6 +172,7 @@ const App = () => (
                 {/* HRM Routes */}
                 <Route path="/hrm/dashboard" element={<HrDashboardPage />} />
                 <Route path="/hrm/employees" element={<EmployeesPage />} />
+                <Route path="/hrm/employees/:id" element={<EmployeeProfilePage />} />
                 <Route path="/hrm/departments" element={<DepartmentsPage />} />
                 <Route path="/hrm/designations" element={<DesignationsPage />} />
                 <Route path="/hrm/attendance" element={<AttendancePage />} />
