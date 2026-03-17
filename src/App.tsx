@@ -50,6 +50,7 @@ import NotFound from "./pages/NotFound";
 import ResetPassword from "./pages/ResetPassword";
 import ShortcutsPage from "./pages/admin/ShortcutsPage";
 import BrandingPage from "./pages/admin/BrandingPage";
+import SmsSettingsPage from "./pages/admin/SmsSettingsPage";
 
 // HRM Pages
 import EmployeesPage from "./pages/hrm/EmployeesPage";
