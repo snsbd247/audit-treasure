@@ -129,6 +129,7 @@ export default function EmployeeProfilePage() {
   const [ecForm, setEcForm] = useState({ name: "", relation: "", phone: "", address: "" });
 
   const [saving, setSaving] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   const fetchAll = useCallback(async () => {
     if (!id) return;
