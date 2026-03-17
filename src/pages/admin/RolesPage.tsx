@@ -10,15 +10,17 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2, Shield } from "lucide-react";
 
-const MODULES = [
-  "Dashboard",
-  "Accounts",
-  "Sales",
-  "Purchase",
-  "Manufacturing",
-  "Inventory",
-  "Reports",
-  "Administration",
+const MODULES: { key: string; label: string }[] = [
+  { key: "dashboard", label: "Dashboard" },
+  { key: "accounts", label: "Accounts" },
+  { key: "sales", label: "Sales" },
+  { key: "purchase", label: "Purchase" },
+  { key: "inventory", label: "Inventory" },
+  { key: "manufacturing", label: "Manufacturing" },
+  { key: "bank", label: "Bank & Cash" },
+  { key: "hrm", label: "HRM & Payroll" },
+  { key: "reports", label: "Reports" },
+  { key: "administration", label: "Administration" },
 ];
 
 const PERMISSION_KEYS = ["can_view", "can_add", "can_edit", "can_delete"] as const;
