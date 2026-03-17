@@ -69,12 +69,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         // Fetch custom role permissions
         const { data: customRoleLinks } = await supabase
-          .from("user_custom_roles")
-          .select("custom_role_id")
+          .from("user_roles")
+          .select("role_id")
           .eq("user_id", userId);
 
         if (customRoleLinks && customRoleLinks.length > 0) {
-          const roleIds = customRoleLinks.map((r: any) => r.custom_role_id);
+          const roleIds = customRoleLinks.map((r: any) => r.role_id);
           const { data: perms } = await supabase
             .from("role_permissions")
             .select("*")
