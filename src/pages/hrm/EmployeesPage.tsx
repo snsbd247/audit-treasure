@@ -163,7 +163,7 @@ export default function EmployeesPage() {
             </TableHeader>
             <TableBody>
               {filtered.map(emp => (
-                <TableRow key={emp.id}>
+                <TableRow key={emp.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/hrm/employees/${emp.id}`)}>
                   <TableCell className="font-mono">{emp.employee_code}</TableCell>
                   <TableCell className="font-medium">{emp.first_name} {emp.last_name}</TableCell>
                   <TableCell>{getDeptName(emp.department_id)}</TableCell>
