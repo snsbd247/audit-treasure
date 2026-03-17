@@ -40,6 +40,8 @@ import FinancialReports from "./pages/reports/FinancialReports";
 import StockLedger from "./pages/reports/StockLedger";
 import CustomersPage from "./pages/CustomersPage";
 import SuppliersPage from "./pages/SuppliersPage";
+import CustomerProfilePage from "./pages/CustomerProfilePage";
+import SupplierProfilePage from "./pages/SupplierProfilePage";
 import FinancialYearsPage from "./pages/FinancialYearsPage";
 import ChangePasswordPage from "./pages/ChangePasswordPage";
 import BankAccountsPage from "./pages/bank/BankAccountsPage";
