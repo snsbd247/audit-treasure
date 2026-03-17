@@ -343,8 +343,8 @@ export default function InstallPage() {
           {step === "complete" && (
             <>
               <CardHeader className="text-center">
-                <div className="mx-auto w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-4">
-                  <CheckCircle2 className="w-10 h-10 text-green-600" />
+                <div className="mx-auto w-16 h-16 rounded-full bg-success/10 flex items-center justify-center mb-4">
+                  <CheckCircle2 className="w-10 h-10 text-success" />
                 </div>
                 <CardTitle className="text-xl">Installation Complete!</CardTitle>
                 <CardDescription>Your SmartERP system is ready to use.</CardDescription>
