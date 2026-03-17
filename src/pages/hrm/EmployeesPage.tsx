@@ -38,10 +38,12 @@ interface Department { id: string; name: string; }
 interface Designation { id: string; name: string; }
 interface Branch { id: string; name: string; }
 
+interface UserProfile { id: string; name: string; email: string | null; username: string | null; }
+
 const defaultForm = {
   employee_code: "", first_name: "", last_name: "", mobile: "", email: "",
   address: "", national_id: "", department_id: "", designation_id: "",
-  branch_id: "", joining_date: new Date().toISOString().split("T")[0],
+  branch_id: "", user_id: "", joining_date: new Date().toISOString().split("T")[0],
   salary: 0, employment_type: "permanent", status: "active",
 };
 
@@ -54,6 +56,7 @@ export default function EmployeesPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [designations, setDesignations] = useState<Designation[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
+  const [userProfiles, setUserProfiles] = useState<UserProfile[]>([]);
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -61,16 +64,18 @@ export default function EmployeesPage() {
   const [loading, setLoading] = useState(false);
 
   const fetchAll = useCallback(async () => {
-    const [empRes, deptRes, desigRes, branchRes] = await Promise.all([
+    const [empRes, deptRes, desigRes, branchRes, profilesRes] = await Promise.all([
       supabase.from("employees" as any).select("*").order("employee_code"),
       supabase.from("departments" as any).select("id, name").eq("status", "active"),
       supabase.from("designations" as any).select("id, name").eq("status", "active"),
       supabase.from("branches").select("id, name").eq("status", "active"),
+      supabase.from("profiles").select("id, name, email, username").is("deleted_at", null).neq("status", "deleted"),
     ]);
     if (empRes.data) setEmployees(empRes.data as any);
     if (deptRes.data) setDepartments(deptRes.data as any);
     if (desigRes.data) setDesignations(desigRes.data as any);
     if (branchRes.data) setBranches(branchRes.data as any);
+    if (profilesRes.data) setUserProfiles(profilesRes.data as UserProfile[]);
   }, []);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
@@ -88,6 +93,7 @@ export default function EmployeesPage() {
       mobile: emp.mobile || "", email: emp.email || "", address: emp.address || "",
       national_id: emp.national_id || "", department_id: emp.department_id || "",
       designation_id: emp.designation_id || "", branch_id: emp.branch_id || "",
+      user_id: emp.user_id || "",
       joining_date: emp.joining_date, salary: emp.salary,
       employment_type: emp.employment_type, status: emp.status,
     });
@@ -105,6 +111,7 @@ export default function EmployeesPage() {
       department_id: form.department_id || null,
       designation_id: form.designation_id || null,
       branch_id: form.branch_id || null,
+      user_id: form.user_id || null,
       updated_at: new Date().toISOString(),
     };
 
@@ -220,6 +227,21 @@ export default function EmployeesPage() {
                 <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                 <SelectContent>{branches.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}</SelectContent>
               </Select>
+            </div>
+            <div>
+              <Label>Link User Account</Label>
+              <Select value={form.user_id} onValueChange={v => setForm({...form, user_id: v})}>
+                <SelectTrigger><SelectValue placeholder="None (no portal access)" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {userProfiles.filter(p => {
+                    // Only show users not already linked to another employee
+                    const alreadyLinked = employees.some(e => e.user_id === p.id && e.id !== editId);
+                    return !alreadyLinked;
+                  }).map(p => <SelectItem key={p.id} value={p.id}>{p.name} {p.email ? `(${p.email})` : p.username ? `(${p.username})` : ""}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <p className="text-[10px] text-muted-foreground mt-1">Links this employee to a user for Employee Portal access</p>
             </div>
             <div><Label>Joining Date</Label><Input type="date" value={form.joining_date} onChange={e => setForm({...form, joining_date: e.target.value})} /></div>
             <div><Label>Salary</Label><Input type="number" value={form.salary} onChange={e => setForm({...form, salary: Number(e.target.value)})} /></div>

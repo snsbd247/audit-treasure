@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { NavLink } from "@/components/NavLink";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useModules, type ModuleKey } from "@/contexts/ModuleContext";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -24,6 +25,7 @@ interface NavGroup {
   requiredModules?: ModuleKey[];
   children: { to: string; label: string; icon: any; end?: boolean }[];
   adminOnly?: boolean;
+  portalOnly?: boolean; // Show only if user has linked employee or is HR admin
 }
 
 const navGroups: NavGroup[] = [
@@ -146,6 +148,7 @@ const navGroups: NavGroup[] = [
     icon: User,
     module: "hrm",
     requiredModules: ["hrm"],
+    portalOnly: true,
     children: [
       { to: "/portal/profile", label: "My Profile", icon: User },
       { to: "/portal/attendance", label: "My Attendance", icon: Clock },
@@ -258,11 +261,23 @@ const CollapsibleGroup = ({ group, isModuleEnabled }: { group: NavGroup; isModul
 };
 
 export const AppSidebar = () => {
-  const { signOut, profile, hasPermission } = useAuth();
+  const { signOut, profile, hasPermission, user, isSuperAdmin } = useAuth();
   const { isModuleEnabled } = useModules();
   const { branding } = useBranding();
   const isMobile = useIsMobile();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [hasEmployeeRecord, setHasEmployeeRecord] = useState(false);
+
+  // Check if user has a linked employee record (for portal visibility)
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await supabase.from("employees").select("id").eq("user_id", user.id).maybeSingle();
+      setHasEmployeeRecord(!!data);
+    })();
+  }, [user]);
+
+  const isHrAdmin = isSuperAdmin || hasPermission("hrm", "can_view");
 
   const sidebarContent = (
     <>
@@ -296,7 +311,9 @@ export const AppSidebar = () => {
           <div className="my-2 border-t border-sidebar-border" />
           {navGroups.map((group) => {
             if (group.requiredModules && group.requiredModules.some((m) => !isModuleEnabled(m))) return null;
-            // For administration module: check administration permission or super_admin
+            // Portal section: show only if user has employee record or is HR admin
+            if (group.portalOnly && !hasEmployeeRecord && !isHrAdmin) return null;
+            // For administration module: check administration permission
             if (group.adminOnly && !hasPermission("administration", "can_view")) return null;
             // For other modules: check module permission
             if (!group.adminOnly && group.module && !hasPermission(group.module, "can_view")) return null;
