@@ -46,7 +46,7 @@ const UsersPage = () => {
   const [formEmail, setFormEmail] = useState("");
   const [formPhone, setFormPhone] = useState("");
   const [formPassword, setFormPassword] = useState("");
-  const [formRole, setFormRole] = useState<string>("staff");
+  const [formRole, setFormRole] = useState<string>("user");
   const [formBranch, setFormBranch] = useState<string>("");
   const [formStatus, setFormStatus] = useState<string>("active");
   const [formCustomRole, setFormCustomRole] = useState<string>("");
