@@ -166,6 +166,7 @@ const MessagingPage = () => {
           username: p.username,
           is_online: p.is_online ?? false,
           last_seen_at: p.last_seen_at,
+          photo_url: p.employee_id ? empPhotoMap.get(p.employee_id) || null : null,
         })),
         latest_message: latestMessage,
         unread_count: unreadCount || 0,
