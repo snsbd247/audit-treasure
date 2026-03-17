@@ -48,11 +48,11 @@ export function usePortalEmployee() {
   // Fetch full employee by id
   const fetchEmployeeById = useCallback(async (id: string) => {
     const { data } = await supabase
-      .from("employees" as any)
+      .from("employees")
       .select("*")
       .eq("id", id)
       .single();
-    return data as Employee | null;
+    return data as unknown as Employee | null;
   }, []);
 
   useEffect(() => {
