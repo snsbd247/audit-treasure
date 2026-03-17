@@ -232,7 +232,12 @@ return new class extends Migration
         Schema::dropIfExists('employee_documents');
         Schema::dropIfExists('biometric_logs');
         Schema::dropIfExists('payroll');
+        Schema::dropIfExists('employee_emergency_contacts');
+        Schema::dropIfExists('employee_experience');
+        Schema::dropIfExists('employee_education');
+        Schema::dropIfExists('employee_bank_info');
         Schema::dropIfExists('salary_structures');
+        Schema::dropIfExists('overtime_records');
         Schema::dropIfExists('overtime_records');
         Schema::dropIfExists('leave_requests');
         Schema::dropIfExists('leave_types');
