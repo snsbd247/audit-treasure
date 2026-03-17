@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('status', 20)->default('active');
             $table->rememberToken();
             $table->timestamps();
+            $table->softDeletes();
 
             $table->foreign('branch_id')->references('id')->on('branches')->nullOnDelete();
         });

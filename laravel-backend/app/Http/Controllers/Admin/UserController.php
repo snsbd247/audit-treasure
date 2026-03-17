@@ -11,6 +11,8 @@ class UserController extends BaseController
     public function index(Request $request)
     {
         return $this->paginated(User::with('roles', 'branch')
+            ->whereNull('deleted_at')
+            ->where('status', '!=', 'deleted')
             ->orderByDesc('created_at')->paginate($request->per_page ?? 25));
     }
 
