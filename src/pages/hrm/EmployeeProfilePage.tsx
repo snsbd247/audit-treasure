@@ -97,7 +97,7 @@ export default function EmployeeProfilePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
-  const { formatCurrency } = useCurrency();
+  const { fc } = useCurrency();
 
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
