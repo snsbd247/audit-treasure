@@ -446,6 +446,7 @@ const MessagingPage = () => {
                   {/* Avatar with online indicator */}
                   <div className="relative shrink-0">
                     <Avatar className="h-11 w-11">
+                      {other?.photo_url && <AvatarImage src={other.photo_url} alt={other.name} className="object-cover" />}
                       <AvatarFallback className={cn(
                         "text-sm font-semibold",
                         isActive ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
