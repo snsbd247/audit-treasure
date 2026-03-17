@@ -53,7 +53,8 @@ function buildDocumentStyles() {
 export default function DocumentsPage() {
   const { settings } = useCompanySettings();
   const { fc } = useCurrency();
-  const { user, isAdmin } = useAuth();
+  const { user, hasPermission } = useAuth();
+  const isAdmin = hasPermission("hrm", "can_edit");
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [departments, setDepartments] = useState<Dept[]>([]);
   const [designations, setDesignations] = useState<Desig[]>([]);
