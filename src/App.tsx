@@ -12,6 +12,7 @@ import { BrandingProvider } from "@/contexts/BrandingContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppLayout } from "@/components/AppLayout";
 import Login from "./pages/Login";
+import InstallPage from "./pages/InstallPage";
 import Dashboard from "./pages/Dashboard";
 import VouchersPage from "./pages/VouchersPage";
 import Profile from "./pages/Profile";
