@@ -204,7 +204,7 @@ export default function InstallPage() {
                     {Object.entries(envChecks).map(([key, check]) => (
                       <div key={key} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                         <div className="flex items-center gap-2">
-                          {check.ok ? <CheckCircle2 className="w-5 h-5 text-green-600" /> : <XCircle className="w-5 h-5 text-destructive" />}
+                          {check.ok ? <CheckCircle2 className="w-5 h-5 text-success" /> : <XCircle className="w-5 h-5 text-destructive" />}
                           <span className="text-sm font-medium">{check.label}</span>
                         </div>
                         <span className={`text-xs px-2 py-1 rounded ${check.ok ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}>{check.value}</span>
