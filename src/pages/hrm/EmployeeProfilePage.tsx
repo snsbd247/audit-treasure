@@ -14,7 +14,8 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { ArrowLeft, Edit, Plus, Trash2, Save, User, DollarSign, Landmark, GraduationCap, Briefcase, Phone } from "lucide-react";
+import { ArrowLeft, Edit, Plus, Trash2, Save, User, DollarSign, Landmark, GraduationCap, Briefcase, Phone, Camera, Upload } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface SalaryStructure {
   id: string;
