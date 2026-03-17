@@ -531,6 +531,7 @@ const MessagingPage = () => {
               </Button>
               <div className="relative shrink-0">
                 <Avatar className="h-9 w-9">
+                  {otherUser?.photo_url && <AvatarImage src={otherUser.photo_url} alt={otherUser.name} className="object-cover" />}
                   <AvatarFallback className="bg-primary/15 text-primary text-xs font-semibold">
                     {otherUser ? getInitials(otherUser.name) : "?"}
                   </AvatarFallback>
