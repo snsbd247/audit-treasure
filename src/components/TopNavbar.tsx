@@ -4,7 +4,8 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Moon, Sun, Search, Bell, UserCircle, KeyRound, LogOut, Command } from "lucide-react";
+import { Moon, Sun, Search, Bell, UserCircle, KeyRound, LogOut, Command, MessageSquare } from "lucide-react";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import {
   DropdownMenu,
   DropdownMenuContent,
