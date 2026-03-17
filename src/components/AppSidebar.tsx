@@ -186,6 +186,7 @@ const navGroups: NavGroup[] = [
       { to: "/admin/numbering", label: "Document Numbering", icon: ScrollText },
       { to: "/admin/shortcuts", label: "Page Shortcuts", icon: Keyboard },
       { to: "/admin/settings", label: "General Settings", icon: CircleDot },
+      { to: "/admin/sms", label: "SMS Integration", icon: MessageSquare },
       { to: "/admin/branding", label: "Branding", icon: Palette },
     ],
   },
