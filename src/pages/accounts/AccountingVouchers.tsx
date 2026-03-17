@@ -414,7 +414,7 @@ const AccountingVouchers = () => {
                               </Button>
                             )}
                             {/* Admin: Approve/Reject pending */}
-                            {v.status === "pending" && isAdmin && (
+                            {v.status === "pending" && canEditForType(activeTab) && (
                               <>
                                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleApprove(v)} title="Approve">
                                   <Check className="w-3.5 h-3.5 text-emerald-600" />
