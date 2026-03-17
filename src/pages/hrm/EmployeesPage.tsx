@@ -47,6 +47,7 @@ const defaultForm = {
 
 export default function EmployeesPage() {
   const { user, isAdmin } = useAuth();
+  const navigate = useNavigate();
   
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
