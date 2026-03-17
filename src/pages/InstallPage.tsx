@@ -287,7 +287,7 @@ export default function InstallPage() {
                 </div>
               </div>
               {dbTested && (
-                <div className="p-3 rounded-lg bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 text-sm flex items-center gap-2">
+                <div className="p-3 rounded-lg bg-success/10 text-success text-sm flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4" /> Connection successful!
                 </div>
               )}
