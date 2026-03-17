@@ -20,25 +20,32 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\BranchScope::class])->gr
     Route::prefix('v1')->group(function () {
 
         // ─── Accounting ─────────────────────────────────────────
+        // Chart of Accounts
         Route::middleware('permission:accounts.view')->group(function () {
             Route::get('accounts/tree', [\App\Http\Controllers\Accounting\AccountController::class, 'tree']);
             Route::get('accounts/{id}/ledger', [\App\Http\Controllers\Accounting\AccountController::class, 'ledger']);
             Route::get('accounts', [\App\Http\Controllers\Accounting\AccountController::class, 'index']);
             Route::get('accounts/{id}', [\App\Http\Controllers\Accounting\AccountController::class, 'show']);
-            Route::get('vouchers', [\App\Http\Controllers\Accounting\VoucherController::class, 'index']);
-            Route::get('vouchers/{id}', [\App\Http\Controllers\Accounting\VoucherController::class, 'show']);
         });
-        Route::middleware('permission:accounts.create')->group(function () {
-            Route::post('accounts', [\App\Http\Controllers\Accounting\AccountController::class, 'store']);
-            Route::post('vouchers', [\App\Http\Controllers\Accounting\VoucherController::class, 'store']);
-        });
+        Route::middleware('permission:accounts.create')->post('accounts', [\App\Http\Controllers\Accounting\AccountController::class, 'store']);
+        Route::middleware('permission:accounts.edit')->put('accounts/{id}', [\App\Http\Controllers\Accounting\AccountController::class, 'update']);
+        Route::middleware('permission:accounts.delete')->delete('accounts/{id}', [\App\Http\Controllers\Accounting\AccountController::class, 'destroy']);
+
+        // Vouchers — per-type permissions
+        Route::middleware('permission:journal.view')->get('vouchers/journal', [\App\Http\Controllers\Accounting\VoucherController::class, 'index']);
+        Route::middleware('permission:payment.view')->get('vouchers/payment', [\App\Http\Controllers\Accounting\VoucherController::class, 'index']);
+        Route::middleware('permission:receipt.view')->get('vouchers/receipt', [\App\Http\Controllers\Accounting\VoucherController::class, 'index']);
+        Route::middleware('permission:contra.view')->get('vouchers/contra', [\App\Http\Controllers\Accounting\VoucherController::class, 'index']);
+        Route::get('vouchers/{id}', [\App\Http\Controllers\Accounting\VoucherController::class, 'show']);
+
+        Route::middleware('permission:journal.create')->post('vouchers/journal', [\App\Http\Controllers\Accounting\VoucherController::class, 'store']);
+        Route::middleware('permission:payment.create')->post('vouchers/payment', [\App\Http\Controllers\Accounting\VoucherController::class, 'store']);
+        Route::middleware('permission:receipt.create')->post('vouchers/receipt', [\App\Http\Controllers\Accounting\VoucherController::class, 'store']);
+        Route::middleware('permission:contra.create')->post('vouchers/contra', [\App\Http\Controllers\Accounting\VoucherController::class, 'store']);
+
         Route::middleware('permission:accounts.edit')->group(function () {
-            Route::put('accounts/{id}', [\App\Http\Controllers\Accounting\AccountController::class, 'update']);
             Route::post('vouchers/{id}/approve', [\App\Http\Controllers\Accounting\VoucherController::class, 'approve']);
             Route::post('vouchers/{id}/reject', [\App\Http\Controllers\Accounting\VoucherController::class, 'reject']);
-        });
-        Route::middleware('permission:accounts.delete')->group(function () {
-            Route::delete('accounts/{id}', [\App\Http\Controllers\Accounting\AccountController::class, 'destroy']);
         });
 
         // ─── Reports ────────────────────────────────────────────

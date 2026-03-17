@@ -16,7 +16,8 @@ class DatabaseSeeder extends Seeder
 
         // All permission modules (granular)
         $allModules = [
-            'dashboard', 'accounts', 'sales', 'purchase', 'inventory',
+            'dashboard', 'accounts', 'journal', 'payment', 'receipt', 'contra',
+            'sales', 'purchase', 'inventory',
             'manufacturing', 'bank', 'hrm', 'reports',
             'branches', 'users', 'roles', 'financial_years',
             'settings', 'audit_log', 'backup',

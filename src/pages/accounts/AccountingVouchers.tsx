@@ -43,12 +43,32 @@ type SuperAdminAction = "delete" | "reopen" | "reverse" | null;
 
 const AccountingVouchers = () => {
   const { user, profile, isSuperAdmin, hasPermission } = useAuth();
-  const isAdmin = hasPermission("accounts", "can_edit");
   const { toast } = useToast();
-  const userCanEdit = hasPermission("accounts", "can_edit") || isSuperAdmin;
-  const userCanDelete = hasPermission("accounts", "can_delete") || isSuperAdmin;
   const { fc } = useCurrency();
-  const [activeTab, setActiveTab] = useState("journal");
+
+  // Per-voucher-type permission checks
+  const canViewJournal = isSuperAdmin || hasPermission("journal.view");
+  const canViewPayment = isSuperAdmin || hasPermission("payment.view");
+  const canViewReceipt = isSuperAdmin || hasPermission("receipt.view");
+  const canViewContra = isSuperAdmin || hasPermission("contra.view");
+
+  const voucherPermMap: Record<string, boolean> = {
+    journal: canViewJournal,
+    payment: canViewPayment,
+    receipt: canViewReceipt,
+    contra: canViewContra,
+  };
+
+  const canCreateForType = (type: string) =>
+    isSuperAdmin || hasPermission(`${type}.create`);
+  const canEditForType = (type: string) =>
+    isSuperAdmin || hasPermission(`${type}.edit`);
+  const canDeleteForType = (type: string) =>
+    isSuperAdmin || hasPermission(`${type}.delete`);
+
+  const allowedTypes = VOUCHER_TYPES.filter((vt) => voucherPermMap[vt.id]);
+  const defaultTab = allowedTypes.length > 0 ? allowedTypes[0].id : "journal";
+  const [activeTab, setActiveTab] = useState(defaultTab);
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -150,13 +170,13 @@ const AccountingVouchers = () => {
   };
 
   const canEditVoucher = (v: Voucher) => {
-    if (v.status === "draft" || v.status === "rejected") return userCanEdit;
+    if (v.status === "draft" || v.status === "rejected") return canEditForType(activeTab);
     if (v.status === "approved") return isSuperAdmin;
     return false;
   };
 
   const canDeleteVoucher = (v: Voucher) => {
-    if (v.status === "draft" || v.status === "rejected") return userCanDelete;
+    if (v.status === "draft" || v.status === "rejected") return canDeleteForType(activeTab);
     if (v.status === "approved") return isSuperAdmin;
     return false;
   };
@@ -318,12 +338,17 @@ const AccountingVouchers = () => {
           <FileText className="w-5 h-5 text-primary" />
           <h1 className="text-xl font-semibold text-foreground">Accounting Vouchers</h1>
         </div>
-        <Button onClick={openCreate} size="sm"><Plus className="w-4 h-4 mr-1" />New Voucher</Button>
+        {canCreateForType(activeTab) && (
+          <Button onClick={openCreate} size="sm"><Plus className="w-4 h-4 mr-1" />New Voucher</Button>
+        )}
       </div>
 
+      {allowedTypes.length === 0 ? (
+        <div className="text-center text-muted-foreground py-12">You do not have permission to view any voucher types.</div>
+      ) : (
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          {VOUCHER_TYPES.map((vt) => (
+          {allowedTypes.map((vt) => (
             <TabsTrigger key={vt.id} value={vt.id}>{vt.label}</TabsTrigger>
           ))}
         </TabsList>
@@ -389,7 +414,7 @@ const AccountingVouchers = () => {
                               </Button>
                             )}
                             {/* Admin: Approve/Reject pending */}
-                            {v.status === "pending" && isAdmin && (
+                            {v.status === "pending" && canEditForType(activeTab) && (
                               <>
                                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleApprove(v)} title="Approve">
                                   <Check className="w-3.5 h-3.5 text-emerald-600" />
@@ -410,6 +435,7 @@ const AccountingVouchers = () => {
           </TabsContent>
         ))}
       </Tabs>
+      )}
 
       {/* Create/Edit Voucher Dialog */}
       <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) setEditingVoucher(null); }}>
