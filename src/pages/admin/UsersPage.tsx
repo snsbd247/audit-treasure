@@ -309,10 +309,10 @@ const UsersPage = () => {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="super_admin">Super Admin</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="staff">Staff</SelectItem>
+                    <SelectItem value="user">User</SelectItem>
                   </SelectContent>
                 </Select>
+                <p className="text-[10px] text-muted-foreground">Super Admin bypasses all permissions. Use "User" + Custom Role for granular access.</p>
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Custom Role (Permissions)</Label>
