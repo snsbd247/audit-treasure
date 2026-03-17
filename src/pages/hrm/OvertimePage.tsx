@@ -55,7 +55,7 @@ export default function OvertimePage() {
           <h1 className="text-2xl font-bold text-foreground">Overtime Management</h1>
           <p className="text-muted-foreground">Track and approve employee overtime hours</p>
         </div>
-        {isAdmin && <Button onClick={() => { setForm({ employee_id: "", date: new Date().toISOString().split("T")[0], hours: 0 }); setDialog(true); }}><Plus className="w-4 h-4 mr-2" />Record Overtime</Button>}
+        {canManage && <Button onClick={() => { setForm({ employee_id: "", date: new Date().toISOString().split("T")[0], hours: 0 }); setDialog(true); }}><Plus className="w-4 h-4 mr-2" />Record Overtime</Button>}
       </div>
 
       <Card>
