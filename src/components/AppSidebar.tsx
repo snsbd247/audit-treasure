@@ -11,7 +11,7 @@ import {
   CreditCard, Landmark, PiggyBank, TrendingUp,
   ArrowLeftRight, Calendar, Activity, Menu, X, CircleDot, Truck, UserCheck,
   Briefcase, Clock, CalendarDays, DollarSign, FileCheck, BadgeCheck, User,
-  Fingerprint, ScanFace, Timer, Gauge, Keyboard, Palette,
+  Fingerprint, ScanFace, Timer, Gauge, Keyboard, Palette, MessageSquare,
 } from "lucide-react";
 import { useBranding } from "@/contexts/BrandingContext";
 import { Button } from "@/components/ui/button";
@@ -183,6 +183,7 @@ const navGroups: NavGroup[] = [
       { to: "/admin/numbering", label: "Document Numbering", icon: ScrollText },
       { to: "/admin/shortcuts", label: "Page Shortcuts", icon: Keyboard },
       { to: "/admin/settings", label: "General Settings", icon: CircleDot },
+      { to: "/admin/sms", label: "SMS Integration", icon: MessageSquare },
       { to: "/admin/branding", label: "Branding", icon: Palette },
     ],
   },

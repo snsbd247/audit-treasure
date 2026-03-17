@@ -50,6 +50,7 @@ import NotFound from "./pages/NotFound";
 import ResetPassword from "./pages/ResetPassword";
 import ShortcutsPage from "./pages/admin/ShortcutsPage";
 import BrandingPage from "./pages/admin/BrandingPage";
+import SmsSettingsPage from "./pages/admin/SmsSettingsPage";
 
 // HRM Pages
 import EmployeesPage from "./pages/hrm/EmployeesPage";
@@ -206,6 +207,7 @@ const App = () => (
                 <Route path="/admin/numbering" element={<ProtectedRoute requireAdmin><DocumentNumberingPage /></ProtectedRoute>} />
                 <Route path="/admin/shortcuts" element={<ProtectedRoute requireAdmin><ShortcutsPage /></ProtectedRoute>} />
                 <Route path="/admin/branding" element={<ProtectedRoute requireAdmin><BrandingPage /></ProtectedRoute>} />
+                <Route path="/admin/sms" element={<ProtectedRoute requireAdmin><SmsSettingsPage /></ProtectedRoute>} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
