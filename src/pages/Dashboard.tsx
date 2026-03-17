@@ -35,7 +35,7 @@ const CHART_COLORS = [
 ];
 
 const Dashboard = () => {
-  const { profile, roles, isSuperAdmin } = useAuth();
+  const { profile, roles, isSuperAdmin, hasPermission, user } = useAuth();
   const navigate = useNavigate();
   const { fc } = useCurrency();
   const [stats, setStats] = useState<Stats>({
@@ -46,6 +46,24 @@ const Dashboard = () => {
   const [monthlySales, setMonthlySales] = useState<any[]>([]);
   const [monthlyPurchases, setMonthlyPurchases] = useState<any[]>([]);
   const [expenseBreakdown, setExpenseBreakdown] = useState<any[]>([]);
+  const [checkedRedirect, setCheckedRedirect] = useState(false);
+
+  // Redirect employee-only users to portal dashboard
+  useEffect(() => {
+    if (!user || checkedRedirect) return;
+    const isEmployeeOnly = !isSuperAdmin && !hasPermission("accounts", "can_view") && !hasPermission("sales", "can_view") && !hasPermission("administration", "can_view");
+    if (isEmployeeOnly) {
+      (async () => {
+        const { data } = await supabase.from("employees").select("id").eq("user_id", user.id).maybeSingle();
+        if (data) {
+          navigate("/portal/dashboard", { replace: true });
+        }
+        setCheckedRedirect(true);
+      })();
+    } else {
+      setCheckedRedirect(true);
+    }
+  }, [user, isSuperAdmin, hasPermission, checkedRedirect, navigate]);
 
   useEffect(() => {
     loadDashboardData();

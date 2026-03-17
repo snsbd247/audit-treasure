@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { usePortalEmployee } from "@/hooks/usePortalEmployee";
 import { PortalEmployeeSelector } from "@/components/portal/PortalEmployeeSelector";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { Plus, CalendarDays } from "lucide-react";
 
 export default function MyLeavePage() {
   const { employee, loading, isHrAdmin, allEmployees, selectedEmployeeId, selectEmployee } = usePortalEmployee();
@@ -28,13 +28,13 @@ export default function MyLeavePage() {
     })();
   }, []);
 
-  useEffect(() => {
+  const fetchRequests = async () => {
     if (!employee) return;
-    (async () => {
-      const { data } = await supabase.from("leave_requests").select("*").eq("employee_id", employee.id).order("created_at", { ascending: false });
-      if (data) setRequests(data as any);
-    })();
-  }, [employee]);
+    const { data } = await supabase.from("leave_requests").select("*").eq("employee_id", employee.id).order("created_at", { ascending: false });
+    if (data) setRequests(data as any);
+  };
+
+  useEffect(() => { fetchRequests(); }, [employee]);
 
   const handleSubmit = async () => {
     if (!employee || !form.leave_type_id || !form.start_date || !form.end_date) { toast.error("All fields required"); return; }
@@ -46,8 +46,7 @@ export default function MyLeavePage() {
     else {
       toast.success("Leave request submitted");
       setDialogOpen(false);
-      const { data } = await supabase.from("leave_requests").select("*").eq("employee_id", employee.id).order("created_at", { ascending: false });
-      if (data) setRequests(data as any);
+      fetchRequests();
     }
   };
 
@@ -57,25 +56,60 @@ export default function MyLeavePage() {
   if (loading) return <div className="text-center py-16 text-muted-foreground">Loading...</div>;
   if (!employee) return <div className="text-center py-16 text-muted-foreground">No employee profile linked.</div>;
 
+  // Calculate leave balance per type
+  const currentYear = new Date().getFullYear();
+  const leaveBalances = leaveTypes.map((lt: any) => {
+    const used = requests.filter((r: any) => {
+      if (r.leave_type_id !== lt.id || r.status === "rejected") return false;
+      const start = new Date(r.start_date);
+      return start.getFullYear() === currentYear;
+    }).reduce((sum: number, r: any) => {
+      const start = new Date(r.start_date);
+      const end = new Date(r.end_date);
+      const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      return sum + days;
+    }, 0);
+    return { name: lt.name, total: lt.days_per_year, used, remaining: Math.max(0, lt.days_per_year - used) };
+  });
+
   return (
     <div className="space-y-0">
       {isHrAdmin && (
         <PortalEmployeeSelector employees={allEmployees} selectedId={selectedEmployeeId} onSelect={selectEmployee} />
       )}
       <div className="p-4 lg:p-6 space-y-6 max-w-[1600px] mx-auto">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-4">
           <div><h1 className="text-2xl font-bold text-foreground">My Leave</h1></div>
           <Button onClick={() => { setForm({ leave_type_id: "", start_date: "", end_date: "", reason: "" }); setDialogOpen(true); }}><Plus className="w-4 h-4 mr-2" />Apply Leave</Button>
         </div>
+
+        {/* Leave Balance Cards */}
+        {leaveBalances.length > 0 && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {leaveBalances.map((lb) => (
+              <Card key={lb.name}>
+                <CardContent className="pt-4 pb-4">
+                  <p className="text-xs text-muted-foreground font-medium mb-1">{lb.name}</p>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-2xl font-bold text-foreground">{lb.remaining}</span>
+                    <span className="text-xs text-muted-foreground">/ {lb.total} days</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">{lb.used} used</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
         <Card><CardContent className="pt-6">
           <Table>
-            <TableHeader><TableRow><TableHead>Type</TableHead><TableHead>From</TableHead><TableHead>To</TableHead><TableHead>Reason</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+            <TableHeader><TableRow><TableHead>Type</TableHead><TableHead>From</TableHead><TableHead>To</TableHead><TableHead className="hidden sm:table-cell">Reason</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
             <TableBody>
               {requests.map(r => (
                 <TableRow key={r.id}>
                   <TableCell className="font-medium">{getLeaveName(r.leave_type_id)}</TableCell>
                   <TableCell>{r.start_date}</TableCell><TableCell>{r.end_date}</TableCell>
-                  <TableCell className="text-muted-foreground max-w-[200px] truncate">{r.reason || "-"}</TableCell>
+                  <TableCell className="text-muted-foreground max-w-[200px] truncate hidden sm:table-cell">{r.reason || "-"}</TableCell>
                   <TableCell><Badge variant={statusColors[r.status] || "secondary"} className="capitalize">{r.status}</Badge></TableCell>
                 </TableRow>
               ))}

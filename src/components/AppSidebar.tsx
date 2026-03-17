@@ -150,6 +150,7 @@ const navGroups: NavGroup[] = [
     requiredModules: ["hrm"],
     portalOnly: true,
     children: [
+      { to: "/portal/dashboard", label: "My Dashboard", icon: LayoutDashboard },
       { to: "/portal/profile", label: "My Profile", icon: User },
       { to: "/portal/attendance", label: "My Attendance", icon: Clock },
       { to: "/portal/leave", label: "My Leave", icon: CalendarDays },
