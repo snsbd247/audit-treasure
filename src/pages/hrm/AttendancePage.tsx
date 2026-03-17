@@ -15,7 +15,8 @@ interface Employee { id: string; employee_code: string; first_name: string; last
 interface AttendanceRecord { id: string; employee_id: string; date: string; check_in: string | null; check_out: string | null; status: string; }
 
 export default function AttendancePage() {
-  const { isAdmin } = useAuth();
+  const { hasPermission } = useAuth();
+  const isAdmin = hasPermission("hrm", "can_edit");
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);

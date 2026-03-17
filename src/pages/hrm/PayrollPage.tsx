@@ -43,7 +43,8 @@ const months = ["January","February","March","April","May","June","July","August
 const LATE_PENALTY = 50; // Configurable late penalty amount
 
 export default function PayrollPage() {
-  const { isAdmin, user } = useAuth();
+  const { hasPermission, user } = useAuth();
+  const isAdmin = hasPermission("hrm", "can_edit");
   const { fc: formatAmount } = useCurrency();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [structures, setStructures] = useState<SalaryStructure[]>([]);

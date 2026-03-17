@@ -18,7 +18,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Search, Pencil, Check, X, ShieldAlert } from "lucide-react";
 
 const SuppliersPage = () => {
-  const { user, profile, hasPermission, isSuperAdmin, isAdmin } = useAuth();
+  const { user, profile, hasPermission, isSuperAdmin } = useAuth();
+  const isAdmin = hasPermission("purchase", "can_edit");
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);

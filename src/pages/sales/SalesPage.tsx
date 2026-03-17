@@ -40,7 +40,8 @@ interface SalesReturnRow {
 }
 
 const SalesPage = () => {
-  const { user, profile, hasPermission, isSuperAdmin, isAdmin } = useAuth();
+  const { user, profile, hasPermission, isSuperAdmin } = useAuth();
+  const isAdmin = hasPermission("sales", "can_edit");
   const { userBranchId } = useBranch();
   const { toast } = useToast();
   const { fc } = useCurrency();
