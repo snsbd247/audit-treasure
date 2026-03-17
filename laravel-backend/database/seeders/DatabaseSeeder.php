@@ -16,13 +16,13 @@ class DatabaseSeeder extends Seeder
 
         // Roles
         $superAdmin = CustomRole::create(['name' => 'Super Admin', 'description' => 'Full system access']);
-        $modules = ['accounting', 'sales', 'purchase', 'inventory', 'manufacturing', 'hrm', 'payroll', 'admin'];
+        $modules = ['dashboard', 'accounts', 'sales', 'purchase', 'inventory', 'manufacturing', 'bank', 'hrm', 'reports', 'administration'];
         foreach ($modules as $mod) {
             RolePermission::create(['custom_role_id' => $superAdmin->id, 'module' => $mod, 'can_view' => 1, 'can_add' => 1, 'can_edit' => 1, 'can_delete' => 1]);
         }
 
         $staff = CustomRole::create(['name' => 'Staff', 'description' => 'Standard staff access']);
-        foreach (['accounting', 'sales', 'purchase', 'inventory'] as $mod) {
+        foreach (['dashboard', 'accounts', 'sales', 'purchase', 'inventory', 'reports'] as $mod) {
             RolePermission::create(['custom_role_id' => $staff->id, 'module' => $mod, 'can_view' => 1, 'can_add' => 1, 'can_edit' => 1, 'can_delete' => 0]);
         }
 
