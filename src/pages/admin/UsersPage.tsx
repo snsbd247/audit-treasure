@@ -46,7 +46,7 @@ const UsersPage = () => {
   const [formEmail, setFormEmail] = useState("");
   const [formPhone, setFormPhone] = useState("");
   const [formPassword, setFormPassword] = useState("");
-  const [formRole, setFormRole] = useState<string>("staff");
+  const [formRole, setFormRole] = useState<string>("user");
   const [formBranch, setFormBranch] = useState<string>("");
   const [formStatus, setFormStatus] = useState<string>("active");
   const [formCustomRole, setFormCustomRole] = useState<string>("");
@@ -89,7 +89,7 @@ const UsersPage = () => {
   const openCreate = () => {
     setEditUser(null);
     setFormName(""); setFormUsername(""); setFormEmail(""); setFormPhone("");
-    setFormPassword(""); setFormRole("staff"); setFormBranch(""); setFormStatus("active");
+    setFormPassword(""); setFormRole("user"); setFormBranch(""); setFormStatus("active");
     setFormCustomRole("");
     setDialogOpen(true);
   };
@@ -161,7 +161,6 @@ const UsersPage = () => {
 
   const roleColor = (role: string) => {
     if (role === "super_admin") return "destructive" as const;
-    if (role === "admin") return "default" as const;
     return "secondary" as const;
   };
 
@@ -194,8 +193,7 @@ const UsersPage = () => {
           <SelectContent>
             <SelectItem value="all">All Roles</SelectItem>
             <SelectItem value="super_admin">Super Admin</SelectItem>
-            <SelectItem value="admin">Admin</SelectItem>
-            <SelectItem value="staff">Staff</SelectItem>
+            <SelectItem value="user">User</SelectItem>
           </SelectContent>
         </Select>
         <Select value={filterStatus} onValueChange={setFilterStatus}>
@@ -309,10 +307,10 @@ const UsersPage = () => {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="super_admin">Super Admin</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="staff">Staff</SelectItem>
+                    <SelectItem value="user">User</SelectItem>
                   </SelectContent>
                 </Select>
+                <p className="text-[10px] text-muted-foreground">Super Admin bypasses all permissions. Use "User" + Custom Role for granular access.</p>
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Custom Role (Permissions)</Label>

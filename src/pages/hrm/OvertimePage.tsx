@@ -16,7 +16,8 @@ interface Employee { id: string; employee_code: string; first_name: string; last
 interface OvertimeRecord { id: string; employee_id: string; date: string; hours: number; status: string; }
 
 export default function OvertimePage() {
-  const { isAdmin, user } = useAuth();
+  const { hasPermission, user } = useAuth();
+  const canManage = hasPermission("hrm", "can_add");
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [records, setRecords] = useState<OvertimeRecord[]>([]);
   const [dialog, setDialog] = useState(false);
@@ -54,7 +55,7 @@ export default function OvertimePage() {
           <h1 className="text-2xl font-bold text-foreground">Overtime Management</h1>
           <p className="text-muted-foreground">Track and approve employee overtime hours</p>
         </div>
-        {isAdmin && <Button onClick={() => { setForm({ employee_id: "", date: new Date().toISOString().split("T")[0], hours: 0 }); setDialog(true); }}><Plus className="w-4 h-4 mr-2" />Record Overtime</Button>}
+        {canManage && <Button onClick={() => { setForm({ employee_id: "", date: new Date().toISOString().split("T")[0], hours: 0 }); setDialog(true); }}><Plus className="w-4 h-4 mr-2" />Record Overtime</Button>}
       </div>
 
       <Card>
@@ -66,7 +67,7 @@ export default function OvertimePage() {
                 <TableHead>Date</TableHead>
                 <TableHead className="text-right">Hours</TableHead>
                 <TableHead>Status</TableHead>
-                {isAdmin && <TableHead className="text-right">Actions</TableHead>}
+                {canManage && <TableHead className="text-right">Actions</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -76,7 +77,7 @@ export default function OvertimePage() {
                   <TableCell>{r.date}</TableCell>
                   <TableCell className="text-right font-mono">{r.hours}</TableCell>
                   <TableCell><Badge variant={r.status === "approved" ? "default" : "secondary"} className="capitalize">{r.status}</Badge></TableCell>
-                  {isAdmin && (
+                  {canManage && (
                     <TableCell className="text-right">
                       {r.status === "pending" && <Button variant="ghost" size="sm" onClick={() => approve(r.id)}><CheckCircle className="w-4 h-4 mr-1" />Approve</Button>}
                     </TableCell>

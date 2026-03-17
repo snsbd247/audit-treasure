@@ -19,7 +19,8 @@ interface Shift {
 }
 
 export default function ShiftsPage() {
-  const { isAdmin } = useAuth();
+  const { hasPermission } = useAuth();
+  const isAdmin = hasPermission("hrm", "can_edit");
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [dialog, setDialog] = useState(false);
   const [editing, setEditing] = useState<Shift | null>(null);

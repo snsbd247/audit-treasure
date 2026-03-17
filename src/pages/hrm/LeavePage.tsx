@@ -23,7 +23,8 @@ interface LeaveRequest {
 }
 
 export default function LeavePage() {
-  const { isAdmin, user } = useAuth();
+  const { hasPermission, user } = useAuth();
+  const isAdmin = hasPermission("hrm", "can_edit");
   const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [requests, setRequests] = useState<LeaveRequest[]>([]);

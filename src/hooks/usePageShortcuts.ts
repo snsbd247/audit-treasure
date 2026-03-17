@@ -18,7 +18,7 @@ export function usePageShortcuts() {
   const [shortcuts, setShortcuts] = useState<PageShortcut[]>([]);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user, isAdmin, isSuperAdmin, permissions } = useAuth();
+  const { user, isSuperAdmin, hasPermission } = useAuth();
 
   const fetchShortcuts = useCallback(async () => {
     const { data } = await supabase
@@ -47,8 +47,10 @@ export function usePageShortcuts() {
   // Filter by permissions
   const adminPaths = ["/admin/"];
   const filteredShortcuts = shortcuts.filter((s) => {
-    if (isSuperAdmin || isAdmin) return true;
-    if (adminPaths.some((p) => s.page_url.startsWith(p))) return false;
+    if (isSuperAdmin) return true;
+    if (adminPaths.some((p) => s.page_url.startsWith(p))) {
+      return hasPermission("administration", "can_view");
+    }
     return true;
   });
 

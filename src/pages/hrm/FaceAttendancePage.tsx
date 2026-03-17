@@ -16,7 +16,8 @@ interface Employee { id: string; employee_code: string; first_name: string; last
 interface FaceRecord { id: string; employee_id: string; photo_url: string | null; created_at: string; }
 
 export default function FaceAttendancePage() {
-  const { isAdmin } = useAuth();
+  const { hasPermission } = useAuth();
+  const isAdmin = hasPermission("hrm", "can_edit");
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [faceRecords, setFaceRecords] = useState<FaceRecord[]>([]);
   const [selectedEmp, setSelectedEmp] = useState("");

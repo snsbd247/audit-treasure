@@ -96,7 +96,8 @@ const defaultBank: Omit<BankInfo, 'id' | 'employee_id'> = {
 export default function EmployeeProfilePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { isAdmin } = useAuth();
+  const { hasPermission } = useAuth();
+  const isAdmin = hasPermission("hrm", "can_edit");
   const { fc } = useCurrency();
 
   const [employee, setEmployee] = useState<Employee | null>(null);

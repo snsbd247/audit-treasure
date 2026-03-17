@@ -168,7 +168,7 @@ const navGroups: NavGroup[] = [
   {
     label: "Administration",
     icon: Shield,
-    adminOnly: true,
+    module: "administration",
     children: [
       { to: "/admin/branches", label: "Branches", icon: Building2 },
       { to: "/admin/financial-years", label: "Financial Years", icon: Calendar },
@@ -258,7 +258,7 @@ const CollapsibleGroup = ({ group, isModuleEnabled }: { group: NavGroup; isModul
 };
 
 export const AppSidebar = () => {
-  const { isAdmin, signOut, profile, hasPermission } = useAuth();
+  const { signOut, profile, hasPermission } = useAuth();
   const { isModuleEnabled } = useModules();
   const { branding } = useBranding();
   const isMobile = useIsMobile();
@@ -295,9 +295,11 @@ export const AppSidebar = () => {
           <NavItem to="/" label="Dashboard" icon={LayoutDashboard} end />
           <div className="my-2 border-t border-sidebar-border" />
           {navGroups.map((group) => {
-            if (group.adminOnly && !isAdmin) return null;
             if (group.requiredModules && group.requiredModules.some((m) => !isModuleEnabled(m))) return null;
-            if (!isAdmin && group.module && !hasPermission(group.module, "can_view")) return null;
+            // For administration module: check administration permission or super_admin
+            if (group.adminOnly && !hasPermission("administration", "can_view")) return null;
+            // For other modules: check module permission
+            if (!group.adminOnly && group.module && !hasPermission(group.module, "can_view")) return null;
             return <CollapsibleGroup key={group.label} group={group} isModuleEnabled={isModuleEnabled} />;
           })}
         </nav>

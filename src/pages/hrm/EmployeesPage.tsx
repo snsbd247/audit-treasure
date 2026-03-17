@@ -46,7 +46,8 @@ const defaultForm = {
 };
 
 export default function EmployeesPage() {
-  const { user, isAdmin } = useAuth();
+  const { user, hasPermission } = useAuth();
+  const isAdmin = hasPermission("hrm", "can_edit");
   const navigate = useNavigate();
   
   const [employees, setEmployees] = useState<Employee[]>([]);

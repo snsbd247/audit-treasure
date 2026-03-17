@@ -27,7 +27,8 @@ interface Item { id: string; item_code: string; item_name: string; }
 interface Transfer { id: string; transfer_number: string; transfer_date: string; from_warehouse_id: string; to_warehouse_id: string; item_id: string; quantity: number; notes: string | null; status: string; created_at: string; }
 
 const StockTransferPage = () => {
-  const { user, isSuperAdmin, isAdmin } = useAuth();
+  const { user, isSuperAdmin, hasPermission } = useAuth();
+  const isAdmin = hasPermission("inventory", "can_edit");
   const { userBranchId } = useBranch();
   const [warehouses, setWarehouses] = useState<WH[]>([]);
   const [items, setItems] = useState<Item[]>([]);

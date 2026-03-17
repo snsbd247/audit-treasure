@@ -30,7 +30,7 @@ export function useDocumentRules(
   module: string,
   status: DocumentStatus | string
 ): DocumentRules {
-  const { isSuperAdmin, isAdmin, hasPermission } = useAuth();
+  const { isSuperAdmin, hasPermission } = useAuth();
 
   const normalizedStatus = status?.toLowerCase() as DocumentStatus;
   const userCanEdit = hasPermission(module, "can_edit") || isSuperAdmin;
@@ -54,7 +54,7 @@ export function useDocumentRules(
       canEdit: isSuperAdmin,
       canDelete: isSuperAdmin,
       canApprove: false,
-      canCancel: isSuperAdmin || isAdmin,
+      canCancel: isSuperAdmin,
       isOverrideEdit: isSuperAdmin,
       lockReason: isSuperAdmin ? null : "Only Super Admin can modify approved documents",
     };
@@ -64,7 +64,7 @@ export function useDocumentRules(
   return {
     canEdit: userCanEdit,
     canDelete: userCanDelete,
-    canApprove: isAdmin || isSuperAdmin,
+    canApprove: isSuperAdmin || userCanEdit,
     canCancel: userCanEdit,
     isOverrideEdit: false,
     lockReason: userCanEdit ? null : "You don't have permission to edit",
