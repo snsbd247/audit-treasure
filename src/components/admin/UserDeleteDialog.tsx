@@ -82,7 +82,7 @@ const UserDeleteDialog = ({ user, allUsers, isSuperAdmin, onDeleted }: Props) =>
 
       toast({ title: "User deleted successfully" });
       setOpen(false);
-      onDeleted();
+      setTimeout(() => onDeleted(), 300);
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
