@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { logLoginAttempt, logLogout } from "@/lib/audit-utils";
 import type { User, Session } from "@supabase/supabase-js";
 
 type AppRole = "super_admin" | "admin" | "staff";
@@ -116,7 +117,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [fetchProfile]);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    // Log login attempt
+    try {
+      await logLoginAttempt({
+        userId: data?.user?.id,
+        email,
+        success: !error,
+      });
+    } catch { /* ignore logging errors */ }
     return { error: error as Error | null };
   };
 
@@ -130,6 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    try { await logLogout(user?.id); } catch { /* ignore */ }
     await supabase.auth.signOut();
   };
 
