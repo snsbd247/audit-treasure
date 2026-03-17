@@ -247,9 +247,17 @@ const UsersPage = () => {
                     <Badge variant={u.status === "active" ? "default" : "secondary"} className="text-xs">{u.status}</Badge>
                   </TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="icon" onClick={() => openEdit(u)} className="h-8 w-8">
-                      <Pencil className="w-3.5 h-3.5" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(u)} className="h-8 w-8">
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                      <UserDeleteDialog
+                        user={u}
+                        allUsers={users}
+                        isSuperAdmin={users.some(usr => usr.roles.includes("super_admin") && usr.id === currentUserId)}
+                        onDeleted={fetchData}
+                      />
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
