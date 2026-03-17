@@ -34,6 +34,7 @@ class AuthController extends BaseController
         }
 
         $token = $user->createToken('api')->plainTextToken;
+        $user->update(['is_online' => true, 'last_seen_at' => now()]);
         $roles = $user->roles()->with('permissions')->get();
         $permissions = $user->getAllPermissions();
 
