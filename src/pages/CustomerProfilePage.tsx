@@ -535,6 +535,118 @@ const CustomerProfilePage = () => {
           )}
         </TabsContent>
 
+        {/* Payments Tab */}
+        <TabsContent value="payments" className="space-y-3">
+          {/* Add Payment Form */}
+          {isSuperAdmin && (
+            <Card>
+              <CardHeader className="pb-3"><CardTitle className="text-sm">Record Payment</CardTitle></CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Date</Label>
+                    <Input type="date" value={newPayment.payment_date} onChange={e => setNewPayment(p => ({ ...p, payment_date: e.target.value }))} className="h-9" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Amount</Label>
+                    <Input type="number" min="0" step="0.01" placeholder="0.00" value={newPayment.amount} onChange={e => setNewPayment(p => ({ ...p, amount: e.target.value }))} className="h-9" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Method</Label>
+                    <select className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm" value={newPayment.payment_method} onChange={e => setNewPayment(p => ({ ...p, payment_method: e.target.value }))}>
+                      <option value="cash">Cash</option>
+                      <option value="bank">Bank Transfer</option>
+                      <option value="cheque">Cheque</option>
+                      <option value="mobile">Mobile Payment</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Reference</Label>
+                    <Input placeholder="Ref # / Cheque #" value={newPayment.reference} onChange={e => setNewPayment(p => ({ ...p, reference: e.target.value }))} className="h-9" />
+                  </div>
+                  <div className="space-y-1 sm:col-span-2">
+                    <Label className="text-xs">Notes</Label>
+                    <Input placeholder="Payment notes..." value={newPayment.notes} onChange={e => setNewPayment(p => ({ ...p, notes: e.target.value }))} className="h-9" />
+                  </div>
+                </div>
+                <Button size="sm" className="mt-3" onClick={addPayment} disabled={!newPayment.amount || Number(newPayment.amount) <= 0}>
+                  <Plus className="w-3.5 h-3.5 mr-1" />Record Payment
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Filter */}
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs">From</Label>
+              <Input type="date" value={payDateFrom} onChange={e => setPayDateFrom(e.target.value)} className="h-9 w-36" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">To</Label>
+              <Input type="date" value={payDateTo} onChange={e => setPayDateTo(e.target.value)} className="h-9 w-36" />
+            </div>
+            {(payDateFrom || payDateTo) && (
+              <Button size="sm" variant="ghost" onClick={() => { setPayDateFrom(""); setPayDateTo(""); }}>Clear</Button>
+            )}
+          </div>
+
+          {/* Payments Table */}
+          <Card>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                      <TableHead>Method</TableHead>
+                      <TableHead>Reference</TableHead>
+                      <TableHead>Notes</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredPayments.length === 0 ? (
+                      <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No payments recorded</TableCell></TableRow>
+                    ) : (
+                      <>
+                        {filteredPayments.map(pay => (
+                          <TableRow key={pay.id}>
+                            <TableCell className="text-sm">{pay.payment_date}</TableCell>
+                            <TableCell className="text-right tabular-nums font-medium text-emerald-600">{fc(Number(pay.amount))}</TableCell>
+                            <TableCell className="text-sm capitalize">{pay.payment_method}</TableCell>
+                            <TableCell className="font-mono text-xs">{pay.reference || "—"}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground truncate max-w-[200px]">{pay.notes || "—"}</TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-1">
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handlePrintPaymentReceipt(pay)}>
+                                  <Printer className="w-3.5 h-3.5" />
+                                </Button>
+                                {isSuperAdmin && (
+                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deletePayment(pay.id)}>
+                                    <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                                  </Button>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        <TableRow className="bg-muted/50 font-medium">
+                          <TableCell className="text-right text-sm">Total</TableCell>
+                          <TableCell className="text-right tabular-nums font-bold text-emerald-600">{fc(filteredPayments.reduce((s, p) => s + Number(p.amount || 0), 0))}</TableCell>
+                          <TableCell colSpan={4} />
+                        </TableRow>
+                      </>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* Notes Tab */}
         <TabsContent value="notes" className="space-y-3">
           <Card>
