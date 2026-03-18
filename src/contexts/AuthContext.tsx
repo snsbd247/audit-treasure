@@ -168,7 +168,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    try { await logLogout(user?.id); } catch { /* ignore */ }
+    try {
+      await logLogout(user?.id);
+      // Update logout_time in login_logs
+      if (user?.id) {
+        const { data: latestLog } = await supabase
+          .from("login_logs" as any)
+          .select("id")
+          .eq("user_id", user.id)
+          .is("logout_time", null)
+          .order("login_time", { ascending: false })
+          .limit(1)
+          .single();
+        if (latestLog) {
+          await supabase.from("login_logs" as any).update({ logout_time: new Date().toISOString() }).eq("id", (latestLog as any).id);
+        }
+      }
+    } catch { /* ignore */ }
     await supabase.auth.signOut();
   };
 
