@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
       userId = newUser.user.id;
     }
 
-    const userId = newUser.user.id;
+    // Upsert profile with employee_id link
 
     // Upsert profile with employee_id link
     await adminClient.from("profiles").upsert({
