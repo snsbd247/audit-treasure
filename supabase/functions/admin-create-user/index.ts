@@ -49,7 +49,8 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Email, password and name are required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Create user with admin API (no confirmation email, no session switch)
+    // Try to create user; if email exists, find existing user instead
+    let userId: string;
     const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
       email,
       password,
@@ -58,7 +59,21 @@ Deno.serve(async (req) => {
     });
 
     if (createError) {
-      return new Response(JSON.stringify({ error: createError.message }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (createError.message.includes("already been registered")) {
+        // Find existing user by email and update their password
+        const { data: { users } } = await adminClient.auth.admin.listUsers();
+        const existing = users?.find((u: any) => u.email === email);
+        if (!existing) {
+          return new Response(JSON.stringify({ error: "User exists but could not be found" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        userId = existing.id;
+        // Update password for existing user
+        await adminClient.auth.admin.updateUser(userId, { password, user_metadata: { name, username } });
+      } else {
+        return new Response(JSON.stringify({ error: createError.message }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    } else {
+      userId = newUser.user.id;
     }
 
     const userId = newUser.user.id;
