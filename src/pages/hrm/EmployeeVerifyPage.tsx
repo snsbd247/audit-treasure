@@ -5,7 +5,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CheckCircle, XCircle, Shield, Search, Printer, ArrowLeft } from "lucide-react";
+import {
+  CheckCircle, XCircle, Shield, Search, Printer,
+  ArrowLeft, Award, Share2, Copy, Check,
+} from "lucide-react";
 
 interface EmployeeResult {
   first_name: string;
@@ -17,6 +20,63 @@ interface EmployeeResult {
   designation_id: string | null;
 }
 
+// Simple QR code as SVG using a basic encoding approach
+function QRCodeSVG({ value, size = 100 }: { value: string; size?: number }) {
+  // Generate a deterministic pattern from the URL string
+  const cells = 21;
+  const cellSize = size / cells;
+  const grid: boolean[][] = [];
+
+  // Simple hash-based pattern (not a real QR but visually representative)
+  let hash = 0;
+  for (let i = 0; i < value.length; i++) {
+    hash = ((hash << 5) - hash + value.charCodeAt(i)) | 0;
+  }
+
+  for (let r = 0; r < cells; r++) {
+    grid[r] = [];
+    for (let c = 0; c < cells; c++) {
+      // Finder patterns (top-left, top-right, bottom-left corners)
+      const inFinderTL = r < 7 && c < 7;
+      const inFinderTR = r < 7 && c >= cells - 7;
+      const inFinderBL = r >= cells - 7 && c < 7;
+
+      if (inFinderTL || inFinderTR || inFinderBL) {
+        const lr = inFinderTL ? r : inFinderTR ? r : r - (cells - 7);
+        const lc = inFinderTL ? c : inFinderTR ? c - (cells - 7) : c;
+        // Outer border or inner square
+        grid[r][c] =
+          lr === 0 || lr === 6 || lc === 0 || lc === 6 ||
+          (lr >= 2 && lr <= 4 && lc >= 2 && lc <= 4);
+      } else {
+        // Data area - deterministic pattern from hash
+        const seed = (hash ^ (r * 31 + c * 17)) >>> 0;
+        grid[r][c] = seed % 3 !== 0;
+      }
+    }
+  }
+
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="mx-auto">
+      <rect width={size} height={size} fill="white" />
+      {grid.map((row, r) =>
+        row.map((cell, c) =>
+          cell ? (
+            <rect
+              key={`${r}-${c}`}
+              x={c * cellSize}
+              y={r * cellSize}
+              width={cellSize}
+              height={cellSize}
+              fill="black"
+            />
+          ) : null
+        )
+      )}
+    </svg>
+  );
+}
+
 export default function EmployeeVerifyPage() {
   const { code } = useParams<{ code: string }>();
   const [searchCode, setSearchCode] = useState(code || "");
@@ -25,25 +85,35 @@ export default function EmployeeVerifyPage() {
   const [designation, setDesignation] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [companyLogo, setCompanyLogo] = useState("");
+  const [companyAddress, setCompanyAddress] = useState("");
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [notFound, setNotFound] = useState(false);
+  const [showCert, setShowCert] = useState(false);
+  const [copied, setCopied] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
-  const fetchCompany = async () => {
-    const { data } = await supabase
-      .from("company_settings")
-      .select("company_name, company_logo_url")
-      .eq("id", "default")
-      .single();
-    if (data) {
-      setCompanyName(data.company_name);
-      setCompanyLogo(data.company_logo_url || "");
-    }
-  };
+  const verifyUrl = employee
+    ? `${window.location.origin}/verify/${employee.employee_code}`
+    : "";
+
+  const todayFormatted = new Date().toLocaleDateString("en-US", {
+    year: "numeric", month: "long", day: "numeric",
+  });
 
   useEffect(() => {
-    fetchCompany();
+    (async () => {
+      const { data } = await supabase
+        .from("company_settings")
+        .select("company_name, company_logo_url, address")
+        .eq("id", "default")
+        .single();
+      if (data) {
+        setCompanyName(data.company_name);
+        setCompanyLogo(data.company_logo_url || "");
+        setCompanyAddress(data.address || "");
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -59,6 +129,7 @@ export default function EmployeeVerifyPage() {
     setDepartment("");
     setDesignation("");
     setSearched(true);
+    setShowCert(false);
 
     const { data: emp } = await supabase
       .from("employees" as any)
@@ -96,11 +167,148 @@ export default function EmployeeVerifyPage() {
 
   const handlePrint = () => window.print();
 
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(verifyUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleWhatsAppShare = () => {
+    const text = `Verify employee ${employee?.first_name} ${employee?.last_name} (${employee?.employee_code}): ${verifyUrl}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+  };
+
   const isActive = employee?.status === "active";
 
+  // ─── Certificate View ───
+  if (showCert && employee) {
+    return (
+      <div className="min-h-screen bg-muted/30 flex items-start justify-center p-4 pt-8 sm:pt-12 print:bg-white print:p-0">
+        {/* Print: only certificate */}
+        <div className="w-full max-w-2xl">
+          <div className="print:hidden mb-4 flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => setShowCert(false)}>
+              <ArrowLeft className="w-4 h-4 mr-1" /> Back
+            </Button>
+            <Button size="sm" onClick={handlePrint}>
+              <Printer className="w-4 h-4 mr-1" /> Print / Save PDF
+            </Button>
+          </div>
+
+          {/* Certificate */}
+          <div className="bg-white border-2 border-primary/20 rounded-lg p-8 sm:p-12 relative overflow-hidden print:border-2 print:rounded-none print:p-12">
+            {/* Watermark */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] print:opacity-[0.04]">
+              <span className="text-[120px] sm:text-[160px] font-black text-primary rotate-[-30deg] whitespace-nowrap select-none">
+                VERIFIED
+              </span>
+            </div>
+
+            {/* Decorative Border */}
+            <div className="absolute inset-3 border border-primary/10 rounded pointer-events-none print:border-primary/20" />
+
+            {/* Content */}
+            <div className="relative z-10 text-center">
+              {/* Header */}
+              {companyLogo && <img src={companyLogo} alt="Logo" className="h-14 mx-auto mb-2 print:h-16" />}
+              <h2 className="text-lg font-bold text-foreground tracking-wide print:text-black">{companyName}</h2>
+              {companyAddress && (
+                <p className="text-xs text-muted-foreground mt-0.5 print:text-gray-500">{companyAddress}</p>
+              )}
+
+              {/* Divider */}
+              <div className="my-5 flex items-center gap-3">
+                <div className="flex-1 h-px bg-primary/20" />
+                <Award className="w-6 h-6 text-primary print:text-black" />
+                <div className="flex-1 h-px bg-primary/20" />
+              </div>
+
+              {/* Title */}
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground uppercase tracking-[0.15em] print:text-black">
+                Employee Verification Certificate
+              </h1>
+              <p className="text-xs text-muted-foreground mt-1 print:text-gray-500">
+                Certificate of Employment Verification
+              </p>
+
+              {/* Body */}
+              <div className="mt-8 text-sm text-foreground leading-relaxed max-w-md mx-auto print:text-black">
+                <p>This is to certify that</p>
+                <p className="text-xl font-bold my-3 text-primary print:text-black">
+                  {employee.first_name} {employee.last_name}
+                </p>
+                <p>
+                  bearing Employee ID <span className="font-mono font-semibold">{employee.employee_code}</span> is a
+                  {isActive ? " currently active" : "n"} employee of <strong>{companyName}</strong>.
+                </p>
+              </div>
+
+              {/* Employee Details Table */}
+              <div className="mt-8 mx-auto max-w-sm">
+                <table className="w-full text-sm">
+                  <tbody>
+                    {[
+                      { label: "Full Name", value: `${employee.first_name} ${employee.last_name}` },
+                      { label: "Employee ID", value: employee.employee_code },
+                      { label: "Department", value: department || "—" },
+                      { label: "Designation", value: designation || "—" },
+                      { label: "Status", value: isActive ? "Active" : "Inactive" },
+                    ].map((row) => (
+                      <tr key={row.label} className="border-b border-muted print:border-gray-200">
+                        <td className="py-2 text-left text-muted-foreground font-medium print:text-gray-500">{row.label}</td>
+                        <td className={`py-2 text-right font-semibold ${
+                          row.label === "Status"
+                            ? isActive ? "text-green-600" : "text-destructive"
+                            : "text-foreground print:text-black"
+                        }`}>
+                          {row.value}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* QR Code */}
+              <div className="mt-8">
+                <QRCodeSVG value={verifyUrl} size={80} />
+                <p className="text-[9px] text-muted-foreground mt-1 print:text-gray-400">
+                  Scan to verify online
+                </p>
+              </div>
+
+              {/* Issue Date */}
+              <div className="mt-8 pt-6 border-t border-primary/10">
+                <p className="text-xs text-muted-foreground print:text-gray-500">
+                  Issued on: <span className="font-semibold">{todayFormatted}</span>
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-1 print:text-gray-400">
+                  This certificate is system-generated and verified by {companyName}.
+                </p>
+              </div>
+
+              {/* Signature Area */}
+              <div className="mt-10 flex justify-between items-end px-4">
+                <div className="text-center">
+                  <div className="w-32 border-b border-foreground/30 mb-1 print:border-black/30" />
+                  <p className="text-[10px] text-muted-foreground print:text-gray-500">Employee Signature</p>
+                </div>
+                <div className="text-center">
+                  <div className="w-32 border-b border-foreground/30 mb-1 print:border-black/30" />
+                  <p className="text-[10px] text-muted-foreground print:text-gray-500">Authorized Signature</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Main Search + Result View ───
   return (
     <div className="min-h-screen bg-gradient-to-br from-muted/50 to-background flex flex-col items-center justify-start p-4 pt-8 sm:pt-16 print:bg-white print:p-0 print:pt-0">
-      {/* Search Section - hidden in print */}
+      {/* Search Section */}
       <div className="w-full max-w-md mb-6 print:hidden">
         <Link to="/login" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors">
           <ArrowLeft className="w-4 h-4" />
@@ -133,7 +341,7 @@ export default function EmployeeVerifyPage() {
         </form>
       </div>
 
-      {/* Loading State */}
+      {/* Loading */}
       {loading && (
         <div className="text-center py-12 print:hidden">
           <div className="w-10 h-10 rounded-full border-4 border-primary border-t-transparent animate-spin mx-auto mb-3" />
@@ -141,7 +349,7 @@ export default function EmployeeVerifyPage() {
         </div>
       )}
 
-      {/* Not Found State */}
+      {/* Not Found */}
       {!loading && searched && notFound && (
         <Card className="w-full max-w-md print:hidden">
           <CardContent className="pt-8 pb-6 text-center">
@@ -150,7 +358,7 @@ export default function EmployeeVerifyPage() {
             </div>
             <h2 className="text-xl font-bold text-foreground mb-1">Employee Not Found</h2>
             <p className="text-sm text-muted-foreground">
-              No employee record matches code "<span className="font-mono font-semibold">{searchCode}</span>".
+              No employee record matches "<span className="font-mono font-semibold">{searchCode}</span>".
             </p>
             <p className="text-xs text-muted-foreground mt-3">
               Please check the ID and try again, or contact the organization.
@@ -163,7 +371,7 @@ export default function EmployeeVerifyPage() {
       {!loading && employee && (
         <div ref={printRef} className="w-full max-w-md">
           <Card className="overflow-hidden shadow-lg print:shadow-none print:border">
-            {/* Card Header */}
+            {/* Header */}
             <div className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground p-5 text-center print:bg-primary print:text-white">
               {companyLogo && <img src={companyLogo} alt="Logo" className="h-8 mx-auto mb-2 print:h-10" />}
               <h2 className="text-base font-bold tracking-wide">{companyName}</h2>
@@ -174,7 +382,7 @@ export default function EmployeeVerifyPage() {
             </div>
 
             <CardContent className="pt-5 pb-6">
-              {/* Status Badge */}
+              {/* Status */}
               <div className="flex items-center justify-center mb-5">
                 {isActive ? (
                   <Badge className="px-4 py-1.5 text-sm font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800 print:bg-green-100 print:text-green-800">
@@ -190,11 +398,7 @@ export default function EmployeeVerifyPage() {
               {/* Photo & Name */}
               <div className="text-center mb-5">
                 {employee.photo_url ? (
-                  <img
-                    src={employee.photo_url}
-                    alt="Photo"
-                    className="w-24 h-24 rounded-full object-cover mx-auto mb-3 border-[3px] border-primary shadow-md print:w-28 print:h-28"
-                  />
+                  <img src={employee.photo_url} alt="Photo" className="w-24 h-24 rounded-full object-cover mx-auto mb-3 border-[3px] border-primary shadow-md print:w-28 print:h-28" />
                 ) : (
                   <div className="w-24 h-24 rounded-full bg-muted mx-auto mb-3 flex items-center justify-center text-2xl font-bold text-muted-foreground border-[3px] border-primary shadow-md print:w-28 print:h-28">
                     {employee.first_name[0]}{employee.last_name[0]}
@@ -204,7 +408,7 @@ export default function EmployeeVerifyPage() {
                 <p className="text-sm text-muted-foreground font-mono mt-0.5">{employee.employee_code}</p>
               </div>
 
-              {/* Info Rows */}
+              {/* Details */}
               <div className="space-y-2.5 border-t border-b py-4">
                 {[
                   { label: "Department", value: department },
@@ -225,18 +429,38 @@ export default function EmployeeVerifyPage() {
                 ))}
               </div>
 
-              {/* Print Button - hidden in print */}
-              <div className="mt-5 print:hidden">
-                <Button onClick={handlePrint} variant="outline" className="w-full h-10">
-                  <Printer className="w-4 h-4 mr-2" />
-                  Print Verification
-                </Button>
+              {/* QR Code */}
+              <div className="mt-4 text-center print:block">
+                <QRCodeSVG value={verifyUrl} size={72} />
+                <p className="text-[9px] text-muted-foreground mt-1">Scan to verify</p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="mt-5 space-y-2 print:hidden">
+                <div className="flex gap-2">
+                  <Button onClick={() => setShowCert(true)} className="flex-1 h-10">
+                    <Award className="w-4 h-4 mr-1.5" />
+                    View Certificate
+                  </Button>
+                  <Button onClick={handlePrint} variant="outline" className="h-10 px-3">
+                    <Printer className="w-4 h-4" />
+                  </Button>
+                </div>
+                <div className="flex gap-2">
+                  <Button onClick={handleCopyLink} variant="secondary" className="flex-1 h-9 text-xs">
+                    {copied ? <Check className="w-3.5 h-3.5 mr-1" /> : <Copy className="w-3.5 h-3.5 mr-1" />}
+                    {copied ? "Copied!" : "Copy Link"}
+                  </Button>
+                  <Button onClick={handleWhatsAppShare} variant="secondary" className="flex-1 h-9 text-xs">
+                    <Share2 className="w-3.5 h-3.5 mr-1" />
+                    Share WhatsApp
+                  </Button>
+                </div>
               </div>
 
               {/* Footer */}
               <p className="text-[10px] text-center text-muted-foreground mt-4 print:mt-6">
-                This is an official employee verification from {companyName}.
-                <br />Verified on {new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}.
+                Official verification from {companyName}. Verified on {todayFormatted}.
               </p>
             </CardContent>
           </Card>

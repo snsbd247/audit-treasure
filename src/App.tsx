@@ -130,6 +130,7 @@ const App = () => (
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/employee/verify" element={<EmployeeVerifyPage />} />
               <Route path="/employee/verify/:code" element={<EmployeeVerifyPage />} />
+              <Route path="/verify/:code" element={<EmployeeVerifyPage />} />
               <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                 {/* Dashboard — all authenticated users */}
                 <Route path="/" element={<Dashboard />} />
