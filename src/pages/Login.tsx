@@ -139,10 +139,13 @@ const Login = () => {
                   {submitting ? "Please wait..." : <><LogIn className="w-4 h-4 mr-2" />Sign In</>}
                 </Button>
               </form>
-              <div className="mt-4 text-center">
+              <div className="mt-4 flex items-center justify-between">
                 <button type="button" className="text-xs text-primary hover:underline" onClick={() => setForgotMode(true)}>
                   Forgot password?
                 </button>
+                <a href="/employee/verify" className="text-xs text-primary hover:underline">
+                  Verify Employee
+                </a>
               </div>
             </>
           )}
