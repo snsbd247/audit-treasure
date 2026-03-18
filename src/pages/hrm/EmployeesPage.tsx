@@ -95,7 +95,7 @@ export default function EmployeesPage() {
     return (e.first_name + " " + e.last_name + " " + e.employee_code).toLowerCase().includes(q);
   });
 
-  const openAdd = () => { setEditId(null); setForm(defaultForm); setDialogOpen(true); };
+  const openAdd = () => { setEditId(null); setForm(defaultForm); setShowPassword(false); setDialogOpen(true); };
   const openEdit = (emp: Employee) => {
     setEditId(emp.id);
     const hasLogin = !!linkedUsers[emp.id];
