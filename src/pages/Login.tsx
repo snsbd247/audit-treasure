@@ -36,7 +36,12 @@ const Login = () => {
       if (error) throw error;
       navigate("/");
     } catch (err: any) {
-      toast({ title: "Login Failed", description: err.message, variant: "destructive" });
+      const msg = err.message || "";
+      const friendly =
+        msg.includes("Invalid login") || msg.includes("non-2xx")
+          ? "Invalid username or password. Please try again."
+          : msg;
+      toast({ title: "Login Failed", description: friendly, variant: "destructive" });
     } finally {
       setSubmitting(false);
     }
