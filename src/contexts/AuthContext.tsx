@@ -143,6 +143,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     try {
       await logLoginAttempt({ userId: data?.user?.id, email, success: !error });
+      // Log to login_logs table for activity tracking
+      if (!error && data?.user?.id) {
+        await supabase.from("login_logs" as any).insert({
+          user_id: data.user.id,
+          ip_address: null, // Not available client-side
+          user_agent: navigator.userAgent,
+          login_time: new Date().toISOString(),
+        });
+        // Update last_login_at on profile
+        await supabase.from("profiles").update({ last_login_at: new Date().toISOString() }).eq("id", data.user.id);
+      }
     } catch { /* ignore */ }
     return { error: error as Error | null };
   };
