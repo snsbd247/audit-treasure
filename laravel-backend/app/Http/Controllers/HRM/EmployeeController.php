@@ -234,7 +234,41 @@ class EmployeeController extends CrudController
      */
     public function getLinkedUser(string $id)
     {
-        $user = User::where('employee_id', $id)->first(['id', 'username', 'status', 'created_at']);
+        $user = User::where('employee_id', $id)->first(['id', 'username', 'status', 'created_at', 'last_login_at']);
         return $this->success($user);
+    }
+
+    /**
+     * Auto-generate username in EMP-XXXX format.
+     */
+    private function generateUsername(): string
+    {
+        $lastUser = User::whereNotNull('username')
+            ->where('username', 'LIKE', 'EMP-%')
+            ->orderByRaw("CAST(SUBSTRING(username, 5) AS UNSIGNED) DESC")
+            ->first();
+
+        $nextNum = 1;
+        if ($lastUser && preg_match('/^EMP-(\d+)$/i', $lastUser->username, $matches)) {
+            $nextNum = (int) $matches[1] + 1;
+        }
+
+        $username = 'EMP-' . str_pad($nextNum, 4, '0', STR_PAD_LEFT);
+
+        // Ensure uniqueness
+        while (User::where('username', $username)->exists()) {
+            $nextNum++;
+            $username = 'EMP-' . str_pad($nextNum, 4, '0', STR_PAD_LEFT);
+        }
+
+        return $username;
+    }
+
+    /**
+     * API endpoint to get next auto-generated username.
+     */
+    public function nextUsername()
+    {
+        return $this->success(['username' => $this->generateUsername()]);
     }
 }
