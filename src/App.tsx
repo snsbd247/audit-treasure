@@ -74,6 +74,7 @@ import OvertimePage from "./pages/hrm/OvertimePage";
 import FaceAttendancePage from "./pages/hrm/FaceAttendancePage";
 import HrDashboardPage from "./pages/hrm/HrDashboardPage";
 import EmployeeProfilePage from "./pages/hrm/EmployeeProfilePage";
+import LoginActivityPage from "./pages/hrm/LoginActivityPage";
 
 // Inventory - Stock Ledger
 import StockLedgerPage from "./pages/inventory/StockLedgerPage";
