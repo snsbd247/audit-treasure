@@ -15,7 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import {
   ArrowLeft, User, DollarSign, FileText, Printer,
-  Phone, Mail, MapPin, StickyNote, Plus, Trash2, TrendingDown, Receipt, RotateCcw
+  Phone, Mail, MapPin, StickyNote, Plus, Trash2, TrendingDown, Receipt, RotateCcw, Wallet
 } from "lucide-react";
 
 interface LedgerRow {
