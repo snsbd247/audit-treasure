@@ -139,6 +139,7 @@ const navGroups: NavGroup[] = [
       { to: "/hrm/documents", label: "Documents", icon: FileCheck, permission: "hrm.view" },
       { to: "/hrm/id-cards", label: "Employee ID Cards", icon: BadgeCheck, permission: "hrm.view" },
       { to: "/hrm/reports", label: "HR Reports", icon: BarChart3, permission: "hrm.view" },
+      { to: "/hrm/login-activity", label: "Login Activity", icon: Activity, permission: "hrm.view" },
     ],
   },
   {

@@ -143,6 +143,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     try {
       await logLoginAttempt({ userId: data?.user?.id, email, success: !error });
+      // Log to login_logs table for activity tracking
+      if (!error && data?.user?.id) {
+        await supabase.from("login_logs" as any).insert({
+          user_id: data.user.id,
+          ip_address: null, // Not available client-side
+          user_agent: navigator.userAgent,
+          login_time: new Date().toISOString(),
+        });
+        // Update last_login_at on profile
+        await supabase.from("profiles").update({ last_login_at: new Date().toISOString() }).eq("id", data.user.id);
+      }
     } catch { /* ignore */ }
     return { error: error as Error | null };
   };
@@ -157,7 +168,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    try { await logLogout(user?.id); } catch { /* ignore */ }
+    try {
+      await logLogout(user?.id);
+      // Update logout_time in login_logs
+      if (user?.id) {
+        const { data: latestLog } = await supabase
+          .from("login_logs" as any)
+          .select("id")
+          .eq("user_id", user.id)
+          .is("logout_time", null)
+          .order("login_time", { ascending: false })
+          .limit(1)
+          .single();
+        if (latestLog) {
+          await supabase.from("login_logs" as any).update({ logout_time: new Date().toISOString() }).eq("id", (latestLog as any).id);
+        }
+      }
+    } catch { /* ignore */ }
     await supabase.auth.signOut();
   };
 

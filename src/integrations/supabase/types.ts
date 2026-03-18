@@ -1232,6 +1232,39 @@ export type Database = {
         }
         Relationships: []
       }
+      login_logs: {
+        Row: {
+          created_at: string
+          id: string
+          ip_address: string | null
+          login_time: string
+          logout_time: string | null
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          login_time?: string
+          logout_time?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          login_time?: string
+          logout_time?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           conversation_id: string
@@ -1745,6 +1778,7 @@ export type Database = {
           employee_id: string | null
           id: string
           is_online: boolean
+          last_login_at: string | null
           last_seen_at: string | null
           name: string
           phone: string | null
@@ -1760,6 +1794,7 @@ export type Database = {
           employee_id?: string | null
           id: string
           is_online?: boolean
+          last_login_at?: string | null
           last_seen_at?: string | null
           name?: string
           phone?: string | null
@@ -1775,6 +1810,7 @@ export type Database = {
           employee_id?: string | null
           id?: string
           is_online?: boolean
+          last_login_at?: string | null
           last_seen_at?: string | null
           name?: string
           phone?: string | null

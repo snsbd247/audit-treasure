@@ -74,6 +74,7 @@ import OvertimePage from "./pages/hrm/OvertimePage";
 import FaceAttendancePage from "./pages/hrm/FaceAttendancePage";
 import HrDashboardPage from "./pages/hrm/HrDashboardPage";
 import EmployeeProfilePage from "./pages/hrm/EmployeeProfilePage";
+import LoginActivityPage from "./pages/hrm/LoginActivityPage";
 
 // Inventory - Stock Ledger
 import StockLedgerPage from "./pages/inventory/StockLedgerPage";
@@ -191,6 +192,7 @@ const App = () => (
                 <Route path="/hrm/documents" element={<P perm="hrm.view"><DocumentsPage /></P>} />
                 <Route path="/hrm/id-cards" element={<P perm="hrm.view"><IdCardsPage /></P>} />
                 <Route path="/hrm/reports" element={<P perm="hrm.view"><HrReportsPage /></P>} />
+                <Route path="/hrm/login-activity" element={<P perm="hrm.view"><LoginActivityPage /></P>} />
 
                 {/* ─── Employee Portal (own data — no module permission needed) ── */}
                 <Route path="/portal/dashboard" element={<MyDashboardPage />} />
