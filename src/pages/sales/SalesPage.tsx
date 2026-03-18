@@ -608,6 +608,18 @@ const SalesPage = () => {
                 <td colSpan={5} style={{ padding: "8px 10px", border: "1px solid #ddd", textAlign: "right" }}>Net Amount</td>
                 <td style={{ padding: "8px 10px", border: "1px solid #ddd", textAlign: "right" }}>{fc(printInvoice.net_amount)}</td>
               </tr>
+              <tr>
+                <td colSpan={5} style={{ padding: "6px 10px", border: "1px solid #ddd", textAlign: "right" }}>Paid</td>
+                <td style={{ padding: "6px 10px", border: "1px solid #ddd", textAlign: "right", color: "#166534" }}>{fc((printInvoice as any).paid_amount || 0)}</td>
+              </tr>
+              <tr style={{ background: "#f0f0f0", fontWeight: 700 }}>
+                <td colSpan={5} style={{ padding: "8px 10px", border: "1px solid #ddd", textAlign: "right" }}>
+                  Balance Due
+                  {(printInvoice as any).due_amount <= 0 && <span style={{ marginLeft: "8px", background: "#dcfce7", color: "#166534", padding: "2px 8px", borderRadius: "4px", fontSize: "10px" }}>PAID</span>}
+                  {(printInvoice as any).due_amount > 0 && (printInvoice as any).paid_amount > 0 && <span style={{ marginLeft: "8px", background: "#fef3c7", color: "#92400e", padding: "2px 8px", borderRadius: "4px", fontSize: "10px" }}>PARTIAL</span>}
+                </td>
+                <td style={{ padding: "8px 10px", border: "1px solid #ddd", textAlign: "right", color: (printInvoice as any).due_amount > 0 ? "#991b1b" : "#166534" }}>{fc((printInvoice as any).due_amount || 0)}</td>
+              </tr>
             </tbody>
           </table>
         </PrintLayout>
