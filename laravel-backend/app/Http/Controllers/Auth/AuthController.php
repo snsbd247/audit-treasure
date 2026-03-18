@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\BaseController;
 use App\Models\User;
+use App\Models\LoginLog;
 use App\Services\UserActivityService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -34,9 +35,17 @@ class AuthController extends BaseController
         }
 
         $token = $user->createToken('api')->plainTextToken;
-        $user->update(['is_online' => true, 'last_seen_at' => now()]);
+        $user->update(['is_online' => true, 'last_seen_at' => now(), 'last_login_at' => now()]);
         $roles = $user->roles()->with('permissions')->get();
         $permissions = $user->getAllPermissions();
+
+        // Log login activity
+        LoginLog::create([
+            'user_id' => $user->id,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'login_time' => now(),
+        ]);
 
         // Log successful login
         $this->activityService->logLogin($user->id, $request, true);
@@ -62,9 +71,20 @@ class AuthController extends BaseController
 
     public function logout(Request $request)
     {
-        $request->user()->update(['is_online' => false, 'last_seen_at' => now()]);
-        $this->activityService->logLogout($request->user()->id, $request);
-        $request->user()->currentAccessToken()->delete();
+        $user = $request->user();
+        $user->update(['is_online' => false, 'last_seen_at' => now()]);
+
+        // Update the latest login log with logout time
+        $latestLog = LoginLog::where('user_id', $user->id)
+            ->whereNull('logout_time')
+            ->orderBy('login_time', 'desc')
+            ->first();
+        if ($latestLog) {
+            $latestLog->update(['logout_time' => now()]);
+        }
+
+        $this->activityService->logLogout($user->id, $request);
+        $user->currentAccessToken()->delete();
         return $this->success(null, 'Logged out');
     }
 
