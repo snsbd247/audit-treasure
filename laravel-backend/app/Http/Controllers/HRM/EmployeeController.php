@@ -131,18 +131,20 @@ class EmployeeController extends CrudController
             'national_id' => 'nullable|string',
             'employment_type' => 'nullable|in:permanent,contract,probation',
             'status' => 'nullable|in:active,inactive,terminated',
+            'create_login' => 'sometimes|boolean',
         ]);
 
-        return DB::transaction(function () use ($data, $request, $employee, $id) {
+        $loginEnabled = $request->boolean('create_login');
+
+        return DB::transaction(function () use ($data, $request, $employee, $id, $loginEnabled) {
             $employee->update($data);
+            $existingUser = User::where('employee_id', $id)->first();
 
-            // Handle login account
-            if ($request->boolean('create_login')) {
-                $existingUser = User::where('employee_id', $id)->first();
-
+            if ($loginEnabled) {
+                // Login toggle is ON
                 if ($existingUser) {
                     // Update existing user
-                    $updateData = [];
+                    $updateData = ['name' => "{$employee->first_name} {$employee->last_name}", 'email' => $employee->email, 'status' => 'active'];
                     if ($request->filled('username')) {
                         $request->validate(['username' => "required|unique:users,username,{$existingUser->id}|max:50"]);
                         $updateData['username'] = $request->username;
@@ -151,11 +153,9 @@ class EmployeeController extends CrudController
                         $request->validate(['password' => 'min:6']);
                         $updateData['password'] = Hash::make($request->password);
                     }
-                    $updateData['name'] = "{$employee->first_name} {$employee->last_name}";
-                    $updateData['email'] = $employee->email;
                     $existingUser->update($updateData);
                 } else {
-                    // Create new user
+                    // Create new login account
                     $request->validate([
                         'username' => 'required|unique:users,username|max:50',
                         'password' => 'required|min:6',
@@ -178,6 +178,13 @@ class EmployeeController extends CrudController
                     if ($staffRole) {
                         $user->roles()->attach($staffRole->id);
                     }
+                }
+            } else {
+                // Login toggle is OFF — disable login
+                if ($existingUser) {
+                    $existingUser->update(['status' => 'inactive', 'username' => null]);
+                    $existingUser->tokens()->delete(); // Revoke all tokens
+                    $employee->update(['user_id' => null]);
                 }
             }
 

@@ -382,31 +382,52 @@ export default function EmployeesPage() {
                   <KeyRound className="w-4 h-4" /> Employee Login Account
                 </Label>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Allow this employee to login and access Employee Portal
+                  {form.create_login
+                    ? "This employee can login to the Employee Portal"
+                    : "Enable to allow this employee to login"}
                 </p>
               </div>
-              <Switch checked={form.create_login} onCheckedChange={v => setForm({...form, create_login: v})} />
+              <Switch
+                checked={form.create_login}
+                onCheckedChange={v => {
+                  setForm({
+                    ...form,
+                    create_login: v,
+                    // Clear login fields when toggling OFF
+                    ...(!v ? { username: "", password: "" } : {}),
+                    // Auto-fill username from employee code when toggling ON
+                    ...(v && !form.username ? { username: form.employee_code } : {}),
+                  });
+                }}
+              />
             </div>
             {form.create_login && (
-              <div className="grid grid-cols-2 gap-4 bg-muted/50 p-3 rounded-lg">
+              <div className="grid grid-cols-2 gap-4 bg-muted/50 p-3 rounded-lg border border-border/50">
                 <div>
                   <Label>Username *</Label>
                   <Input
                     value={form.username}
                     onChange={e => setForm({...form, username: e.target.value})}
                     placeholder={form.employee_code || "username"}
+                    autoComplete="off"
                   />
                 </div>
                 <div>
-                  <Label>{editId && linkedUsers[editId] ? "New Password (leave blank to keep)" : "Password *"}</Label>
+                  <Label>{editId && linkedUsers[editId!] ? "New Password (leave blank to keep)" : "Password *"}</Label>
                   <Input
                     type="password"
                     value={form.password}
                     onChange={e => setForm({...form, password: e.target.value})}
-                    placeholder={editId ? "Leave blank to keep current" : "Min 6 characters"}
+                    placeholder={editId && linkedUsers[editId!] ? "Leave blank to keep current" : "Min 6 characters"}
+                    autoComplete="new-password"
                   />
                 </div>
               </div>
+            )}
+            {!form.create_login && editId && linkedUsers[editId!] && (
+              <p className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 p-2 rounded">
+                ⚠️ Turning off will disable this employee's login access
+              </p>
             )}
           </div>
 
