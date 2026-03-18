@@ -15,11 +15,18 @@ class UserController extends BaseController
 
     public function index(Request $request)
     {
+        $query = User::with('roles', 'branch')
+            ->whereNull('deleted_at')
+            ->where('status', '!=', 'deleted');
+
+        // Hide Super Admin users (employee_id IS NULL) from non-Super Admin viewers
+        $currentUser = $request->user();
+        if ($currentUser && $currentUser->employee_id !== null) {
+            $query->whereNotNull('employee_id');
+        }
+
         return $this->paginated(
-            User::with('roles', 'branch')
-                ->whereNull('deleted_at')
-                ->where('status', '!=', 'deleted')
-                ->orderByDesc('created_at')
+            $query->orderByDesc('created_at')
                 ->paginate($request->per_page ?? 25)
         );
     }
