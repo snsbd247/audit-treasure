@@ -28,10 +28,13 @@ export function AccountTreeTable({ accounts, onEdit, onDrillDown }: Props) {
   // Compute rollup balances for parent accounts
   const rollup = useMemo(() => {
     const map = new Map<string, { debit: number; credit: number; closing: number }>();
+    const computing = new Set<string>();
     const computeRollup = (id: string): { debit: number; credit: number; closing: number } => {
       if (map.has(id)) return map.get(id)!;
+      if (computing.has(id)) return { debit: 0, credit: 0, closing: 0 }; // break circular ref
+      computing.add(id);
       const acc = accounts.find((a) => a.id === id);
-      if (!acc) return { debit: 0, credit: 0, closing: 0 };
+      if (!acc) { computing.delete(id); return { debit: 0, credit: 0, closing: 0 }; }
 
       const children = childMap.get(id) || [];
       const selfClosingSigned = acc.closing_balance_type === "debit" ? acc.closing_balance : -acc.closing_balance;
@@ -48,6 +51,7 @@ export function AccountTreeTable({ accounts, onEdit, onDrillDown }: Props) {
 
       const result = { debit: totalDebit, credit: totalCredit, closing: totalClosing };
       map.set(id, result);
+      computing.delete(id);
       return result;
     };
     accounts.forEach((a) => computeRollup(a.id));
