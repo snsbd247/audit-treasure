@@ -192,6 +192,7 @@ const App = () => (
                 <Route path="/hrm/documents" element={<P perm="hrm.view"><DocumentsPage /></P>} />
                 <Route path="/hrm/id-cards" element={<P perm="hrm.view"><IdCardsPage /></P>} />
                 <Route path="/hrm/reports" element={<P perm="hrm.view"><HrReportsPage /></P>} />
+                <Route path="/hrm/login-activity" element={<P perm="hrm.view"><LoginActivityPage /></P>} />
 
                 {/* ─── Employee Portal (own data — no module permission needed) ── */}
                 <Route path="/portal/dashboard" element={<MyDashboardPage />} />
