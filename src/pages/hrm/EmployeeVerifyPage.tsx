@@ -150,17 +150,12 @@ export default function EmployeeVerifyPage() {
     if (!employee || signature) return;
     setSigLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("verify-employee", {
-        body: null,
-        method: "GET",
-        headers: {},
-      });
-      // Use direct fetch for GET with path params
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID || "ezwsrtsqiumhxukwgiou";
       const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-employee/${employee.employee_code}/signature`,
+        `https://${projectId}.supabase.co/functions/v1/verify-employee/${employee.employee_code}/signature`,
         {
           headers: {
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "",
           },
         }
       );
