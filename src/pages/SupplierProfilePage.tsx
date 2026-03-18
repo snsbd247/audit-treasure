@@ -342,6 +342,7 @@ const SupplierProfilePage = () => {
                 <div className="flex justify-between"><span className="text-muted-foreground">Total Orders</span><span className="font-medium">{purchases.length}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Total Purchases</span><span className="font-medium">{fc(totalPurchases)}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Total Returns</span><span className="text-amber-600">{fc(totalReturns)}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Total Paid</span><span className="text-emerald-600">{fc(totalPaid)}</span></div>
                 <div className="flex justify-between border-t pt-2"><span className="text-muted-foreground font-medium">Net Payable</span>
                   <span className={`font-bold ${balanceDue > 0 ? "text-destructive" : "text-emerald-600"}`}>{fc(Math.abs(balanceDue))}</span>
                 </div>
