@@ -73,7 +73,12 @@ const UsersPage = () => {
     const rolesList = rolesRes.data || [];
     const userCustomRolesList = userCustomRolesRes.data || [];
 
-    const mapped: UserRow[] = profiles.map((p: any) => ({
+    // Filter out super admin users (employee_id IS NULL) for non-super-admin viewers
+    const visibleProfiles = isSuperAdmin
+      ? profiles
+      : profiles.filter((p: any) => p.employee_id !== null && p.employee_id !== undefined);
+
+    const mapped: UserRow[] = visibleProfiles.map((p: any) => ({
       ...p,
       roles: rolesList.filter((r: any) => r.user_id === p.id).map((r: any) => r.role),
       branch_name: branchList.find((b) => b.id === p.branch_id)?.name,
