@@ -53,6 +53,7 @@ const reportGroups = [
       { to: "/reports/expense-analysis", label: "Expense Analysis", icon: TrendingDown, desc: "Expense breakdown by category" },
       { to: "/reports/income-analysis", label: "Income Analysis", icon: TrendingUp, desc: "Income breakdown by source" },
       { to: "/reports/financial-summary", label: "Financial Summary", icon: BarChart3, desc: "Dashboard with key metrics" },
+      { to: "/reports/customer-statement", label: "Customer Statement", icon: Users, desc: "Full customer ledger statement with PDF" },
     ],
   },
 ];
