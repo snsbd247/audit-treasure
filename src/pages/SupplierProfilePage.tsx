@@ -15,7 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import {
   ArrowLeft, User, DollarSign, FileText, Printer,
-  Phone, Mail, MapPin, StickyNote, Plus, Trash2, TrendingDown, Receipt, RotateCcw
+  Phone, Mail, MapPin, StickyNote, Plus, Trash2, TrendingDown, Receipt, RotateCcw, Wallet
 } from "lucide-react";
 
 interface LedgerRow {
@@ -40,20 +40,25 @@ const SupplierProfilePage = () => {
   const [returns, setReturns] = useState<any[]>([]);
   const [ledger, setLedger] = useState<LedgerRow[]>([]);
   const [notes, setNotes] = useState<any[]>([]);
+  const [payments, setPayments] = useState<any[]>([]);
   const [newNote, setNewNote] = useState("");
   const [loading, setLoading] = useState(true);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [payDateFrom, setPayDateFrom] = useState("");
+  const [payDateTo, setPayDateTo] = useState("");
+  const [newPayment, setNewPayment] = useState({ amount: "", payment_method: "cash", reference: "", notes: "", payment_date: new Date().toISOString().split("T")[0] });
 
   const fetchData = useCallback(async () => {
     if (!id) return;
     setLoading(true);
 
-    const [supRes, purRes, retRes, notesRes] = await Promise.all([
+    const [supRes, purRes, retRes, notesRes, payRes] = await Promise.all([
       supabase.from("suppliers").select("*").eq("id", id).single(),
       supabase.from("purchases").select("*").eq("supplier_id", id).order("purchase_date", { ascending: true }),
       supabase.from("purchase_returns").select("*").eq("supplier_id", id).order("return_date", { ascending: true }),
       supabase.from("party_notes" as any).select("*").eq("party_type", "supplier").eq("party_id", id).order("created_at", { ascending: false }),
+      supabase.from("party_payments" as any).select("*").eq("party_type", "supplier").eq("party_id", id).order("payment_date", { ascending: false }),
     ]);
 
     setSupplier(supRes.data);
@@ -62,6 +67,7 @@ const SupplierProfilePage = () => {
     setPurchases(purs);
     setReturns(rets);
     setNotes((notesRes.data as any[]) || []);
+    setPayments((payRes.data as any[]) || []);
 
     // Build combined ledger: purchases (credit/payable) + returns (debit/receivable back)
     const allTxns: Array<{ date: string; type: string; ref: string; dr: number; cr: number; id: string }> = [];
@@ -139,7 +145,70 @@ const SupplierProfilePage = () => {
 
   const totalPurchases = purchases.reduce((s, p) => s + Number(p.total_amount || 0), 0);
   const totalReturns = returns.reduce((s, r) => s + Number(r.total_amount || 0), 0);
-  const balanceDue = totalPurchases - totalReturns;
+  const totalPaid = payments.reduce((s, p) => s + Number(p.amount || 0), 0);
+  const balanceDue = totalPurchases - totalReturns - totalPaid;
+
+  const filteredPayments = payments.filter(p => {
+    if (payDateFrom && p.payment_date < payDateFrom) return false;
+    if (payDateTo && p.payment_date > payDateTo) return false;
+    return true;
+  });
+
+  const addPayment = async () => {
+    if (!id || !newPayment.amount || Number(newPayment.amount) <= 0) return;
+    const { error } = await supabase.from("party_payments" as any).insert({
+      party_type: "supplier",
+      party_id: id,
+      payment_date: newPayment.payment_date,
+      amount: Number(newPayment.amount),
+      payment_method: newPayment.payment_method,
+      reference: newPayment.reference || null,
+      notes: newPayment.notes || null,
+      created_by: user?.id || null,
+    } as any);
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      setNewPayment({ amount: "", payment_method: "cash", reference: "", notes: "", payment_date: new Date().toISOString().split("T")[0] });
+      toast({ title: "Payment recorded" });
+      fetchData();
+    }
+  };
+
+  const deletePayment = async (payId: string) => {
+    await supabase.from("party_payments" as any).delete().eq("id", payId);
+    toast({ title: "Payment deleted" });
+    fetchData();
+  };
+
+  const handlePrintPaymentReceipt = (pay: any) => {
+    const win = window.open("", "_blank");
+    if (!win) return;
+    win.document.write(`
+      <html><head><title>Payment Receipt</title>
+      <style>
+        body { font-family: Arial, sans-serif; margin: 40px; font-size: 13px; }
+        h2 { margin-bottom: 5px; }
+        .row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #eee; }
+        .label { color: #666; }
+        .val { font-weight: 600; }
+        .amount { font-size: 22px; font-weight: 700; margin: 20px 0; text-align: center; }
+        .sub { color: #888; font-size: 11px; }
+      </style></head><body>
+      <h2>Payment Receipt</h2>
+      <p class="sub">Supplier: ${supplier?.name}</p>
+      <hr/>
+      <div class="amount">${fc(Number(pay.amount))}</div>
+      <div class="row"><span class="label">Date</span><span class="val">${pay.payment_date}</span></div>
+      <div class="row"><span class="label">Method</span><span class="val">${pay.payment_method}</span></div>
+      <div class="row"><span class="label">Reference</span><span class="val">${pay.reference || "—"}</span></div>
+      <div class="row"><span class="label">Notes</span><span class="val">${pay.notes || "—"}</span></div>
+      <br/><p class="sub">Printed: ${new Date().toLocaleString()}</p>
+      <script>window.print(); window.close();</script>
+      </body></html>
+    `);
+    win.document.close();
+  };
 
   const handlePrintLedger = () => {
     const printContent = document.getElementById("supplier-ledger-print");
@@ -248,6 +317,7 @@ const SupplierProfilePage = () => {
           <TabsTrigger value="overview" className="text-xs sm:text-sm"><User className="w-3.5 h-3.5 mr-1 hidden sm:inline" />Overview</TabsTrigger>
           <TabsTrigger value="ledger" className="text-xs sm:text-sm"><Receipt className="w-3.5 h-3.5 mr-1 hidden sm:inline" />Ledger</TabsTrigger>
           <TabsTrigger value="purchases" className="text-xs sm:text-sm"><FileText className="w-3.5 h-3.5 mr-1 hidden sm:inline" />Purchases</TabsTrigger>
+          <TabsTrigger value="payments" className="text-xs sm:text-sm"><Wallet className="w-3.5 h-3.5 mr-1 hidden sm:inline" />Payments</TabsTrigger>
           <TabsTrigger value="notes" className="text-xs sm:text-sm"><StickyNote className="w-3.5 h-3.5 mr-1 hidden sm:inline" />Notes</TabsTrigger>
         </TabsList>
 
@@ -272,6 +342,7 @@ const SupplierProfilePage = () => {
                 <div className="flex justify-between"><span className="text-muted-foreground">Total Orders</span><span className="font-medium">{purchases.length}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Total Purchases</span><span className="font-medium">{fc(totalPurchases)}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Total Returns</span><span className="text-amber-600">{fc(totalReturns)}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Total Paid</span><span className="text-emerald-600">{fc(totalPaid)}</span></div>
                 <div className="flex justify-between border-t pt-2"><span className="text-muted-foreground font-medium">Net Payable</span>
                   <span className={`font-bold ${balanceDue > 0 ? "text-destructive" : "text-emerald-600"}`}>{fc(Math.abs(balanceDue))}</span>
                 </div>
@@ -456,6 +527,115 @@ const SupplierProfilePage = () => {
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        {/* Payments Tab */}
+        <TabsContent value="payments" className="space-y-3">
+          {isSuperAdmin && (
+            <Card>
+              <CardHeader className="pb-3"><CardTitle className="text-sm">Record Payment</CardTitle></CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Date</Label>
+                    <Input type="date" value={newPayment.payment_date} onChange={e => setNewPayment(p => ({ ...p, payment_date: e.target.value }))} className="h-9" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Amount</Label>
+                    <Input type="number" min="0" step="0.01" placeholder="0.00" value={newPayment.amount} onChange={e => setNewPayment(p => ({ ...p, amount: e.target.value }))} className="h-9" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Method</Label>
+                    <select className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm" value={newPayment.payment_method} onChange={e => setNewPayment(p => ({ ...p, payment_method: e.target.value }))}>
+                      <option value="cash">Cash</option>
+                      <option value="bank">Bank Transfer</option>
+                      <option value="cheque">Cheque</option>
+                      <option value="mobile">Mobile Payment</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Reference</Label>
+                    <Input placeholder="Ref # / Cheque #" value={newPayment.reference} onChange={e => setNewPayment(p => ({ ...p, reference: e.target.value }))} className="h-9" />
+                  </div>
+                  <div className="space-y-1 sm:col-span-2">
+                    <Label className="text-xs">Notes</Label>
+                    <Input placeholder="Payment notes..." value={newPayment.notes} onChange={e => setNewPayment(p => ({ ...p, notes: e.target.value }))} className="h-9" />
+                  </div>
+                </div>
+                <Button size="sm" className="mt-3" onClick={addPayment} disabled={!newPayment.amount || Number(newPayment.amount) <= 0}>
+                  <Plus className="w-3.5 h-3.5 mr-1" />Record Payment
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs">From</Label>
+              <Input type="date" value={payDateFrom} onChange={e => setPayDateFrom(e.target.value)} className="h-9 w-36" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">To</Label>
+              <Input type="date" value={payDateTo} onChange={e => setPayDateTo(e.target.value)} className="h-9 w-36" />
+            </div>
+            {(payDateFrom || payDateTo) && (
+              <Button size="sm" variant="ghost" onClick={() => { setPayDateFrom(""); setPayDateTo(""); }}>Clear</Button>
+            )}
+          </div>
+
+          <Card>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                      <TableHead>Method</TableHead>
+                      <TableHead>Reference</TableHead>
+                      <TableHead>Notes</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredPayments.length === 0 ? (
+                      <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No payments recorded</TableCell></TableRow>
+                    ) : (
+                      <>
+                        {filteredPayments.map(pay => (
+                          <TableRow key={pay.id}>
+                            <TableCell className="text-sm">{pay.payment_date}</TableCell>
+                            <TableCell className="text-right tabular-nums font-medium text-emerald-600">{fc(Number(pay.amount))}</TableCell>
+                            <TableCell className="text-sm capitalize">{pay.payment_method}</TableCell>
+                            <TableCell className="font-mono text-xs">{pay.reference || "—"}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground truncate max-w-[200px]">{pay.notes || "—"}</TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-1">
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handlePrintPaymentReceipt(pay)}>
+                                  <Printer className="w-3.5 h-3.5" />
+                                </Button>
+                                {isSuperAdmin && (
+                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deletePayment(pay.id)}>
+                                    <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                                  </Button>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        <TableRow className="bg-muted/50 font-medium">
+                          <TableCell className="text-right text-sm">Total</TableCell>
+                          <TableCell className="text-right tabular-nums font-bold text-emerald-600">{fc(filteredPayments.reduce((s, p) => s + Number(p.amount || 0), 0))}</TableCell>
+                          <TableCell colSpan={4} />
+                        </TableRow>
+                      </>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Notes Tab */}
