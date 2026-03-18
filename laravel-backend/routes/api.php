@@ -309,6 +309,8 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\BranchScope::class, \App
             Route::get('ledger/pdf', [\App\Http\Controllers\Print\PrintController::class, 'ledgerPdf']);
             Route::get('payments/{id}', [\App\Http\Controllers\Print\PrintController::class, 'paymentPrint']);
             Route::get('payments/{id}/pdf', [\App\Http\Controllers\Print\PrintController::class, 'paymentPdf']);
+            Route::get('statement', [\App\Http\Controllers\Print\PrintController::class, 'statementPrint']);
+            Route::get('statement/pdf', [\App\Http\Controllers\Print\PrintController::class, 'statementPdf']);
         });
 
         // ─── Payments & Ledger ──────────────────────────────────
