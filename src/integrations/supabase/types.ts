@@ -1461,6 +1461,41 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_allocations: {
+        Row: {
+          allocated_amount: number
+          created_at: string
+          id: string
+          invoice_id: string
+          invoice_type: string
+          payment_id: string
+        }
+        Insert: {
+          allocated_amount?: number
+          created_at?: string
+          id?: string
+          invoice_id: string
+          invoice_type: string
+          payment_id: string
+        }
+        Update: {
+          allocated_amount?: number
+          created_at?: string
+          id?: string
+          invoice_id?: string
+          invoice_type?: string
+          payment_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_allocations_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "party_payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payroll: {
         Row: {
           allowances: number
