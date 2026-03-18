@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Plus, Edit, Trash2, Search, Users, Eye, KeyRound } from "lucide-react";
+import { Plus, Edit, Trash2, Search, Users, Eye, EyeOff, KeyRound, Wand2 } from "lucide-react";
 
 interface Employee {
   id: string;
