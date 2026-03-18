@@ -53,14 +53,21 @@ const CustomerProfilePage = () => {
     if (!id) return;
     setLoading(true);
 
-    const [custRes, invRes, retRes, notesRes] = await Promise.all([
+    const [custRes, invRes, retRes, notesRes, payRes] = await Promise.all([
       supabase.from("customers").select("*").eq("id", id).single(),
       supabase.from("sales_invoices").select("*").eq("customer_id", id).order("invoice_date", { ascending: true }),
       supabase.from("sales_returns").select("*").eq("customer_id", id).order("return_date", { ascending: true }),
       supabase.from("party_notes" as any).select("*").eq("party_type", "customer").eq("party_id", id).order("created_at", { ascending: false }),
+      supabase.from("party_payments" as any).select("*").eq("party_type", "customer").eq("party_id", id).order("payment_date", { ascending: false }),
     ]);
 
     setCustomer(custRes.data);
+    const invs = invRes.data || [];
+    const rets = retRes.data || [];
+    setInvoices(invs);
+    setReturns(rets);
+    setNotes((notesRes.data as any[]) || []);
+    setPayments((payRes.data as any[]) || []);
     const invs = invRes.data || [];
     const rets = retRes.data || [];
     setInvoices(invs);

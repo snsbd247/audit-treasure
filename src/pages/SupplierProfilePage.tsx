@@ -53,14 +53,21 @@ const SupplierProfilePage = () => {
     if (!id) return;
     setLoading(true);
 
-    const [supRes, purRes, retRes, notesRes] = await Promise.all([
+    const [supRes, purRes, retRes, notesRes, payRes] = await Promise.all([
       supabase.from("suppliers").select("*").eq("id", id).single(),
       supabase.from("purchases").select("*").eq("supplier_id", id).order("purchase_date", { ascending: true }),
       supabase.from("purchase_returns").select("*").eq("supplier_id", id).order("return_date", { ascending: true }),
       supabase.from("party_notes" as any).select("*").eq("party_type", "supplier").eq("party_id", id).order("created_at", { ascending: false }),
+      supabase.from("party_payments" as any).select("*").eq("party_type", "supplier").eq("party_id", id).order("payment_date", { ascending: false }),
     ]);
 
     setSupplier(supRes.data);
+    const purs = purRes.data || [];
+    const rets = retRes.data || [];
+    setPurchases(purs);
+    setReturns(rets);
+    setNotes((notesRes.data as any[]) || []);
+    setPayments((payRes.data as any[]) || []);
     const purs = purRes.data || [];
     const rets = retRes.data || [];
     setPurchases(purs);
