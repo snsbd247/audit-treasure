@@ -303,6 +303,8 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\BranchScope::class, \App
         Route::prefix('print')->group(function () {
             Route::get('invoices/{id}', [\App\Http\Controllers\Print\PrintController::class, 'invoicePrint']);
             Route::get('invoices/{id}/pdf', [\App\Http\Controllers\Print\PrintController::class, 'invoicePdf']);
+            Route::get('purchases/{id}', [\App\Http\Controllers\Print\PrintController::class, 'purchasePrint']);
+            Route::get('purchases/{id}/pdf', [\App\Http\Controllers\Print\PrintController::class, 'purchasePdf']);
             Route::get('ledger', [\App\Http\Controllers\Print\PrintController::class, 'ledgerPrint']);
             Route::get('ledger/pdf', [\App\Http\Controllers\Print\PrintController::class, 'ledgerPdf']);
             Route::get('payments/{id}', [\App\Http\Controllers\Print\PrintController::class, 'paymentPrint']);

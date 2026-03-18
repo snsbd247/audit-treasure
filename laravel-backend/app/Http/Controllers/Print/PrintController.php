@@ -55,6 +55,45 @@ class PrintController extends BaseController
         return $pdf->download("Invoice_{$invoice->invoice_number}.pdf");
     }
 
+    // ─── Purchase Print Data ────────────────────────────────
+    public function purchasePrint(string $id)
+    {
+        $purchase = Purchase::with('items.product', 'supplier', 'branch')->findOrFail($id);
+        $company = CompanySetting::first();
+
+        $paid = (float) PaymentAllocation::where('invoice_id', $id)
+            ->where('invoice_type', 'purchase')
+            ->sum('allocated_amount');
+        $due = round((float) $purchase->total_amount - $paid, 2);
+
+        return $this->success([
+            'purchase' => $purchase,
+            'company' => $company,
+            'paid_amount' => round($paid, 2),
+            'due_amount' => max($due, 0),
+        ]);
+    }
+
+    public function purchasePdf(string $id)
+    {
+        $purchase = Purchase::with('items.product', 'supplier', 'branch')->findOrFail($id);
+        $company = CompanySetting::first();
+
+        $paid = (float) PaymentAllocation::where('invoice_id', $id)
+            ->where('invoice_type', 'purchase')
+            ->sum('allocated_amount');
+        $due = round((float) $purchase->total_amount - $paid, 2);
+
+        $pdf = Pdf::loadView('prints.purchase', [
+            'purchase' => $purchase,
+            'company' => $company,
+            'paid_amount' => round($paid, 2),
+            'due_amount' => max($due, 0),
+        ]);
+
+        return $pdf->download("Purchase_{$purchase->purchase_number}.pdf");
+    }
+
     // ─── Ledger Print Data ──────────────────────────────────
     public function ledgerPrint(Request $request)
     {
