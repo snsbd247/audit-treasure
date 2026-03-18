@@ -20,6 +20,37 @@ interface EmployeeResult {
   status: string;
   department_id: string | null;
   designation_id: string | null;
+  joining_date: string | null;
+}
+
+function calcExperience(joiningDate: string | null) {
+  if (!joiningDate) return { text: "", years: 0, badge: "" };
+  const join = new Date(joiningDate);
+  const now = new Date();
+  let years = now.getFullYear() - join.getFullYear();
+  let months = now.getMonth() - join.getMonth();
+  if (months < 0) { years--; months += 12; }
+  const totalYears = years + months / 12;
+  const text = years > 0
+    ? `${years} Year${years > 1 ? "s" : ""} ${months} Month${months !== 1 ? "s" : ""}`
+    : `${months} Month${months !== 1 ? "s" : ""}`;
+  let badge = "";
+  if (totalYears < 1) badge = "New Employee";
+  else if (totalYears < 3) badge = "Junior";
+  else if (totalYears < 5) badge = "Mid-Level";
+  else badge = "Senior";
+  return { text, years: totalYears, badge };
+}
+
+function badgeColor(badge: string) {
+  if (badge === "Senior") return "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800";
+  if (badge === "Mid-Level") return "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800";
+  return "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800";
+}
+
+function formatJoinDate(d: string | null) {
+  if (!d) return "—";
+  return new Date(d).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" });
 }
 
 interface DigitalSignature {
