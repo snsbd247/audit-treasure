@@ -331,26 +331,48 @@ const CustomerProfilePage = () => {
   };
 
   const handlePrintLedger = () => {
-    const printContent = document.getElementById("customer-ledger-print");
-    if (!printContent) return;
+    const rows = ledger.map(r => `
+      <tr>
+        <td>${r.date}</td>
+        <td>${r.type}</td>
+        <td class="mono">${r.reference}</td>
+        <td class="right">${r.debit > 0 ? fc(r.debit) : "—"}</td>
+        <td class="right">${r.credit > 0 ? fc(r.credit) : "—"}</td>
+        <td class="right" style="font-weight:600;">${fc(Math.abs(r.balance))} ${r.balance < 0 ? "Cr" : "Dr"}</td>
+      </tr>
+    `).join("");
+    const totalDr = ledger.reduce((s, r) => s + r.debit, 0);
+    const totalCr = ledger.reduce((s, r) => s + r.credit, 0);
+    const closingBal = ledger.length > 0 ? ledger[ledger.length - 1].balance : 0;
+
     const win = window.open("", "_blank");
     if (!win) return;
     win.document.write(`
-      <html><head><title>Customer Ledger - ${customer?.name}</title>
-      <style>
-        body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; }
-        h2 { margin-bottom: 5px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
-        th { background: #f5f5f5; font-weight: 600; }
-        .right { text-align: right; }
-        .mono { font-family: monospace; }
-        .sub { color: #666; font-size: 11px; }
-      </style></head><body>
-      <h2>${customer?.name} — Ledger</h2>
-      <p class="sub">${dateFrom ? `From: ${dateFrom}` : ""} ${dateTo ? `To: ${dateTo}` : ""} ${!dateFrom && !dateTo ? "All dates" : ""}</p>
-      ${printContent.innerHTML}
-      <script>window.print(); window.close();</script>
+      <html><head><title>Customer Ledger — ${customer?.name}</title>
+      <style>${printStyles}</style></head><body>
+      ${companyHeader()}
+      <div class="doc-title">Customer Ledger</div>
+      <div class="doc-info">
+        <div><span class="label">Customer:</span> ${customer?.name}</div>
+        ${dateFrom ? `<div><span class="label">From:</span> ${dateFrom}</div>` : ""}
+        ${dateTo ? `<div><span class="label">To:</span> ${dateTo}</div>` : ""}
+        <div><span class="label">Entries:</span> ${ledger.length}</div>
+      </div>
+      <table>
+        <thead><tr><th>Date</th><th>Description</th><th>Reference</th><th class="right">Debit</th><th class="right">Credit</th><th class="right">Balance</th></tr></thead>
+        <tbody>
+          <tr style="background:#f8f8f8;font-weight:600;"><td colspan="5">Opening Balance</td><td class="right">0.00</td></tr>
+          ${rows}
+          <tr class="total-row">
+            <td colspan="3" class="right">Closing Balance</td>
+            <td class="right">${fc(totalDr)}</td>
+            <td class="right">${fc(totalCr)}</td>
+            <td class="right" style="font-size:13px;color:${closingBal >= 0 ? "#991b1b" : "#166534"};">${fc(Math.abs(closingBal))} ${closingBal < 0 ? "Cr" : "Dr"}</td>
+          </tr>
+        </tbody>
+      </table>
+      ${printFooter()}
+      <script>setTimeout(function(){window.print();window.close();},300);</script>
       </body></html>
     `);
     win.document.close();
