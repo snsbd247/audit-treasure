@@ -40,10 +40,14 @@ const SupplierProfilePage = () => {
   const [returns, setReturns] = useState<any[]>([]);
   const [ledger, setLedger] = useState<LedgerRow[]>([]);
   const [notes, setNotes] = useState<any[]>([]);
+  const [payments, setPayments] = useState<any[]>([]);
   const [newNote, setNewNote] = useState("");
   const [loading, setLoading] = useState(true);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [payDateFrom, setPayDateFrom] = useState("");
+  const [payDateTo, setPayDateTo] = useState("");
+  const [newPayment, setNewPayment] = useState({ amount: "", payment_method: "cash", reference: "", notes: "", payment_date: new Date().toISOString().split("T")[0] });
 
   const fetchData = useCallback(async () => {
     if (!id) return;
