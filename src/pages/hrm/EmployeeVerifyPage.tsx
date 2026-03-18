@@ -506,13 +506,19 @@ export default function EmployeeVerifyPage() {
               </div>
 
               {/* Details */}
-              <div className="space-y-2.5 border-t border-b py-4">
-                {[
+              {(() => {
+                const exp = calcExperience(employee.joining_date);
+                const rows = [
                   { label: "Department", value: department },
                   { label: "Designation", value: designation },
+                  { label: "Joining Date", value: formatJoinDate(employee.joining_date) },
+                  ...(exp.text ? [{ label: "Experience", value: exp.text }] : []),
                   { label: "Company", value: companyName },
                   { label: "Status", value: employee.status, isStatus: true },
-                ].map((row) => (
+                ];
+                return (
+              <div className="space-y-2.5 border-t border-b py-4">
+                {rows.map((row) => (
                   <div key={row.label} className="flex justify-between items-center px-1">
                     <span className="text-muted-foreground text-sm">{row.label}</span>
                     {row.isStatus ? (
