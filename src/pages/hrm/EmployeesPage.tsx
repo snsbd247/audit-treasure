@@ -63,6 +63,7 @@ export default function EmployeesPage() {
   const [form, setForm] = useState(defaultForm);
   const [loading, setLoading] = useState(false);
   const [linkedUsers, setLinkedUsers] = useState<Record<string, string>>({});
+  const [showPassword, setShowPassword] = useState(false);
 
   const fetchAll = useCallback(async () => {
     const [empRes, deptRes, desigRes, branchRes] = await Promise.all([
