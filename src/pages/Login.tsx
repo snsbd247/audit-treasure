@@ -157,10 +157,6 @@ const Login = () => {
             )}
           </CardContent>
         </Card>
-        <p className="mt-4 text-xs text-muted-foreground text-center">
-          {branding.footer_text}
-          {!branding.white_label_mode && branding.developer_name && ` | Developed by ${branding.developer_name}`}
-        </p>
       </div>
     </div>
   );
