@@ -5,9 +5,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { QRCodeSVG } from "qrcode.react";
 import {
   CheckCircle, XCircle, Shield, Search, Printer,
-  ArrowLeft, Award, Share2, Copy, Check,
+  ArrowLeft, Award, Share2, Copy, Check, Download,
+  Fingerprint, ShieldCheck,
 } from "lucide-react";
 
 interface EmployeeResult {
@@ -20,61 +22,11 @@ interface EmployeeResult {
   designation_id: string | null;
 }
 
-// Simple QR code as SVG using a basic encoding approach
-function QRCodeSVG({ value, size = 100 }: { value: string; size?: number }) {
-  // Generate a deterministic pattern from the URL string
-  const cells = 21;
-  const cellSize = size / cells;
-  const grid: boolean[][] = [];
-
-  // Simple hash-based pattern (not a real QR but visually representative)
-  let hash = 0;
-  for (let i = 0; i < value.length; i++) {
-    hash = ((hash << 5) - hash + value.charCodeAt(i)) | 0;
-  }
-
-  for (let r = 0; r < cells; r++) {
-    grid[r] = [];
-    for (let c = 0; c < cells; c++) {
-      // Finder patterns (top-left, top-right, bottom-left corners)
-      const inFinderTL = r < 7 && c < 7;
-      const inFinderTR = r < 7 && c >= cells - 7;
-      const inFinderBL = r >= cells - 7 && c < 7;
-
-      if (inFinderTL || inFinderTR || inFinderBL) {
-        const lr = inFinderTL ? r : inFinderTR ? r : r - (cells - 7);
-        const lc = inFinderTL ? c : inFinderTR ? c - (cells - 7) : c;
-        // Outer border or inner square
-        grid[r][c] =
-          lr === 0 || lr === 6 || lc === 0 || lc === 6 ||
-          (lr >= 2 && lr <= 4 && lc >= 2 && lc <= 4);
-      } else {
-        // Data area - deterministic pattern from hash
-        const seed = (hash ^ (r * 31 + c * 17)) >>> 0;
-        grid[r][c] = seed % 3 !== 0;
-      }
-    }
-  }
-
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="mx-auto">
-      <rect width={size} height={size} fill="white" />
-      {grid.map((row, r) =>
-        row.map((cell, c) =>
-          cell ? (
-            <rect
-              key={`${r}-${c}`}
-              x={c * cellSize}
-              y={r * cellSize}
-              width={cellSize}
-              height={cellSize}
-              fill="black"
-            />
-          ) : null
-        )
-      )}
-    </svg>
-  );
+interface DigitalSignature {
+  hash: string;
+  hash_short: string;
+  issued_at: string;
+  algorithm: string;
 }
 
 export default function EmployeeVerifyPage() {
@@ -91,6 +43,8 @@ export default function EmployeeVerifyPage() {
   const [notFound, setNotFound] = useState(false);
   const [showCert, setShowCert] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [signature, setSignature] = useState<DigitalSignature | null>(null);
+  const [sigLoading, setSigLoading] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
   const verifyUrl = employee
@@ -130,6 +84,7 @@ export default function EmployeeVerifyPage() {
     setDesignation("");
     setSearched(true);
     setShowCert(false);
+    setSignature(null);
 
     const { data: emp } = await supabase
       .from("employees" as any)
@@ -160,6 +115,35 @@ export default function EmployeeVerifyPage() {
     setLoading(false);
   };
 
+  const fetchSignature = async () => {
+    if (!employee || signature) return;
+    setSigLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("verify-employee", {
+        body: null,
+        method: "GET",
+        headers: {},
+      });
+      // Use direct fetch for GET with path params
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-employee/${employee.employee_code}/signature`,
+        {
+          headers: {
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+        }
+      );
+      const json = await res.json();
+      if (json.success && json.data?.digital_signature) {
+        setSignature(json.data.digital_signature);
+      }
+    } catch (err) {
+      console.error("Signature fetch failed:", err);
+    } finally {
+      setSigLoading(false);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     doVerify(searchCode);
@@ -178,61 +162,82 @@ export default function EmployeeVerifyPage() {
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
   };
 
+  const handleViewCertificate = () => {
+    setShowCert(true);
+    fetchSignature();
+  };
+
   const isActive = employee?.status === "active";
 
   // ─── Certificate View ───
   if (showCert && employee) {
     return (
       <div className="min-h-screen bg-muted/30 flex items-start justify-center p-4 pt-8 sm:pt-12 print:bg-white print:p-0">
-        {/* Print: only certificate */}
         <div className="w-full max-w-2xl">
-          <div className="print:hidden mb-4 flex gap-2">
+          {/* Toolbar */}
+          <div className="print:hidden mb-4 flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={() => setShowCert(false)}>
               <ArrowLeft className="w-4 h-4 mr-1" /> Back
             </Button>
             <Button size="sm" onClick={handlePrint}>
-              <Printer className="w-4 h-4 mr-1" /> Print / Save PDF
+              <Printer className="w-4 h-4 mr-1" /> Print Certificate
+            </Button>
+            <Button size="sm" variant="secondary" onClick={handlePrint}>
+              <Download className="w-4 h-4 mr-1" /> Save as PDF
             </Button>
           </div>
 
           {/* Certificate */}
-          <div className="bg-white border-2 border-primary/20 rounded-lg p-8 sm:p-12 relative overflow-hidden print:border-2 print:rounded-none print:p-12">
+          <div className="bg-white border-2 border-primary/20 rounded-lg p-6 sm:p-10 relative overflow-hidden print:border-2 print:rounded-none print:p-10">
             {/* Watermark */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] print:opacity-[0.04]">
-              <span className="text-[120px] sm:text-[160px] font-black text-primary rotate-[-30deg] whitespace-nowrap select-none">
+              <span className="text-[100px] sm:text-[140px] font-black text-primary rotate-[-30deg] whitespace-nowrap select-none">
                 VERIFIED
               </span>
             </div>
 
-            {/* Decorative Border */}
-            <div className="absolute inset-3 border border-primary/10 rounded pointer-events-none print:border-primary/20" />
+            {/* Decorative double border */}
+            <div className="absolute inset-2 border border-primary/8 rounded pointer-events-none print:border-primary/15" />
+            <div className="absolute inset-4 border border-primary/5 rounded pointer-events-none print:border-primary/10" />
 
             {/* Content */}
             <div className="relative z-10 text-center">
               {/* Header */}
-              {companyLogo && <img src={companyLogo} alt="Logo" className="h-14 mx-auto mb-2 print:h-16" />}
-              <h2 className="text-lg font-bold text-foreground tracking-wide print:text-black">{companyName}</h2>
-              {companyAddress && (
-                <p className="text-xs text-muted-foreground mt-0.5 print:text-gray-500">{companyAddress}</p>
-              )}
+              <div className="mb-6">
+                {companyLogo && <img src={companyLogo} alt="Logo" className="h-14 mx-auto mb-2 print:h-16" />}
+                <h2 className="text-lg font-bold text-foreground tracking-wide print:text-black">{companyName}</h2>
+                {companyAddress && (
+                  <p className="text-[11px] text-muted-foreground mt-0.5 print:text-gray-500">{companyAddress}</p>
+                )}
+              </div>
 
               {/* Divider */}
-              <div className="my-5 flex items-center gap-3">
+              <div className="flex items-center gap-3 mb-5">
                 <div className="flex-1 h-px bg-primary/20" />
                 <Award className="w-6 h-6 text-primary print:text-black" />
                 <div className="flex-1 h-px bg-primary/20" />
               </div>
 
               {/* Title */}
-              <h1 className="text-xl sm:text-2xl font-bold text-foreground uppercase tracking-[0.15em] print:text-black">
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground uppercase tracking-[0.12em] print:text-black">
                 Employee Verification Certificate
               </h1>
               <p className="text-xs text-muted-foreground mt-1 print:text-gray-500">
                 Certificate of Employment Verification
               </p>
 
-              {/* Body */}
-              <div className="mt-8 text-sm text-foreground leading-relaxed max-w-md mx-auto print:text-black">
+              {/* Digital Signature Badge */}
+              {signature && (
+                <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-50 border border-green-200 dark:bg-green-900/20 dark:border-green-800 print:bg-green-50">
+                  <ShieldCheck className="w-3.5 h-3.5 text-green-600" />
+                  <span className="text-[11px] font-semibold text-green-700 dark:text-green-400 print:text-green-700">
+                    Digitally Signed & Verified
+                  </span>
+                </div>
+              )}
+
+              {/* Body text */}
+              <div className="mt-7 text-sm text-foreground leading-relaxed max-w-md mx-auto print:text-black">
                 <p>This is to certify that</p>
                 <p className="text-xl font-bold my-3 text-primary print:text-black">
                   {employee.first_name} {employee.last_name}
@@ -244,7 +249,7 @@ export default function EmployeeVerifyPage() {
               </div>
 
               {/* Employee Details Table */}
-              <div className="mt-8 mx-auto max-w-sm">
+              <div className="mt-7 mx-auto max-w-sm">
                 <table className="w-full text-sm">
                   <tbody>
                     {[
@@ -252,12 +257,12 @@ export default function EmployeeVerifyPage() {
                       { label: "Employee ID", value: employee.employee_code },
                       { label: "Department", value: department || "—" },
                       { label: "Designation", value: designation || "—" },
-                      { label: "Status", value: isActive ? "Active" : "Inactive" },
+                      { label: "Employment Status", value: isActive ? "Active" : "Inactive" },
                     ].map((row) => (
                       <tr key={row.label} className="border-b border-muted print:border-gray-200">
                         <td className="py-2 text-left text-muted-foreground font-medium print:text-gray-500">{row.label}</td>
                         <td className={`py-2 text-right font-semibold ${
-                          row.label === "Status"
+                          row.label === "Employment Status"
                             ? isActive ? "text-green-600" : "text-destructive"
                             : "text-foreground print:text-black"
                         }`}>
@@ -269,33 +274,73 @@ export default function EmployeeVerifyPage() {
                 </table>
               </div>
 
-              {/* QR Code */}
-              <div className="mt-8">
-                <QRCodeSVG value={verifyUrl} size={80} />
-                <p className="text-[9px] text-muted-foreground mt-1 print:text-gray-400">
-                  Scan to verify online
-                </p>
+              {/* QR + Digital Signature Section */}
+              <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-6">
+                {/* QR Code */}
+                <div className="text-center">
+                  <div className="bg-white p-2 border rounded inline-block">
+                    <QRCodeSVG value={verifyUrl} size={90} level="M" />
+                  </div>
+                  <p className="text-[9px] text-muted-foreground mt-1 print:text-gray-400">
+                    Scan to verify online
+                  </p>
+                </div>
+
+                {/* Digital Signature Info */}
+                {signature && (
+                  <div className="text-left bg-muted/50 rounded-lg p-3 text-[10px] space-y-1 border print:bg-gray-50">
+                    <div className="flex items-center gap-1 font-semibold text-foreground mb-1.5 print:text-black">
+                      <Fingerprint className="w-3.5 h-3.5" />
+                      Digital Signature
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground print:text-gray-500">Hash: </span>
+                      <span className="font-mono font-semibold text-foreground print:text-black">{signature.hash_short}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground print:text-gray-500">Algorithm: </span>
+                      <span className="font-medium text-foreground print:text-black">{signature.algorithm}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground print:text-gray-500">Issued: </span>
+                      <span className="font-medium text-foreground print:text-black">
+                        {new Date(signature.issued_at).toLocaleString("en-US", {
+                          year: "numeric", month: "short", day: "numeric",
+                          hour: "2-digit", minute: "2-digit",
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {sigLoading && (
+                  <div className="text-center">
+                    <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+                    <p className="text-[10px] text-muted-foreground mt-1">Generating signature...</p>
+                  </div>
+                )}
               </div>
 
               {/* Issue Date */}
-              <div className="mt-8 pt-6 border-t border-primary/10">
+              <div className="mt-8 pt-5 border-t border-primary/10">
                 <p className="text-xs text-muted-foreground print:text-gray-500">
                   Issued on: <span className="font-semibold">{todayFormatted}</span>
                 </p>
                 <p className="text-[10px] text-muted-foreground mt-1 print:text-gray-400">
-                  This certificate is system-generated and verified by {companyName}.
+                  This certificate is digitally generated and verified by {companyName}.
+                  <br />Verify authenticity at: <span className="font-mono text-foreground print:text-black">{verifyUrl}</span>
                 </p>
               </div>
 
               {/* Signature Area */}
-              <div className="mt-10 flex justify-between items-end px-4">
+              <div className="mt-10 flex justify-between items-end px-2 sm:px-6">
                 <div className="text-center">
-                  <div className="w-32 border-b border-foreground/30 mb-1 print:border-black/30" />
+                  <div className="w-28 sm:w-36 border-b border-foreground/30 mb-1 print:border-black/30" />
                   <p className="text-[10px] text-muted-foreground print:text-gray-500">Employee Signature</p>
                 </div>
                 <div className="text-center">
-                  <div className="w-32 border-b border-foreground/30 mb-1 print:border-black/30" />
-                  <p className="text-[10px] text-muted-foreground print:text-gray-500">Authorized Signature</p>
+                  <div className="w-28 sm:w-36 border-b border-foreground/30 mb-1 print:border-black/30" />
+                  <p className="text-[10px] text-muted-foreground print:text-gray-500">Authorized Signature & Seal</p>
                 </div>
               </div>
             </div>
@@ -431,18 +476,20 @@ export default function EmployeeVerifyPage() {
 
               {/* QR Code */}
               <div className="mt-4 text-center print:block">
-                <QRCodeSVG value={verifyUrl} size={72} />
-                <p className="text-[9px] text-muted-foreground mt-1">Scan to verify</p>
+                <div className="inline-block bg-white p-2 border rounded">
+                  <QRCodeSVG value={verifyUrl} size={80} level="M" />
+                </div>
+                <p className="text-[9px] text-muted-foreground mt-1">Scan to verify online</p>
               </div>
 
               {/* Action Buttons */}
               <div className="mt-5 space-y-2 print:hidden">
                 <div className="flex gap-2">
-                  <Button onClick={() => setShowCert(true)} className="flex-1 h-10">
+                  <Button onClick={handleViewCertificate} className="flex-1 h-10">
                     <Award className="w-4 h-4 mr-1.5" />
                     View Certificate
                   </Button>
-                  <Button onClick={handlePrint} variant="outline" className="h-10 px-3">
+                  <Button onClick={handlePrint} variant="outline" className="h-10 px-3" title="Print">
                     <Printer className="w-4 h-4" />
                   </Button>
                 </div>
