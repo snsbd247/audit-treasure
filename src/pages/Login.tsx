@@ -37,10 +37,16 @@ const Login = () => {
       navigate("/");
     } catch (err: any) {
       const msg = err.message || "";
-      const friendly =
-        msg.includes("Invalid login") || msg.includes("non-2xx")
-          ? "Invalid username or password. Please try again."
-          : msg;
+      let friendly: string;
+      if (msg.includes("banned") || msg.includes("disabled")) {
+        friendly = "Your account has been disabled. Please contact the administrator.";
+      } else if (msg.includes("Invalid login") || msg.includes("non-2xx") || msg.includes("Invalid Refresh Token")) {
+        friendly = "Invalid username or password. Please try again.";
+      } else if (msg.includes("not found")) {
+        friendly = "Username not found. Please check and try again.";
+      } else {
+        friendly = msg;
+      }
       toast({ title: "Login Failed", description: friendly, variant: "destructive" });
     } finally {
       setSubmitting(false);
