@@ -66,35 +66,19 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex bg-background">
-      <div className="hidden lg:flex lg:w-1/2 bg-primary relative items-center justify-center p-12">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary to-primary/80" />
-        <div className="relative z-10 text-center space-y-6 max-w-md">
+      <div className="hidden lg:flex lg:w-1/2 bg-primary relative items-center justify-center">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/90 to-primary/80" />
+        <div className="relative z-10 flex flex-col items-center justify-center space-y-5">
           {branding.login_logo_url ? (
-            <img src={branding.login_logo_url} alt="Logo" className="h-16 mx-auto" />
+            <img src={branding.login_logo_url} alt="Logo" className="h-20" />
           ) : branding.company_logo_url ? (
-            <img src={branding.company_logo_url} alt="Logo" className="h-16 mx-auto" />
+            <img src={branding.company_logo_url} alt="Logo" className="h-20" />
           ) : (
-            <div className="w-16 h-16 bg-primary-foreground/20 rounded-2xl flex items-center justify-center mx-auto">
-              <Building2 className="w-8 h-8 text-primary-foreground" />
+            <div className="w-20 h-20 bg-primary-foreground/20 rounded-2xl flex items-center justify-center">
+              <Building2 className="w-10 h-10 text-primary-foreground" />
             </div>
           )}
-          <h1 className="text-3xl font-bold text-primary-foreground">{branding.software_name || "ERP System"}</h1>
-          <p className="text-primary-foreground/80 text-sm leading-relaxed">
-            Complete enterprise resource planning for manufacturing companies.
-            Manage accounting, inventory, sales, purchases, and production — all in one place.
-          </p>
-          <div className="grid grid-cols-2 gap-3 text-xs text-primary-foreground/70">
-            {["Multi-Branch Accounting", "Inventory Management", "Manufacturing", "Financial Reports",
-              "Role-Based Access", "Voucher Workflow", "Stock Ledger", "Audit Logs"].map((f) => (
-              <div key={f} className="flex items-center gap-1.5">
-                <div className="w-1 h-1 rounded-full bg-primary-foreground/50" />
-                {f}
-              </div>
-            ))}
-          </div>
-          {!branding.white_label_mode && branding.developer_name && (
-            <p className="text-primary-foreground/50 text-xs mt-4">Developed by {branding.developer_name}</p>
-          )}
+          <h1 className="text-3xl font-bold text-primary-foreground tracking-tight">{branding.software_name || "SmartERP"}</h1>
         </div>
       </div>
 
