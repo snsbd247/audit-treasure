@@ -141,6 +141,7 @@ const App = () => (
 
                 {/* ─── Sales ────────────────────────────────────── */}
                 <Route path="/sales" element={<P perm="sales.view"><SalesPage /></P>} />
+                <Route path="/sales/invoices/:id" element={<P perm="sales.view"><SalesInvoiceDetailPage /></P>} />
                 <Route path="/sales/returns" element={<P perm="sales.view"><SalesPage /></P>} />
                 <Route path="/customers" element={<P perm="sales.view"><CustomersPage /></P>} />
                 <Route path="/customers/:id" element={<P perm="sales.view"><CustomerProfilePage /></P>} />
