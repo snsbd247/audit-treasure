@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import {
-  ArrowLeft, User, DollarSign, FileText, Printer,
+  ArrowLeft, User, DollarSign, FileText, Printer, Download,
   Phone, Mail, MapPin, StickyNote, Plus, Trash2, TrendingDown, Receipt, RotateCcw, Wallet, CheckCircle
 } from "lucide-react";
 
@@ -43,6 +44,7 @@ const SupplierProfilePage = () => {
   const navigate = useNavigate();
   const { fc } = useCurrency();
   const { isSuperAdmin, user } = useAuth();
+  const { settings } = useCompanySettings();
   const { toast } = useToast();
 
   const [supplier, setSupplier] = useState<any>(null);
@@ -229,67 +231,126 @@ const SupplierProfilePage = () => {
     return "due";
   };
 
+  const companyHeader = () => `
+    <div style="text-align:center;border-bottom:2px solid #1a1a1a;padding-bottom:12px;margin-bottom:16px;">
+      ${settings?.company_logo_url ? `<img src="${settings.company_logo_url}" alt="Logo" style="height:48px;margin:0 auto 8px;display:block;">` : ""}
+      <h1 style="font-size:18px;font-weight:700;margin-bottom:2px;">${settings?.company_name || "Company"}</h1>
+      ${settings?.address ? `<p style="font-size:11px;color:#666;">${settings.address}</p>` : ""}
+      <p style="font-size:11px;color:#666;">${[settings?.phone && `Phone: ${settings.phone}`, settings?.email && `Email: ${settings.email}`].filter(Boolean).join(" | ")}</p>
+    </div>`;
+
+  const printStyles = `
+    body { font-family: 'Segoe UI', system-ui, sans-serif; margin: 24px; font-size: 12px; color: #1a1a1a; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th { background: #f0f0f0; font-weight: 600; text-align: left; padding: 8px 10px; border: 1px solid #ddd; font-size: 11px; text-transform: uppercase; }
+    td { padding: 6px 10px; border: 1px solid #ddd; font-size: 12px; }
+    .right { text-align: right; }
+    .mono { font-family: monospace; font-size: 11px; }
+    .doc-title { font-size: 14px; font-weight: 600; margin-top: 8px; text-transform: uppercase; letter-spacing: 1px; text-align: center; }
+    .doc-info { display: flex; justify-content: space-between; margin-bottom: 16px; padding: 8px 12px; background: #f8f8f8; border-radius: 4px; }
+    .doc-info .label { font-weight: 600; }
+    .total-row { background: #f0f0f0; font-weight: 700; }
+    .amount-big { font-size: 22px; font-weight: 700; margin: 16px 0; text-align: center; color: #166534; }
+    .signatures { display: flex; justify-content: space-between; margin-top: 48px; }
+    .sig-block { text-align: center; min-width: 140px; }
+    .sig-line { border-top: 1px solid #666; padding-top: 4px; font-size: 11px; color: #666; }
+    .timestamp { font-size: 10px; color: #999; text-align: center; margin-top: 20px; }
+    @media print { body { margin: 0; } }`;
+
+  const printFooter = () => `
+    <div style="margin-top:36px;border-top:1px solid #ddd;padding-top:16px;">
+      <div class="signatures">
+        ${["Prepared By", "Checked By", "Authorized By"].map(l => `<div class="sig-block"><div class="sig-line">${l}</div></div>`).join("")}
+      </div>
+      <p class="timestamp">${settings?.company_name || "Company"} | Generated: ${new Date().toLocaleString()}</p>
+    </div>`;
+
   const handlePrintPaymentReceipt = (pay: any) => {
     const payAllocs = getPaymentAllocations(pay.id);
     const allocRows = payAllocs.map((a: any) => {
       const pur = purchases.find(p => p.id === a.invoice_id);
-      return `<tr><td>${pur?.purchase_number || "—"}</td><td>${pur?.purchase_date || ""}</td><td style="text-align:right">${fc(Number(a.allocated_amount))}</td></tr>`;
+      return `<tr><td class="mono">${pur?.purchase_number || "—"}</td><td>${pur?.purchase_date || ""}</td><td class="right">${fc(Number(a.allocated_amount))}</td></tr>`;
     }).join("");
+    const totalAlloc = payAllocs.reduce((s: number, a: any) => s + Number(a.allocated_amount || 0), 0);
+    const unallocatedAmt = Number(pay.amount) - totalAlloc;
 
     const win = window.open("", "_blank");
     if (!win) return;
     win.document.write(`
-      <html><head><title>Payment Receipt</title>
-      <style>
-        body { font-family: Arial, sans-serif; margin: 40px; font-size: 13px; }
-        h2 { margin-bottom: 5px; }
-        .row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #eee; }
-        .label { color: #666; } .val { font-weight: 600; }
-        .amount { font-size: 22px; font-weight: 700; margin: 20px 0; text-align: center; }
-        .sub { color: #888; font-size: 11px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; font-size: 12px; }
-        th { background: #f5f5f5; }
-      </style></head><body>
-      <h2>Payment Receipt</h2>
-      <p class="sub">Supplier: ${supplier?.name}</p>
-      <hr/>
-      <div class="amount">${fc(Number(pay.amount))}</div>
-      <div class="row"><span class="label">Date</span><span class="val">${pay.payment_date}</span></div>
-      <div class="row"><span class="label">Method</span><span class="val">${pay.payment_method}</span></div>
-      <div class="row"><span class="label">Reference</span><span class="val">${pay.reference || "—"}</span></div>
-      <div class="row"><span class="label">Notes</span><span class="val">${pay.notes || "—"}</span></div>
+      <html><head><title>Payment Receipt — ${pay.reference || pay.id}</title>
+      <style>${printStyles}</style></head><body>
+      ${companyHeader()}
+      <div class="doc-title">Payment Receipt</div>
+      <div class="doc-info">
+        <div><span class="label">Receipt #:</span> ${pay.reference || pay.id}</div>
+        <div><span class="label">Date:</span> ${pay.payment_date}</div>
+        <div><span class="label">Supplier:</span> ${supplier?.name}</div>
+      </div>
+      <div class="amount-big">${fc(Number(pay.amount))}</div>
+      <div class="doc-info">
+        <div><span class="label">Method:</span> ${pay.payment_method}</div>
+        <div><span class="label">Reference:</span> ${pay.reference || "—"}</div>
+        ${pay.notes ? `<div><span class="label">Notes:</span> ${pay.notes}</div>` : ""}
+      </div>
       ${payAllocs.length > 0 ? `
-        <h3 style="margin-top:20px;">Purchase Allocations</h3>
-        <table><thead><tr><th>Purchase #</th><th>Date</th><th style="text-align:right">Allocated</th></tr></thead>
-        <tbody>${allocRows}</tbody></table>
+        <h3 style="font-size:13px;font-weight:600;margin:16px 0 8px;border-bottom:1px solid #ddd;padding-bottom:4px;">Payment Allocation</h3>
+        <table><thead><tr><th>Purchase #</th><th>Date</th><th class="right">Allocated</th></tr></thead>
+        <tbody>${allocRows}
+          <tr class="total-row"><td colspan="2" class="right">Total Allocated</td><td class="right">${fc(totalAlloc)}</td></tr>
+          ${unallocatedAmt > 0.01 ? `<tr><td colspan="2" class="right" style="color:#92400e;">Unallocated (Advance)</td><td class="right" style="color:#92400e;">${fc(unallocatedAmt)}</td></tr>` : ""}
+        </tbody></table>
       ` : ""}
-      <br/><p class="sub">Printed: ${new Date().toLocaleString()}</p>
-      <script>window.print(); window.close();</script>
+      <div style="margin-top:24px;text-align:center;font-size:12px;color:#555;">Thank you for your payment.</div>
+      ${printFooter()}
+      <script>setTimeout(function(){window.print();window.close();},300);</script>
       </body></html>
     `);
     win.document.close();
   };
 
   const handlePrintLedger = () => {
-    const printContent = document.getElementById("supplier-ledger-print");
-    if (!printContent) return;
+    const rows = ledger.map(r => `
+      <tr>
+        <td>${r.date}</td>
+        <td>${r.type}</td>
+        <td class="mono">${r.reference}</td>
+        <td class="right">${r.debit > 0 ? fc(r.debit) : "—"}</td>
+        <td class="right">${r.credit > 0 ? fc(r.credit) : "—"}</td>
+        <td class="right" style="font-weight:600;">${fc(Math.abs(r.balance))} ${r.balance < 0 ? "Cr" : "Dr"}</td>
+      </tr>
+    `).join("");
+    const totalDr = ledger.reduce((s, r) => s + r.debit, 0);
+    const totalCr = ledger.reduce((s, r) => s + r.credit, 0);
+    const closingBal = ledger.length > 0 ? ledger[ledger.length - 1].balance : 0;
+
     const win = window.open("", "_blank");
     if (!win) return;
     win.document.write(`
-      <html><head><title>Supplier Ledger - ${supplier?.name}</title>
-      <style>
-        body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; }
-        h2 { margin-bottom: 5px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
-        th { background: #f5f5f5; font-weight: 600; }
-        .sub { color: #666; font-size: 11px; }
-      </style></head><body>
-      <h2>${supplier?.name} — Ledger</h2>
-      <p class="sub">${dateFrom ? `From: ${dateFrom}` : ""} ${dateTo ? `To: ${dateTo}` : ""} ${!dateFrom && !dateTo ? "All dates" : ""}</p>
-      ${printContent.innerHTML}
-      <script>window.print(); window.close();</script>
+      <html><head><title>Supplier Ledger — ${supplier?.name}</title>
+      <style>${printStyles}</style></head><body>
+      ${companyHeader()}
+      <div class="doc-title">Supplier Ledger</div>
+      <div class="doc-info">
+        <div><span class="label">Supplier:</span> ${supplier?.name}</div>
+        ${dateFrom ? `<div><span class="label">From:</span> ${dateFrom}</div>` : ""}
+        ${dateTo ? `<div><span class="label">To:</span> ${dateTo}</div>` : ""}
+        <div><span class="label">Entries:</span> ${ledger.length}</div>
+      </div>
+      <table>
+        <thead><tr><th>Date</th><th>Description</th><th>Reference</th><th class="right">Debit</th><th class="right">Credit</th><th class="right">Balance</th></tr></thead>
+        <tbody>
+          <tr style="background:#f8f8f8;font-weight:600;"><td colspan="5">Opening Balance</td><td class="right">0.00</td></tr>
+          ${rows}
+          <tr class="total-row">
+            <td colspan="3" class="right">Closing Balance</td>
+            <td class="right">${fc(totalDr)}</td>
+            <td class="right">${fc(totalCr)}</td>
+            <td class="right" style="font-size:13px;color:${closingBal >= 0 ? "#991b1b" : "#166534"};">${fc(Math.abs(closingBal))} ${closingBal < 0 ? "Cr" : "Dr"}</td>
+          </tr>
+        </tbody>
+      </table>
+      ${printFooter()}
+      <script>setTimeout(function(){window.print();window.close();},300);</script>
       </body></html>
     `);
     win.document.close();

@@ -299,6 +299,16 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\BranchScope::class, \App
             });
         });
 
+        // ─── Print & PDF ────────────────────────────────────────
+        Route::prefix('print')->group(function () {
+            Route::get('invoices/{id}', [\App\Http\Controllers\Print\PrintController::class, 'invoicePrint']);
+            Route::get('invoices/{id}/pdf', [\App\Http\Controllers\Print\PrintController::class, 'invoicePdf']);
+            Route::get('ledger', [\App\Http\Controllers\Print\PrintController::class, 'ledgerPrint']);
+            Route::get('ledger/pdf', [\App\Http\Controllers\Print\PrintController::class, 'ledgerPdf']);
+            Route::get('payments/{id}', [\App\Http\Controllers\Print\PrintController::class, 'paymentPrint']);
+            Route::get('payments/{id}/pdf', [\App\Http\Controllers\Print\PrintController::class, 'paymentPdf']);
+        });
+
         // ─── Payments & Ledger ──────────────────────────────────
         Route::prefix('payments')->group(function () {
             Route::middleware('permission:sales.view')->group(function () {
