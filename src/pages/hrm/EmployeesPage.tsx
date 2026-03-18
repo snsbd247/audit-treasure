@@ -176,9 +176,11 @@ export default function EmployeesPage() {
         if (form.create_login) {
           const { data: existingProfile } = await supabase.from("profiles").select("id, username").eq("employee_id", editId).single();
           if (existingProfile) {
-            // Update existing profile
-            const updateData: any = { username: form.username };
+            // Update existing profile - restore active status and username
+            const updateData: any = { username: form.username, status: "active" };
             await supabase.from("profiles").update(updateData).eq("id", existingProfile.id);
+            // Re-link employee user_id if it was cleared
+            await supabase.from("employees" as any).update({ user_id: (existingProfile as any).id }).eq("id", editId);
             // If password provided, update via edge function
             if (form.password) {
               const { error: fnError } = await supabase.functions.invoke("admin-create-user", {
