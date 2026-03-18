@@ -1392,6 +1392,33 @@ export type Database = {
         }
         Relationships: []
       }
+      party_notes: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          note: string
+          party_id: string
+          party_type: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string
+          party_id: string
+          party_type: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string
+          party_id?: string
+          party_type?: string
+        }
+        Relationships: []
+      }
       payroll: {
         Row: {
           allowances: number

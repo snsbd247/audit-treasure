@@ -3,24 +3,44 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Printer } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import {
+  ArrowLeft, User, DollarSign, FileText, Printer,
+  Phone, Mail, MapPin, StickyNote, Plus, Trash2, TrendingDown, Receipt, RotateCcw
+} from "lucide-react";
+
+interface LedgerRow {
+  id: string;
+  date: string;
+  type: string;
+  reference: string;
+  debit: number;
+  credit: number;
+  balance: number;
+}
 
 const SupplierProfilePage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { fc } = useCurrency();
+  const { isSuperAdmin, user } = useAuth();
+  const { toast } = useToast();
 
   const [supplier, setSupplier] = useState<any>(null);
   const [purchases, setPurchases] = useState<any[]>([]);
-  const [ledger, setLedger] = useState<any[]>([]);
+  const [returns, setReturns] = useState<any[]>([]);
+  const [ledger, setLedger] = useState<LedgerRow[]>([]);
+  const [notes, setNotes] = useState<any[]>([]);
+  const [newNote, setNewNote] = useState("");
   const [loading, setLoading] = useState(true);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -29,48 +49,129 @@ const SupplierProfilePage = () => {
     if (!id) return;
     setLoading(true);
 
-    const [supRes, purRes] = await Promise.all([
+    const [supRes, purRes, retRes, notesRes] = await Promise.all([
       supabase.from("suppliers").select("*").eq("id", id).single(),
       supabase.from("purchases").select("*").eq("supplier_id", id).order("purchase_date", { ascending: true }),
+      supabase.from("purchase_returns").select("*").eq("supplier_id", id).order("return_date", { ascending: true }),
+      supabase.from("party_notes" as any).select("*").eq("party_type", "supplier").eq("party_id", id).order("created_at", { ascending: false }),
     ]);
 
     setSupplier(supRes.data);
     const purs = purRes.data || [];
+    const rets = retRes.data || [];
     setPurchases(purs);
+    setReturns(rets);
+    setNotes((notesRes.data as any[]) || []);
+
+    // Build combined ledger: purchases (credit/payable) + returns (debit/receivable back)
+    const allTxns: Array<{ date: string; type: string; ref: string; dr: number; cr: number; id: string }> = [];
+
+    purs.forEach((p: any) => {
+      allTxns.push({
+        date: p.purchase_date,
+        type: "Purchase",
+        ref: p.purchase_number,
+        dr: 0,
+        cr: Number(p.total_amount || 0),
+        id: p.id,
+      });
+    });
+
+    rets.forEach((r: any) => {
+      allTxns.push({
+        date: r.return_date,
+        type: "Purchase Return",
+        ref: r.return_number,
+        dr: Number(r.total_amount || 0),
+        cr: 0,
+        id: r.id,
+      });
+    });
+
+    allTxns.sort((a, b) => a.date.localeCompare(b.date));
 
     let runBal = 0;
-    const ledgerRows = purs
-      .filter((p: any) => {
-        if (dateFrom && p.purchase_date < dateFrom) return false;
-        if (dateTo && p.purchase_date > dateTo) return false;
+    const ledgerRows: LedgerRow[] = allTxns
+      .filter(t => {
+        if (dateFrom && t.date < dateFrom) return false;
+        if (dateTo && t.date > dateTo) return false;
         return true;
       })
-      .map((p: any) => {
-        const cr = Number(p.total_amount || 0);
-        runBal += cr;
+      .map(t => {
+        runBal += t.cr - t.dr; // Supplier balance: credits increase payable
         return {
-          id: p.id,
-          date: p.purchase_date,
-          type: "Purchase",
-          reference: p.purchase_number,
-          debit: 0,
-          credit: cr,
+          id: t.id,
+          date: t.date,
+          type: t.type,
+          reference: t.ref,
+          debit: t.dr,
+          credit: t.cr,
           balance: runBal,
         };
       });
+
     setLedger(ledgerRows);
     setLoading(false);
   }, [id, dateFrom, dateTo]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  const addNote = async () => {
+    if (!newNote.trim() || !id) return;
+    const { error } = await supabase.from("party_notes" as any).insert({
+      party_type: "supplier",
+      party_id: id,
+      note: newNote.trim(),
+      created_by: user?.id || null,
+    } as any);
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      setNewNote("");
+      fetchData();
+    }
+  };
+
+  const deleteNote = async (noteId: string) => {
+    await supabase.from("party_notes" as any).delete().eq("id", noteId);
+    fetchData();
+  };
+
   const totalPurchases = purchases.reduce((s, p) => s + Number(p.total_amount || 0), 0);
+  const totalReturns = returns.reduce((s, r) => s + Number(r.total_amount || 0), 0);
+  const balanceDue = totalPurchases - totalReturns;
+
+  const handlePrintLedger = () => {
+    const printContent = document.getElementById("supplier-ledger-print");
+    if (!printContent) return;
+    const win = window.open("", "_blank");
+    if (!win) return;
+    win.document.write(`
+      <html><head><title>Supplier Ledger - ${supplier?.name}</title>
+      <style>
+        body { font-family: Arial, sans-serif; margin: 20px; font-size: 12px; }
+        h2 { margin-bottom: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
+        th { background: #f5f5f5; font-weight: 600; }
+        .right { text-align: right; }
+        .mono { font-family: monospace; }
+        .sub { color: #666; font-size: 11px; }
+      </style></head><body>
+      <h2>${supplier?.name} — Ledger</h2>
+      <p class="sub">${dateFrom ? `From: ${dateFrom}` : ""} ${dateTo ? `To: ${dateTo}` : ""} ${!dateFrom && !dateTo ? "All dates" : ""}</p>
+      ${printContent.innerHTML}
+      <script>window.print(); window.close();</script>
+      </body></html>
+    `);
+    win.document.close();
+  };
 
   if (loading) {
     return (
-      <div className="p-3 sm:p-4 lg:p-6 max-w-[1600px] mx-auto space-y-4">
+      <div className="page-container">
         <Skeleton className="h-8 w-48" />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
           {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-24" />)}
         </div>
       </div>
@@ -80,57 +181,139 @@ const SupplierProfilePage = () => {
   if (!supplier) return <div className="p-6 text-center text-muted-foreground">Supplier not found</div>;
 
   return (
-    <div className="p-3 sm:p-4 lg:p-6 max-w-[1600px] mx-auto space-y-4 sm:space-y-6">
+    <div className="page-container">
+      {/* Header */}
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/suppliers")}>
+        <Button variant="ghost" size="icon" onClick={() => navigate("/suppliers")} className="shrink-0">
           <ArrowLeft className="w-4 h-4" />
         </Button>
         <div className="flex-1 min-w-0">
           <h1 className="text-lg sm:text-xl font-bold text-foreground truncate">{supplier.name}</h1>
-          <div className="flex flex-wrap gap-2 mt-1 text-xs text-muted-foreground">
-            {supplier.phone && <span>{supplier.phone}</span>}
-            {supplier.email && <span>• {supplier.email}</span>}
-            {supplier.address && <span>• {supplier.address}</span>}
+          <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-xs text-muted-foreground">
+            {supplier.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{supplier.phone}</span>}
+            {supplier.email && <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{supplier.email}</span>}
+            {supplier.address && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{supplier.address}</span>}
           </div>
         </div>
-        <Badge variant={supplier.status === "active" || supplier.status === "approved" ? "default" : "secondary"}>
+        <Badge variant={supplier.status === "active" ? "default" : "secondary"}>
           {supplier.status}
         </Badge>
       </div>
 
+      {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card>
           <CardContent className="p-3 sm:p-4">
-            <p className="text-xs text-muted-foreground">Total Purchases</p>
-            <p className="text-lg sm:text-xl font-bold text-foreground mt-1">{fc(totalPurchases)}</p>
+            <div className="flex items-center gap-2 mb-1">
+              <TrendingDown className="w-4 h-4 text-primary" />
+              <p className="text-xs text-muted-foreground">Total Purchases</p>
+            </div>
+            <p className="text-lg sm:text-xl font-bold text-foreground">{fc(totalPurchases)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-3 sm:p-4">
-            <p className="text-xs text-muted-foreground">Orders</p>
-            <p className="text-lg sm:text-xl font-bold text-foreground mt-1">{purchases.length}</p>
+            <div className="flex items-center gap-2 mb-1">
+              <FileText className="w-4 h-4 text-primary" />
+              <p className="text-xs text-muted-foreground">Orders</p>
+            </div>
+            <p className="text-lg sm:text-xl font-bold text-foreground">{purchases.length}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-3 sm:p-4">
-            <p className="text-xs text-muted-foreground">Total Paid</p>
-            <p className="text-lg sm:text-xl font-bold text-emerald-600 mt-1">{fc(0)}</p>
+            <div className="flex items-center gap-2 mb-1">
+              <RotateCcw className="w-4 h-4 text-amber-500" />
+              <p className="text-xs text-muted-foreground">Returns</p>
+            </div>
+            <p className="text-lg sm:text-xl font-bold text-amber-600">{fc(totalReturns)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-3 sm:p-4">
-            <p className="text-xs text-muted-foreground">Balance Due</p>
-            <p className="text-lg sm:text-xl font-bold text-destructive mt-1">{fc(totalPurchases)}</p>
+            <div className="flex items-center gap-2 mb-1">
+              <DollarSign className="w-4 h-4 text-destructive" />
+              <p className="text-xs text-muted-foreground">Balance Due</p>
+            </div>
+            <p className={`text-lg sm:text-xl font-bold ${balanceDue > 0 ? "text-destructive" : "text-emerald-600"}`}>
+              {fc(Math.abs(balanceDue))}
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      <Tabs defaultValue="ledger">
-        <TabsList className="w-full sm:w-auto">
-          <TabsTrigger value="ledger" className="text-xs sm:text-sm">Ledger</TabsTrigger>
-          <TabsTrigger value="purchases" className="text-xs sm:text-sm">Purchases</TabsTrigger>
+      {/* Tabs */}
+      <Tabs defaultValue="overview">
+        <TabsList className="w-full sm:w-auto flex-wrap">
+          <TabsTrigger value="overview" className="text-xs sm:text-sm"><User className="w-3.5 h-3.5 mr-1 hidden sm:inline" />Overview</TabsTrigger>
+          <TabsTrigger value="ledger" className="text-xs sm:text-sm"><Receipt className="w-3.5 h-3.5 mr-1 hidden sm:inline" />Ledger</TabsTrigger>
+          <TabsTrigger value="purchases" className="text-xs sm:text-sm"><FileText className="w-3.5 h-3.5 mr-1 hidden sm:inline" />Purchases</TabsTrigger>
+          <TabsTrigger value="notes" className="text-xs sm:text-sm"><StickyNote className="w-3.5 h-3.5 mr-1 hidden sm:inline" />Notes</TabsTrigger>
         </TabsList>
 
+        {/* Overview Tab */}
+        <TabsContent value="overview" className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader className="pb-3"><CardTitle className="text-sm">Contact Information</CardTitle></CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <div className="flex justify-between"><span className="text-muted-foreground">Name</span><span className="font-medium">{supplier.name}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Phone</span><span>{supplier.phone || "—"}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Email</span><span>{supplier.email || "—"}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Address</span><span className="text-right max-w-[200px]">{supplier.address || "—"}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Status</span>
+                  <Badge variant={supplier.status === "active" ? "default" : "secondary"} className="text-xs">{supplier.status}</Badge>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-3"><CardTitle className="text-sm">Financial Summary</CardTitle></CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <div className="flex justify-between"><span className="text-muted-foreground">Total Orders</span><span className="font-medium">{purchases.length}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Total Purchases</span><span className="font-medium">{fc(totalPurchases)}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Total Returns</span><span className="text-amber-600">{fc(totalReturns)}</span></div>
+                <div className="flex justify-between border-t pt-2"><span className="text-muted-foreground font-medium">Net Payable</span>
+                  <span className={`font-bold ${balanceDue > 0 ? "text-destructive" : "text-emerald-600"}`}>{fc(Math.abs(balanceDue))}</span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader className="pb-3"><CardTitle className="text-sm">Recent Purchases</CardTitle></CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Purchase #</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {purchases.slice(-5).reverse().map(p => (
+                      <TableRow key={p.id}>
+                        <TableCell className="font-mono text-xs">{p.purchase_number}</TableCell>
+                        <TableCell className="text-sm">{p.purchase_date}</TableCell>
+                        <TableCell className="text-right tabular-nums font-medium">{fc(Number(p.total_amount || 0))}</TableCell>
+                        <TableCell>
+                          <Badge variant={p.status === "completed" || p.status === "approved" ? "default" : "secondary"} className="text-xs">{p.status}</Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {purchases.length === 0 && (
+                      <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-6">No purchases yet</TableCell></TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Ledger Tab */}
         <TabsContent value="ledger" className="space-y-3">
           <div className="flex flex-wrap items-end gap-3">
             <div className="space-y-1">
@@ -141,13 +324,16 @@ const SupplierProfilePage = () => {
               <Label className="text-xs">To</Label>
               <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="h-9 w-36" />
             </div>
-            <Button size="sm" variant="outline" onClick={() => window.print()}>
+            {(dateFrom || dateTo) && (
+              <Button size="sm" variant="ghost" onClick={() => { setDateFrom(""); setDateTo(""); }}>Clear</Button>
+            )}
+            <Button size="sm" variant="outline" onClick={handlePrintLedger}>
               <Printer className="w-3.5 h-3.5 mr-1" />Print
             </Button>
           </div>
           <Card>
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto" id="supplier-ledger-print">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -162,18 +348,32 @@ const SupplierProfilePage = () => {
                   <TableBody>
                     {ledger.length === 0 ? (
                       <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No transactions found</TableCell></TableRow>
-                    ) : ledger.map(row => (
-                      <TableRow key={row.id}>
-                        <TableCell className="text-sm">{row.date}</TableCell>
-                        <TableCell className="text-sm">{row.type}</TableCell>
-                        <TableCell className="font-mono text-xs">{row.reference}</TableCell>
-                        <TableCell className="text-right tabular-nums">{row.debit > 0 ? fc(row.debit) : ""}</TableCell>
-                        <TableCell className="text-right tabular-nums">{row.credit > 0 ? fc(row.credit) : ""}</TableCell>
-                        <TableCell className={`text-right tabular-nums font-medium ${row.balance < 0 ? "text-destructive" : ""}`}>
-                          {fc(Math.abs(row.balance))}
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    ) : (
+                      <>
+                        {ledger.map(row => (
+                          <TableRow key={row.id + row.type}>
+                            <TableCell className="text-sm">{row.date}</TableCell>
+                            <TableCell className="text-sm">
+                              <span className={row.type === "Purchase Return" ? "text-amber-600" : ""}>{row.type}</span>
+                            </TableCell>
+                            <TableCell className="font-mono text-xs">{row.reference}</TableCell>
+                            <TableCell className="text-right tabular-nums text-amber-600">{row.debit > 0 ? fc(row.debit) : ""}</TableCell>
+                            <TableCell className="text-right tabular-nums">{row.credit > 0 ? fc(row.credit) : ""}</TableCell>
+                            <TableCell className={`text-right tabular-nums font-medium ${row.balance < 0 ? "text-amber-600" : ""}`}>
+                              {fc(Math.abs(row.balance))} {row.balance > 0 ? "Cr" : "Dr"}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        <TableRow className="bg-muted/50 font-medium">
+                          <TableCell colSpan={3} className="text-right text-sm">Totals</TableCell>
+                          <TableCell className="text-right tabular-nums text-amber-600">{fc(ledger.reduce((s, r) => s + r.debit, 0))}</TableCell>
+                          <TableCell className="text-right tabular-nums">{fc(ledger.reduce((s, r) => s + r.credit, 0))}</TableCell>
+                          <TableCell className="text-right tabular-nums font-bold">
+                            {ledger.length > 0 ? `${fc(Math.abs(ledger[ledger.length - 1].balance))} ${ledger[ledger.length - 1].balance > 0 ? "Cr" : "Dr"}` : ""}
+                          </TableCell>
+                        </TableRow>
+                      </>
+                    )}
                   </TableBody>
                 </Table>
               </div>
@@ -181,7 +381,8 @@ const SupplierProfilePage = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="purchases">
+        {/* Purchases Tab */}
+        <TabsContent value="purchases" className="space-y-3">
           <Card>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
@@ -191,29 +392,113 @@ const SupplierProfilePage = () => {
                       <TableHead>Purchase #</TableHead>
                       <TableHead>Date</TableHead>
                       <TableHead className="text-right">Amount</TableHead>
+                      <TableHead>Method</TableHead>
                       <TableHead>Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {purchases.length === 0 ? (
-                      <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">No purchases</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No purchases</TableCell></TableRow>
                     ) : purchases.map(p => (
                       <TableRow key={p.id}>
                         <TableCell className="font-mono text-xs">{p.purchase_number}</TableCell>
                         <TableCell className="text-sm">{p.purchase_date}</TableCell>
                         <TableCell className="text-right tabular-nums font-medium">{fc(Number(p.total_amount || 0))}</TableCell>
+                        <TableCell className="text-sm capitalize">{p.payment_method || "—"}</TableCell>
                         <TableCell>
-                          <Badge variant={p.status === "completed" || p.status === "approved" ? "default" : "secondary"} className="text-xs">
-                            {p.status}
-                          </Badge>
+                          <Badge variant={p.status === "completed" || p.status === "approved" ? "default" : "secondary"} className="text-xs">{p.status}</Badge>
                         </TableCell>
                       </TableRow>
                     ))}
+                    {purchases.length > 0 && (
+                      <TableRow className="bg-muted/50 font-medium">
+                        <TableCell colSpan={2} className="text-right text-sm">Total</TableCell>
+                        <TableCell className="text-right tabular-nums font-bold">{fc(totalPurchases)}</TableCell>
+                        <TableCell colSpan={2} />
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </div>
             </CardContent>
           </Card>
+
+          {returns.length > 0 && (
+            <Card>
+              <CardHeader className="pb-3"><CardTitle className="text-sm flex items-center gap-2"><RotateCcw className="w-4 h-4" />Purchase Returns</CardTitle></CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Return #</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                        <TableHead>Reason</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {returns.map(r => (
+                        <TableRow key={r.id}>
+                          <TableCell className="font-mono text-xs">{r.return_number}</TableCell>
+                          <TableCell className="text-sm">{r.return_date}</TableCell>
+                          <TableCell className="text-right tabular-nums font-medium text-amber-600">{fc(Number(r.total_amount || 0))}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground truncate max-w-[200px]">{r.reason || "—"}</TableCell>
+                          <TableCell>
+                            <Badge variant={r.status === "approved" ? "default" : "secondary"} className="text-xs">{r.status}</Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* Notes Tab */}
+        <TabsContent value="notes" className="space-y-3">
+          <Card>
+            <CardHeader className="pb-3"><CardTitle className="text-sm">Add Note</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              <Textarea
+                placeholder="Write a note about this supplier..."
+                value={newNote}
+                onChange={e => setNewNote(e.target.value)}
+                rows={3}
+                className="resize-none"
+              />
+              <Button size="sm" onClick={addNote} disabled={!newNote.trim()}>
+                <Plus className="w-3.5 h-3.5 mr-1" />Add Note
+              </Button>
+            </CardContent>
+          </Card>
+
+          {notes.length === 0 ? (
+            <p className="text-center text-muted-foreground text-sm py-8">No notes yet</p>
+          ) : (
+            <div className="space-y-2">
+              {notes.map((n: any) => (
+                <Card key={n.id}>
+                  <CardContent className="p-3 sm:p-4">
+                    <div className="flex justify-between items-start gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm whitespace-pre-wrap">{n.note}</p>
+                        <p className="text-xs text-muted-foreground mt-2">{new Date(n.created_at).toLocaleString()}</p>
+                      </div>
+                      {isSuperAdmin && (
+                        <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8" onClick={() => deleteNote(n.id)}>
+                          <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>
