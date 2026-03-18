@@ -67,8 +67,10 @@ Deno.serve(async (req) => {
           return new Response(JSON.stringify({ error: "User exists but could not be found" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
         userId = existing.id;
-        // Update password for existing user
-        const { error: updateErr } = await adminClient.auth.admin.updateUserById(userId, { password, user_metadata: { name, username } });
+        // Update password and unban existing user
+        const updatePayload: any = { user_metadata: { name, username }, ban_duration: "none" };
+        if (password) updatePayload.password = password;
+        const { error: updateErr } = await adminClient.auth.admin.updateUserById(userId, updatePayload);
         if (updateErr) {
           return new Response(JSON.stringify({ error: updateErr.message }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
