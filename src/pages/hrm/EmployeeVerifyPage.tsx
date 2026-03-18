@@ -268,42 +268,63 @@ export default function EmployeeVerifyPage() {
               )}
 
               {/* Body text */}
-              <div className="mt-7 text-sm text-foreground leading-relaxed max-w-md mx-auto print:text-black">
-                <p>This is to certify that</p>
-                <p className="text-xl font-bold my-3 text-primary print:text-black">
-                  {employee.first_name} {employee.last_name}
-                </p>
-                <p>
-                  bearing Employee ID <span className="font-mono font-semibold">{employee.employee_code}</span> is a
-                  {isActive ? " currently active" : "n"} employee of <strong>{companyName}</strong>.
-                </p>
-              </div>
+              {(() => {
+                const exp = calcExperience(employee.joining_date);
+                return (
+                  <div className="mt-7 text-sm text-foreground leading-relaxed max-w-md mx-auto print:text-black">
+                    <p>This is to certify that</p>
+                    <p className="text-xl font-bold my-3 text-primary print:text-black">
+                      {employee.first_name} {employee.last_name}
+                    </p>
+                    <p>
+                      bearing Employee ID <span className="font-mono font-semibold">{employee.employee_code}</span> is a
+                      {isActive ? " currently active" : "n"} employee of <strong>{companyName}</strong>.
+                      {exp.text && (
+                        <> This employee has been working for <strong>{exp.text}</strong> and holds <strong>{exp.badge}</strong> position.</>
+                      )}
+                    </p>
+                  </div>
+                );
+              })()}
 
               {/* Employee Details Table */}
-              <div className="mt-7 mx-auto max-w-sm">
-                <table className="w-full text-sm">
-                  <tbody>
-                    {[
-                      { label: "Full Name", value: `${employee.first_name} ${employee.last_name}` },
-                      { label: "Employee ID", value: employee.employee_code },
-                      { label: "Department", value: department || "—" },
-                      { label: "Designation", value: designation || "—" },
-                      { label: "Employment Status", value: isActive ? "Active" : "Inactive" },
-                    ].map((row) => (
-                      <tr key={row.label} className="border-b border-muted print:border-gray-200">
-                        <td className="py-2 text-left text-muted-foreground font-medium print:text-gray-500">{row.label}</td>
-                        <td className={`py-2 text-right font-semibold ${
-                          row.label === "Employment Status"
-                            ? isActive ? "text-green-600" : "text-destructive"
-                            : "text-foreground print:text-black"
-                        }`}>
-                          {row.value}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              {(() => {
+                const exp = calcExperience(employee.joining_date);
+                const rows = [
+                  { label: "Full Name", value: `${employee.first_name} ${employee.last_name}` },
+                  { label: "Employee ID", value: employee.employee_code },
+                  { label: "Department", value: department || "—" },
+                  { label: "Designation", value: designation || "—" },
+                  { label: "Date of Joining", value: formatJoinDate(employee.joining_date) },
+                  ...(exp.text ? [{ label: "Experience", value: exp.text }] : []),
+                  ...(exp.badge ? [{ label: "Level", value: exp.badge }] : []),
+                  { label: "Employment Status", value: isActive ? "Active" : "Inactive" },
+                ];
+                return (
+                  <div className="mt-7 mx-auto max-w-sm">
+                    <table className="w-full text-sm">
+                      <tbody>
+                        {rows.map((row) => (
+                          <tr key={row.label} className="border-b border-muted print:border-gray-200">
+                            <td className="py-2 text-left text-muted-foreground font-medium print:text-gray-500">{row.label}</td>
+                            <td className={`py-2 text-right font-semibold ${
+                              row.label === "Employment Status"
+                                ? isActive ? "text-green-600" : "text-destructive"
+                                : "text-foreground print:text-black"
+                            }`}>
+                              {row.label === "Level" ? (
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border ${badgeColor(row.value)}`}>
+                                  {row.value}
+                                </span>
+                              ) : row.value}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
 
               {/* QR + Digital Signature Section */}
               <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-6">
