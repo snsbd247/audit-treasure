@@ -102,6 +102,7 @@ import AccountsPayableReport from "./pages/reports/accounting/AccountsPayableRep
 import { ARAgingReport, APAgingReport } from "./pages/reports/accounting/AgingReports";
 import { ExpenseAnalysisReport, IncomeAnalysisReport } from "./pages/reports/accounting/AnalysisReports";
 import FinancialSummaryDashboard from "./pages/reports/accounting/FinancialSummaryDashboard";
+import CustomerStatementPage from "./pages/reports/CustomerStatementPage";
 
 const queryClient = new QueryClient();
 
@@ -224,6 +225,7 @@ const App = () => (
                 <Route path="/reports/stock-ledger" element={<P perm="inventory.view"><StockLedger /></P>} />
                 <Route path="/reports/stock-reports" element={<P perm="inventory.view"><StockReportsPage /></P>} />
                 <Route path="/reports/low-stock" element={<P perm="inventory.view"><LowStockPage /></P>} />
+                <Route path="/reports/customer-statement" element={<P perm="sales.view"><CustomerStatementPage /></P>} />
                 <Route path="/reports/sales" element={<P perm="sales.view"><FinancialReports /></P>} />
                 <Route path="/reports/purchase" element={<P perm="purchase.view"><FinancialReports /></P>} />
 

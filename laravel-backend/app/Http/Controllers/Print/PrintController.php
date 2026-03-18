@@ -247,4 +247,63 @@ class PrintController extends BaseController
 
         return $pdf->download("Receipt_{$payment->reference}.pdf");
     }
+
+    // ─── Customer/Supplier Statement ────────────────────────
+    public function statementPrint(Request $request)
+    {
+        $request->validate([
+            'party_id' => 'required|uuid',
+            'party_type' => 'required|in:customer,supplier',
+        ]);
+
+        $data = $this->buildStatementData($request);
+        return $this->success($data);
+    }
+
+    public function statementPdf(Request $request)
+    {
+        $request->validate([
+            'party_id' => 'required|uuid',
+            'party_type' => 'required|in:customer,supplier',
+        ]);
+
+        $data = $this->buildStatementData($request);
+
+        $pdf = Pdf::loadView('prints.statement', array_merge($data, [
+            'company' => CompanySetting::first(),
+        ]));
+
+        return $pdf->download("Statement_{$data['party_name']}.pdf");
+    }
+
+    private function buildStatementData(Request $request): array
+    {
+        $entries = $this->ledgerService->getPartyLedger(
+            $request->party_id,
+            $request->party_type,
+            $request->from,
+            $request->to
+        );
+
+        $company = CompanySetting::first();
+        $party = null;
+        $partyName = '';
+
+        if ($request->party_type === 'customer') {
+            $party = \App\Models\Customer::find($request->party_id);
+        } else {
+            $party = \App\Models\Supplier::find($request->party_id);
+        }
+        $partyName = $party?->name ?? '';
+
+        return [
+            'entries' => $entries,
+            'company' => $company,
+            'party' => $party,
+            'party_name' => $partyName,
+            'party_type' => $request->party_type,
+            'from' => $request->from,
+            'to' => $request->to,
+        ];
+    }
 }
