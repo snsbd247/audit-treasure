@@ -378,7 +378,7 @@ const PurchasesPage = () => {
                     <TableCell>
                       <div className="flex gap-1">
                         {/* View */}
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openView(p)} title="View">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => navigate(`/purchase/invoices/${p.id}`)} title="View">
                           <Eye className="w-3.5 h-3.5" />
                         </Button>
                         {/* Edit */}
