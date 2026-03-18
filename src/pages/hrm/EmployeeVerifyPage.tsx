@@ -514,23 +514,35 @@ export default function EmployeeVerifyPage() {
                   { label: "Joining Date", value: formatJoinDate(employee.joining_date) },
                   ...(exp.text ? [{ label: "Experience", value: exp.text }] : []),
                   { label: "Company", value: companyName },
-                  { label: "Status", value: employee.status, isStatus: true },
+                  { label: "Status", value: employee.status, isStatus: true as const },
                 ];
                 return (
-              <div className="space-y-2.5 border-t border-b py-4">
-                {rows.map((row) => (
-                  <div key={row.label} className="flex justify-between items-center px-1">
-                    <span className="text-muted-foreground text-sm">{row.label}</span>
-                    {row.isStatus ? (
-                      <span className={`font-semibold capitalize ${isActive ? "text-green-600" : "text-destructive"}`}>
-                        {row.value}
-                      </span>
-                    ) : (
-                      <span className="font-medium text-foreground">{row.value || "—"}</span>
+                  <div className="space-y-2.5 border-t border-b py-4">
+                    {rows.map((row) => (
+                      <div key={row.label} className="flex justify-between items-center px-1">
+                        <span className="text-muted-foreground text-sm">{row.label}</span>
+                        {"isStatus" in row && row.isStatus ? (
+                          <span className={`font-semibold capitalize ${isActive ? "text-green-600" : "text-destructive"}`}>
+                            {row.value}
+                          </span>
+                        ) : row.label === "Experience" ? (
+                          <span className="font-medium text-foreground">{row.value || "—"}</span>
+                        ) : (
+                          <span className="font-medium text-foreground">{row.value || "—"}</span>
+                        )}
+                      </div>
+                    ))}
+                    {exp.badge && (
+                      <div className="flex justify-between items-center px-1">
+                        <span className="text-muted-foreground text-sm">Level</span>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border ${badgeColor(exp.badge)}`}>
+                          {exp.badge}
+                        </span>
+                      </div>
                     )}
                   </div>
-                ))}
-              </div>
+                );
+              })()}
 
               {/* QR Code */}
               <div className="mt-4 text-center print:block">
