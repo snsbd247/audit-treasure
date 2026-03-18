@@ -115,10 +115,20 @@ export default function EmployeesPage() {
       toast.error("Employee code, first name and last name are required");
       return;
     }
-    if (form.create_login && !editId) {
+
+    // Validate login fields only when toggle is ON
+    if (form.create_login) {
       if (!form.username) { toast.error("Username is required for login"); return; }
-      if (!form.password || form.password.length < 6) { toast.error("Password must be at least 6 characters"); return; }
+      // Password required for new employees or new login accounts
+      const isNewLogin = !editId || !linkedUsers[editId!];
+      if (isNewLogin && (!form.password || form.password.length < 6)) {
+        toast.error("Password must be at least 6 characters"); return;
+      }
+      if (form.password && form.password.length > 0 && form.password.length < 6) {
+        toast.error("Password must be at least 6 characters"); return;
+      }
     }
+
     setLoading(true);
     const payload: any = {
       employee_code: form.employee_code,
@@ -138,27 +148,68 @@ export default function EmployeesPage() {
       updated_at: new Date().toISOString(),
     };
 
-    if (editId) {
-      const { error } = await supabase.from("employees" as any).update(payload).eq("id", editId);
-      if (error) { toast.error(error.message); } else {
-        // Handle login account update via profiles if needed
-        if (form.create_login && form.username) {
-          // For Supabase frontend, we can update profile username
+    try {
+      if (editId) {
+        const { error } = await supabase.from("employees" as any).update(payload).eq("id", editId);
+        if (error) { toast.error(error.message); setLoading(false); return; }
+
+        // Handle login account changes
+        if (form.create_login) {
+          const { data: existingProfile } = await supabase.from("profiles").select("id, username").eq("employee_id", editId).single();
+          if (existingProfile) {
+            // Update existing profile
+            const updateData: any = { username: form.username };
+            await supabase.from("profiles").update(updateData).eq("id", existingProfile.id);
+            // If password provided, update via edge function
+            if (form.password) {
+              const { error: fnError } = await supabase.functions.invoke("admin-create-user", {
+                body: {
+                  email: form.email || `${form.username}@erp.local`,
+                  password: form.password,
+                  name: `${form.first_name} ${form.last_name}`,
+                  username: form.username,
+                  employee_id: editId,
+                  branch_id: form.branch_id || null,
+                },
+              });
+              if (fnError) toast.error("Password update failed: " + fnError.message);
+            }
+          } else {
+            // Create new login for existing employee
+            const { data: fnData, error: fnError } = await supabase.functions.invoke("admin-create-user", {
+              body: {
+                email: form.email || `${form.username}@erp.local`,
+                password: form.password,
+                name: `${form.first_name} ${form.last_name}`,
+                username: form.username,
+                employee_id: editId,
+                branch_id: form.branch_id || null,
+              },
+            });
+            if (fnError) {
+              toast.error("Login account creation failed: " + fnError.message);
+            } else if (fnData?.user_id) {
+              await supabase.from("employees" as any).update({ user_id: fnData.user_id }).eq("id", editId);
+            }
+          }
+        } else {
+          // Toggle OFF: disable login by setting profile status to inactive
           const { data: existingProfile } = await supabase.from("profiles").select("id").eq("employee_id", editId).single();
           if (existingProfile) {
-            await supabase.from("profiles").update({ username: form.username }).eq("id", existingProfile.id);
+            await supabase.from("profiles").update({ status: "inactive", username: null }).eq("id", existingProfile.id);
+            await supabase.from("employees" as any).update({ user_id: null }).eq("id", editId);
           }
         }
+
         toast.success("Employee updated");
         setDialogOpen(false);
         fetchAll();
-      }
-    } else {
-      const { data, error } = await supabase.from("employees" as any).insert(payload).select().single();
-      if (error) { toast.error(error.message); } else {
-        // If create_login, create a user profile linked to this employee
+      } else {
+        const { data, error } = await supabase.from("employees" as any).insert(payload).select().single();
+        if (error) { toast.error(error.message); setLoading(false); return; }
+
+        // Create login account if toggle is ON
         if (form.create_login && data) {
-          // For Supabase, we'd use the admin-create-user edge function
           try {
             const { data: fnData, error: fnError } = await supabase.functions.invoke("admin-create-user", {
               body: {
@@ -171,9 +222,8 @@ export default function EmployeesPage() {
               },
             });
             if (fnError) throw fnError;
-            // Update the employee with the user_id
-            if (fnData?.user?.id) {
-              await supabase.from("employees" as any).update({ user_id: fnData.user.id }).eq("id", (data as any).id);
+            if (fnData?.user_id) {
+              await supabase.from("employees" as any).update({ user_id: fnData.user_id }).eq("id", (data as any).id);
             }
           } catch (err: any) {
             toast.error("Employee created but login account failed: " + (err.message || "Unknown error"));
@@ -183,6 +233,8 @@ export default function EmployeesPage() {
         setDialogOpen(false);
         fetchAll();
       }
+    } catch (err: any) {
+      toast.error(err.message || "Save failed");
     }
     setLoading(false);
   };
@@ -330,31 +382,52 @@ export default function EmployeesPage() {
                   <KeyRound className="w-4 h-4" /> Employee Login Account
                 </Label>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Allow this employee to login and access Employee Portal
+                  {form.create_login
+                    ? "This employee can login to the Employee Portal"
+                    : "Enable to allow this employee to login"}
                 </p>
               </div>
-              <Switch checked={form.create_login} onCheckedChange={v => setForm({...form, create_login: v})} />
+              <Switch
+                checked={form.create_login}
+                onCheckedChange={v => {
+                  setForm({
+                    ...form,
+                    create_login: v,
+                    // Clear login fields when toggling OFF
+                    ...(!v ? { username: "", password: "" } : {}),
+                    // Auto-fill username from employee code when toggling ON
+                    ...(v && !form.username ? { username: form.employee_code } : {}),
+                  });
+                }}
+              />
             </div>
             {form.create_login && (
-              <div className="grid grid-cols-2 gap-4 bg-muted/50 p-3 rounded-lg">
+              <div className="grid grid-cols-2 gap-4 bg-muted/50 p-3 rounded-lg border border-border/50">
                 <div>
                   <Label>Username *</Label>
                   <Input
                     value={form.username}
                     onChange={e => setForm({...form, username: e.target.value})}
                     placeholder={form.employee_code || "username"}
+                    autoComplete="off"
                   />
                 </div>
                 <div>
-                  <Label>{editId && linkedUsers[editId] ? "New Password (leave blank to keep)" : "Password *"}</Label>
+                  <Label>{editId && linkedUsers[editId!] ? "New Password (leave blank to keep)" : "Password *"}</Label>
                   <Input
                     type="password"
                     value={form.password}
                     onChange={e => setForm({...form, password: e.target.value})}
-                    placeholder={editId ? "Leave blank to keep current" : "Min 6 characters"}
+                    placeholder={editId && linkedUsers[editId!] ? "Leave blank to keep current" : "Min 6 characters"}
+                    autoComplete="new-password"
                   />
                 </div>
               </div>
+            )}
+            {!form.create_login && editId && linkedUsers[editId!] && (
+              <p className="text-xs text-destructive bg-destructive/10 p-2 rounded">
+                ⚠️ Turning off will disable this employee's login access
+              </p>
             )}
           </div>
 

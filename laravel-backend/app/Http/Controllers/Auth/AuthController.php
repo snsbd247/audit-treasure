@@ -17,7 +17,7 @@ class AuthController extends BaseController
     {
         $request->validate(['username' => 'required', 'password' => 'required']);
 
-        $user = User::where('username', $request->username)->first();
+        $user = User::where('username', $request->username)->whereNotNull('username')->first();
         if (!$user || !Hash::check($request->password, $user->password)) {
             $this->activityService->log('failed_login', "Failed login for: {$request->username}", $request, null, [
                 'username' => $request->username,
