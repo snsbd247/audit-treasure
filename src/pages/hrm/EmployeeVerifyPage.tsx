@@ -119,7 +119,7 @@ export default function EmployeeVerifyPage() {
 
     const { data: emp } = await supabase
       .from("employees" as any)
-      .select("first_name, last_name, employee_code, photo_url, status, department_id, designation_id")
+      .select("first_name, last_name, employee_code, photo_url, status, department_id, designation_id, joining_date")
       .eq("employee_code", trimmed)
       .single();
 

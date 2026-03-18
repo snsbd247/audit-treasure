@@ -91,21 +91,48 @@ serve(async (req) => {
       .eq("id", "default")
       .single();
 
+    // Experience calculation
+    let experienceText = "";
+    let experienceYears = 0;
+    let badge = "";
+    if (emp.joining_date) {
+      const join = new Date(emp.joining_date);
+      const now = new Date();
+      let years = now.getFullYear() - join.getFullYear();
+      let months = now.getMonth() - join.getMonth();
+      if (months < 0) { years--; months += 12; }
+      experienceYears = years + months / 12;
+      experienceText = years > 0
+        ? `${years} Year${years > 1 ? "s" : ""} ${months} Month${months !== 1 ? "s" : ""}`
+        : `${months} Month${months !== 1 ? "s" : ""}`;
+      if (experienceYears < 1) badge = "New Employee";
+      else if (experienceYears < 3) badge = "Junior";
+      else if (experienceYears < 5) badge = "Mid-Level";
+      else badge = "Senior";
+    }
+
     const issuedAt = new Date().toISOString();
     const signature = await generateSignature(emp.employee_code, issuedAt);
 
-    // If signature action requested, return full verification with signature
+    const baseData = {
+      name: `${emp.first_name} ${emp.last_name}`,
+      employee_id: emp.employee_code,
+      designation: designationName,
+      department: departmentName,
+      status: emp.status,
+      company: company?.company_name || "",
+      joining_date: emp.joining_date || null,
+      experience_text: experienceText || null,
+      experience_years: Math.round(experienceYears * 10) / 10,
+      badge: badge || null,
+    };
+
     if (action === "signature") {
       return new Response(
         JSON.stringify({
           success: true,
           data: {
-            name: `${emp.first_name} ${emp.last_name}`,
-            employee_id: emp.employee_code,
-            designation: designationName,
-            department: departmentName,
-            status: emp.status,
-            company: company?.company_name || "",
+            ...baseData,
             digital_signature: {
               hash: signature,
               hash_short: signature.substring(0, 16).toUpperCase(),
@@ -118,19 +145,10 @@ serve(async (req) => {
       );
     }
 
-    // Standard public verification response
     return new Response(
       JSON.stringify({
         success: true,
-        data: {
-          name: `${emp.first_name} ${emp.last_name}`,
-          employee_id: emp.employee_code,
-          designation: designationName,
-          department: departmentName,
-          photo_url: emp.photo_url,
-          status: emp.status,
-          company: company?.company_name || "",
-        },
+        data: { ...baseData, photo_url: emp.photo_url },
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
