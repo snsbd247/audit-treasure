@@ -15,7 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import {
   ArrowLeft, User, DollarSign, FileText, Printer,
-  Phone, Mail, MapPin, StickyNote, Plus, Trash2, TrendingDown, Receipt, RotateCcw, Wallet
+  Phone, Mail, MapPin, StickyNote, Plus, Trash2, TrendingDown, Receipt, RotateCcw, Wallet, CheckCircle
 } from "lucide-react";
 
 interface LedgerRow {
@@ -26,6 +26,16 @@ interface LedgerRow {
   debit: number;
   credit: number;
   balance: number;
+}
+
+interface PurchaseDue {
+  id: string;
+  purchase_number: string;
+  purchase_date: string;
+  total: number;
+  paid: number;
+  due: number;
+  allocateInput: string;
 }
 
 const SupplierProfilePage = () => {
@@ -41,6 +51,7 @@ const SupplierProfilePage = () => {
   const [ledger, setLedger] = useState<LedgerRow[]>([]);
   const [notes, setNotes] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
+  const [allocations, setAllocations] = useState<any[]>([]);
   const [newNote, setNewNote] = useState("");
   const [loading, setLoading] = useState(true);
   const [dateFrom, setDateFrom] = useState("");
@@ -48,6 +59,8 @@ const SupplierProfilePage = () => {
   const [payDateFrom, setPayDateFrom] = useState("");
   const [payDateTo, setPayDateTo] = useState("");
   const [newPayment, setNewPayment] = useState({ amount: "", payment_method: "cash", reference: "", notes: "", payment_date: new Date().toISOString().split("T")[0] });
+  const [purchaseDues, setPurchaseDues] = useState<PurchaseDue[]>([]);
+  const [showAllocation, setShowAllocation] = useState(false);
 
   const fetchData = useCallback(async () => {
     if (!id) return;
@@ -64,36 +77,53 @@ const SupplierProfilePage = () => {
     setSupplier(supRes.data);
     const purs = purRes.data || [];
     const rets = retRes.data || [];
+    const pays = (payRes.data as any[]) || [];
     setPurchases(purs);
     setReturns(rets);
     setNotes((notesRes.data as any[]) || []);
-    setPayments((payRes.data as any[]) || []);
+    setPayments(pays);
 
-    // Build combined ledger: purchases (credit/payable) + returns (debit/receivable back)
-    const allTxns: Array<{ date: string; type: string; ref: string; dr: number; cr: number; id: string }> = [];
+    // Fetch allocations
+    const payIds = pays.map((p: any) => p.id);
+    let allocs: any[] = [];
+    if (payIds.length > 0) {
+      const { data: allocData } = await supabase
+        .from("payment_allocations" as any)
+        .select("*")
+        .in("payment_id", payIds);
+      allocs = (allocData as any[]) || [];
+    }
+    setAllocations(allocs);
 
-    purs.forEach((p: any) => {
-      allTxns.push({
-        date: p.purchase_date,
-        type: "Purchase",
-        ref: p.purchase_number,
-        dr: 0,
-        cr: Number(p.total_amount || 0),
+    // Build purchase dues
+    const dueList: PurchaseDue[] = purs.map((p: any) => {
+      const purAmount = Number(p.total_amount || 0);
+      const paidForPur = allocs
+        .filter((a: any) => a.invoice_id === p.id && a.invoice_type === "purchase")
+        .reduce((s: number, a: any) => s + Number(a.allocated_amount || 0), 0);
+      return {
         id: p.id,
-      });
+        purchase_number: p.purchase_number,
+        purchase_date: p.purchase_date,
+        total: purAmount,
+        paid: paidForPur,
+        due: Math.max(0, purAmount - paidForPur),
+        allocateInput: "",
+      };
     });
+    setPurchaseDues(dueList);
 
+    // Build combined ledger
+    const allTxns: Array<{ date: string; type: string; ref: string; dr: number; cr: number; id: string }> = [];
+    purs.forEach((p: any) => {
+      allTxns.push({ date: p.purchase_date, type: "Purchase", ref: p.purchase_number, dr: 0, cr: Number(p.total_amount || 0), id: p.id });
+    });
     rets.forEach((r: any) => {
-      allTxns.push({
-        date: r.return_date,
-        type: "Purchase Return",
-        ref: r.return_number,
-        dr: Number(r.total_amount || 0),
-        cr: 0,
-        id: r.id,
-      });
+      allTxns.push({ date: r.return_date, type: "Purchase Return", ref: r.return_number, dr: Number(r.total_amount || 0), cr: 0, id: r.id });
     });
-
+    pays.forEach((p: any) => {
+      allTxns.push({ date: p.payment_date, type: "Payment", ref: p.reference || p.payment_method, dr: Number(p.amount || 0), cr: 0, id: p.id });
+    });
     allTxns.sort((a, b) => a.date.localeCompare(b.date));
 
     let runBal = 0;
@@ -104,16 +134,8 @@ const SupplierProfilePage = () => {
         return true;
       })
       .map(t => {
-        runBal += t.cr - t.dr; // Supplier balance: credits increase payable
-        return {
-          id: t.id,
-          date: t.date,
-          type: t.type,
-          reference: t.ref,
-          debit: t.dr,
-          credit: t.cr,
-          balance: runBal,
-        };
+        runBal += t.cr - t.dr;
+        return { id: t.id, date: t.date, type: t.type, reference: t.ref, debit: t.dr, credit: t.cr, balance: runBal };
       });
 
     setLedger(ledgerRows);
@@ -124,18 +146,9 @@ const SupplierProfilePage = () => {
 
   const addNote = async () => {
     if (!newNote.trim() || !id) return;
-    const { error } = await supabase.from("party_notes" as any).insert({
-      party_type: "supplier",
-      party_id: id,
-      note: newNote.trim(),
-      created_by: user?.id || null,
-    } as any);
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } else {
-      setNewNote("");
-      fetchData();
-    }
+    const { error } = await supabase.from("party_notes" as any).insert({ party_type: "supplier", party_id: id, note: newNote.trim(), created_by: user?.id || null } as any);
+    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); }
+    else { setNewNote(""); fetchData(); }
   };
 
   const deleteNote = async (noteId: string) => {
@@ -147,6 +160,7 @@ const SupplierProfilePage = () => {
   const totalReturns = returns.reduce((s, r) => s + Number(r.total_amount || 0), 0);
   const totalPaid = payments.reduce((s, p) => s + Number(p.amount || 0), 0);
   const balanceDue = totalPurchases - totalReturns - totalPaid;
+  const advanceBalance = balanceDue < 0 ? Math.abs(balanceDue) : 0;
 
   const filteredPayments = payments.filter(p => {
     if (payDateFrom && p.payment_date < payDateFrom) return false;
@@ -154,25 +168,47 @@ const SupplierProfilePage = () => {
     return true;
   });
 
+  const totalAllocInput = purchaseDues.reduce((s, d) => s + (Number(d.allocateInput) || 0), 0);
+  const paymentAmount = Number(newPayment.amount) || 0;
+  const unallocated = paymentAmount - totalAllocInput;
+
+  const updateAllocInput = (purId: string, val: string) => {
+    setPurchaseDues(prev => prev.map(d => {
+      if (d.id !== purId) return d;
+      const num = Number(val) || 0;
+      if (num < 0) return d;
+      if (num > d.due) return { ...d, allocateInput: String(d.due) };
+      return { ...d, allocateInput: val };
+    }));
+  };
+
   const addPayment = async () => {
-    if (!id || !newPayment.amount || Number(newPayment.amount) <= 0) return;
-    const { error } = await supabase.from("party_payments" as any).insert({
-      party_type: "supplier",
-      party_id: id,
-      payment_date: newPayment.payment_date,
-      amount: Number(newPayment.amount),
-      payment_method: newPayment.payment_method,
-      reference: newPayment.reference || null,
-      notes: newPayment.notes || null,
-      created_by: user?.id || null,
-    } as any);
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } else {
-      setNewPayment({ amount: "", payment_method: "cash", reference: "", notes: "", payment_date: new Date().toISOString().split("T")[0] });
-      toast({ title: "Payment recorded" });
-      fetchData();
+    if (!id || paymentAmount <= 0) return;
+    if (totalAllocInput > paymentAmount) {
+      toast({ title: "Error", description: "Total allocation exceeds payment amount", variant: "destructive" });
+      return;
     }
+
+    const { data: payData, error } = await supabase.from("party_payments" as any).insert({
+      party_type: "supplier", party_id: id, payment_date: newPayment.payment_date,
+      amount: paymentAmount, payment_method: newPayment.payment_method,
+      reference: newPayment.reference || null, notes: newPayment.notes || null, created_by: user?.id || null,
+    } as any).select().single();
+
+    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+
+    const allocsToInsert = purchaseDues
+      .filter(d => Number(d.allocateInput) > 0)
+      .map(d => ({ payment_id: (payData as any).id, invoice_type: "purchase", invoice_id: d.id, allocated_amount: Number(d.allocateInput) }));
+
+    if (allocsToInsert.length > 0) {
+      await supabase.from("payment_allocations" as any).insert(allocsToInsert as any);
+    }
+
+    setNewPayment({ amount: "", payment_method: "cash", reference: "", notes: "", payment_date: new Date().toISOString().split("T")[0] });
+    setShowAllocation(false);
+    toast({ title: "Payment recorded with allocations" });
+    fetchData();
   };
 
   const deletePayment = async (payId: string) => {
@@ -181,7 +217,25 @@ const SupplierProfilePage = () => {
     fetchData();
   };
 
+  const getPaymentAllocations = (payId: string) => allocations.filter((a: any) => a.payment_id === payId);
+
+  const getPurchaseStatus = (pur: any) => {
+    const purAmount = Number(pur.total_amount || 0);
+    const paidForPur = allocations
+      .filter((a: any) => a.invoice_id === pur.id && a.invoice_type === "purchase")
+      .reduce((s: number, a: any) => s + Number(a.allocated_amount || 0), 0);
+    if (paidForPur >= purAmount) return "paid";
+    if (paidForPur > 0) return "partial";
+    return "due";
+  };
+
   const handlePrintPaymentReceipt = (pay: any) => {
+    const payAllocs = getPaymentAllocations(pay.id);
+    const allocRows = payAllocs.map((a: any) => {
+      const pur = purchases.find(p => p.id === a.invoice_id);
+      return `<tr><td>${pur?.purchase_number || "—"}</td><td>${pur?.purchase_date || ""}</td><td style="text-align:right">${fc(Number(a.allocated_amount))}</td></tr>`;
+    }).join("");
+
     const win = window.open("", "_blank");
     if (!win) return;
     win.document.write(`
@@ -190,10 +244,12 @@ const SupplierProfilePage = () => {
         body { font-family: Arial, sans-serif; margin: 40px; font-size: 13px; }
         h2 { margin-bottom: 5px; }
         .row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #eee; }
-        .label { color: #666; }
-        .val { font-weight: 600; }
+        .label { color: #666; } .val { font-weight: 600; }
         .amount { font-size: 22px; font-weight: 700; margin: 20px 0; text-align: center; }
         .sub { color: #888; font-size: 11px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; font-size: 12px; }
+        th { background: #f5f5f5; }
       </style></head><body>
       <h2>Payment Receipt</h2>
       <p class="sub">Supplier: ${supplier?.name}</p>
@@ -203,6 +259,11 @@ const SupplierProfilePage = () => {
       <div class="row"><span class="label">Method</span><span class="val">${pay.payment_method}</span></div>
       <div class="row"><span class="label">Reference</span><span class="val">${pay.reference || "—"}</span></div>
       <div class="row"><span class="label">Notes</span><span class="val">${pay.notes || "—"}</span></div>
+      ${payAllocs.length > 0 ? `
+        <h3 style="margin-top:20px;">Purchase Allocations</h3>
+        <table><thead><tr><th>Purchase #</th><th>Date</th><th style="text-align:right">Allocated</th></tr></thead>
+        <tbody>${allocRows}</tbody></table>
+      ` : ""}
       <br/><p class="sub">Printed: ${new Date().toLocaleString()}</p>
       <script>window.print(); window.close();</script>
       </body></html>
@@ -223,8 +284,6 @@ const SupplierProfilePage = () => {
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
         th { background: #f5f5f5; font-weight: 600; }
-        .right { text-align: right; }
-        .mono { font-family: monospace; }
         .sub { color: #666; font-size: 11px; }
       </style></head><body>
       <h2>${supplier?.name} — Ledger</h2>
@@ -270,7 +329,7 @@ const SupplierProfilePage = () => {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <Card>
           <CardContent className="p-3 sm:p-4">
             <div className="flex items-center gap-2 mb-1">
@@ -278,15 +337,6 @@ const SupplierProfilePage = () => {
               <p className="text-xs text-muted-foreground">Total Purchases</p>
             </div>
             <p className="text-lg sm:text-xl font-bold text-foreground">{fc(totalPurchases)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-3 sm:p-4">
-            <div className="flex items-center gap-2 mb-1">
-              <FileText className="w-4 h-4 text-primary" />
-              <p className="text-xs text-muted-foreground">Orders</p>
-            </div>
-            <p className="text-lg sm:text-xl font-bold text-foreground">{purchases.length}</p>
           </CardContent>
         </Card>
         <Card>
@@ -301,12 +351,31 @@ const SupplierProfilePage = () => {
         <Card>
           <CardContent className="p-3 sm:p-4">
             <div className="flex items-center gap-2 mb-1">
+              <Wallet className="w-4 h-4 text-emerald-500" />
+              <p className="text-xs text-muted-foreground">Total Paid</p>
+            </div>
+            <p className="text-lg sm:text-xl font-bold text-emerald-600">{fc(totalPaid)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 mb-1">
               <DollarSign className="w-4 h-4 text-destructive" />
               <p className="text-xs text-muted-foreground">Balance Due</p>
             </div>
             <p className={`text-lg sm:text-xl font-bold ${balanceDue > 0 ? "text-destructive" : "text-emerald-600"}`}>
               {fc(Math.abs(balanceDue))}
+              {advanceBalance > 0 && <span className="text-xs font-normal ml-1">(Advance)</span>}
             </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <FileText className="w-4 h-4 text-primary" />
+              <p className="text-xs text-muted-foreground">Orders</p>
+            </div>
+            <p className="text-lg sm:text-xl font-bold text-foreground">{purchases.length}</p>
           </CardContent>
         </Card>
       </div>
@@ -343,6 +412,9 @@ const SupplierProfilePage = () => {
                 <div className="flex justify-between"><span className="text-muted-foreground">Total Purchases</span><span className="font-medium">{fc(totalPurchases)}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Total Returns</span><span className="text-amber-600">{fc(totalReturns)}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Total Paid</span><span className="text-emerald-600">{fc(totalPaid)}</span></div>
+                {advanceBalance > 0 && (
+                  <div className="flex justify-between"><span className="text-muted-foreground">Advance Balance</span><span className="text-blue-600 font-medium">{fc(advanceBalance)}</span></div>
+                )}
                 <div className="flex justify-between border-t pt-2"><span className="text-muted-foreground font-medium">Net Payable</span>
                   <span className={`font-bold ${balanceDue > 0 ? "text-destructive" : "text-emerald-600"}`}>{fc(Math.abs(balanceDue))}</span>
                 </div>
@@ -360,20 +432,23 @@ const SupplierProfilePage = () => {
                       <TableHead>Purchase #</TableHead>
                       <TableHead>Date</TableHead>
                       <TableHead className="text-right">Amount</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead>Payment</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {purchases.slice(-5).reverse().map(p => (
-                      <TableRow key={p.id}>
-                        <TableCell className="font-mono text-xs">{p.purchase_number}</TableCell>
-                        <TableCell className="text-sm">{p.purchase_date}</TableCell>
-                        <TableCell className="text-right tabular-nums font-medium">{fc(Number(p.total_amount || 0))}</TableCell>
-                        <TableCell>
-                          <Badge variant={p.status === "completed" || p.status === "approved" ? "default" : "secondary"} className="text-xs">{p.status}</Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {purchases.slice(-5).reverse().map(p => {
+                      const status = getPurchaseStatus(p);
+                      return (
+                        <TableRow key={p.id}>
+                          <TableCell className="font-mono text-xs">{p.purchase_number}</TableCell>
+                          <TableCell className="text-sm">{p.purchase_date}</TableCell>
+                          <TableCell className="text-right tabular-nums font-medium">{fc(Number(p.total_amount || 0))}</TableCell>
+                          <TableCell>
+                            <Badge variant={status === "paid" ? "default" : status === "partial" ? "secondary" : "destructive"} className="text-xs">{status}</Badge>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                     {purchases.length === 0 && (
                       <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-6">No purchases yet</TableCell></TableRow>
                     )}
@@ -421,14 +496,14 @@ const SupplierProfilePage = () => {
                       <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No transactions found</TableCell></TableRow>
                     ) : (
                       <>
-                        {ledger.map(row => (
-                          <TableRow key={row.id + row.type}>
+                        {ledger.map((row, idx) => (
+                          <TableRow key={row.id + row.type + idx}>
                             <TableCell className="text-sm">{row.date}</TableCell>
                             <TableCell className="text-sm">
-                              <span className={row.type === "Purchase Return" ? "text-amber-600" : ""}>{row.type}</span>
+                              <span className={row.type === "Purchase Return" ? "text-amber-600" : row.type === "Payment" ? "text-emerald-600" : ""}>{row.type}</span>
                             </TableCell>
                             <TableCell className="font-mono text-xs">{row.reference}</TableCell>
-                            <TableCell className="text-right tabular-nums text-amber-600">{row.debit > 0 ? fc(row.debit) : ""}</TableCell>
+                            <TableCell className="text-right tabular-nums text-emerald-600">{row.debit > 0 ? fc(row.debit) : ""}</TableCell>
                             <TableCell className="text-right tabular-nums">{row.credit > 0 ? fc(row.credit) : ""}</TableCell>
                             <TableCell className={`text-right tabular-nums font-medium ${row.balance < 0 ? "text-amber-600" : ""}`}>
                               {fc(Math.abs(row.balance))} {row.balance > 0 ? "Cr" : "Dr"}
@@ -437,7 +512,7 @@ const SupplierProfilePage = () => {
                         ))}
                         <TableRow className="bg-muted/50 font-medium">
                           <TableCell colSpan={3} className="text-right text-sm">Totals</TableCell>
-                          <TableCell className="text-right tabular-nums text-amber-600">{fc(ledger.reduce((s, r) => s + r.debit, 0))}</TableCell>
+                          <TableCell className="text-right tabular-nums text-emerald-600">{fc(ledger.reduce((s, r) => s + r.debit, 0))}</TableCell>
                           <TableCell className="text-right tabular-nums">{fc(ledger.reduce((s, r) => s + r.credit, 0))}</TableCell>
                           <TableCell className="text-right tabular-nums font-bold">
                             {ledger.length > 0 ? `${fc(Math.abs(ledger[ledger.length - 1].balance))} ${ledger[ledger.length - 1].balance > 0 ? "Cr" : "Dr"}` : ""}
@@ -462,30 +537,38 @@ const SupplierProfilePage = () => {
                     <TableRow>
                       <TableHead>Purchase #</TableHead>
                       <TableHead>Date</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                      <TableHead>Method</TableHead>
+                      <TableHead className="text-right">Total</TableHead>
+                      <TableHead className="text-right">Paid</TableHead>
+                      <TableHead className="text-right">Due</TableHead>
                       <TableHead>Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {purchases.length === 0 ? (
-                      <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No purchases</TableCell></TableRow>
-                    ) : purchases.map(p => (
-                      <TableRow key={p.id}>
-                        <TableCell className="font-mono text-xs">{p.purchase_number}</TableCell>
-                        <TableCell className="text-sm">{p.purchase_date}</TableCell>
-                        <TableCell className="text-right tabular-nums font-medium">{fc(Number(p.total_amount || 0))}</TableCell>
-                        <TableCell className="text-sm capitalize">{p.payment_method || "—"}</TableCell>
-                        <TableCell>
-                          <Badge variant={p.status === "completed" || p.status === "approved" ? "default" : "secondary"} className="text-xs">{p.status}</Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                      <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No purchases</TableCell></TableRow>
+                    ) : purchases.map(p => {
+                      const status = getPurchaseStatus(p);
+                      const purDue = purchaseDues.find(d => d.id === p.id);
+                      return (
+                        <TableRow key={p.id}>
+                          <TableCell className="font-mono text-xs">{p.purchase_number}</TableCell>
+                          <TableCell className="text-sm">{p.purchase_date}</TableCell>
+                          <TableCell className="text-right tabular-nums font-medium">{fc(Number(p.total_amount || 0))}</TableCell>
+                          <TableCell className="text-right tabular-nums text-emerald-600">{fc(purDue?.paid || 0)}</TableCell>
+                          <TableCell className={`text-right tabular-nums font-medium ${(purDue?.due || 0) > 0 ? "text-destructive" : ""}`}>{fc(purDue?.due || 0)}</TableCell>
+                          <TableCell>
+                            <Badge variant={status === "paid" ? "default" : status === "partial" ? "secondary" : "destructive"} className="text-xs">{status}</Badge>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                     {purchases.length > 0 && (
                       <TableRow className="bg-muted/50 font-medium">
                         <TableCell colSpan={2} className="text-right text-sm">Total</TableCell>
                         <TableCell className="text-right tabular-nums font-bold">{fc(totalPurchases)}</TableCell>
-                        <TableCell colSpan={2} />
+                        <TableCell className="text-right tabular-nums text-emerald-600 font-bold">{fc(purchaseDues.reduce((s, d) => s + d.paid, 0))}</TableCell>
+                        <TableCell className="text-right tabular-nums text-destructive font-bold">{fc(purchaseDues.reduce((s, d) => s + d.due, 0))}</TableCell>
+                        <TableCell />
                       </TableRow>
                     )}
                   </TableBody>
@@ -563,7 +646,65 @@ const SupplierProfilePage = () => {
                     <Input placeholder="Payment notes..." value={newPayment.notes} onChange={e => setNewPayment(p => ({ ...p, notes: e.target.value }))} className="h-9" />
                   </div>
                 </div>
-                <Button size="sm" className="mt-3" onClick={addPayment} disabled={!newPayment.amount || Number(newPayment.amount) <= 0}>
+
+                {paymentAmount > 0 && purchaseDues.some(d => d.due > 0) && (
+                  <div className="mt-3">
+                    <Button size="sm" variant="outline" onClick={() => setShowAllocation(!showAllocation)}>
+                      <CheckCircle className="w-3.5 h-3.5 mr-1" />
+                      {showAllocation ? "Hide" : "Allocate to Purchases"}
+                    </Button>
+                  </div>
+                )}
+
+                {showAllocation && paymentAmount > 0 && (
+                  <div className="mt-3 border rounded-md overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Purchase #</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead className="text-right">Total</TableHead>
+                          <TableHead className="text-right">Paid</TableHead>
+                          <TableHead className="text-right">Due</TableHead>
+                          <TableHead className="text-right w-32">Allocate</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {purchaseDues.filter(d => d.due > 0).map(d => (
+                          <TableRow key={d.id}>
+                            <TableCell className="font-mono text-xs">{d.purchase_number}</TableCell>
+                            <TableCell className="text-sm">{d.purchase_date}</TableCell>
+                            <TableCell className="text-right tabular-nums">{fc(d.total)}</TableCell>
+                            <TableCell className="text-right tabular-nums text-emerald-600">{fc(d.paid)}</TableCell>
+                            <TableCell className="text-right tabular-nums text-destructive font-medium">{fc(d.due)}</TableCell>
+                            <TableCell className="text-right">
+                              <Input
+                                type="number" min="0" max={d.due} step="0.01"
+                                value={d.allocateInput}
+                                onChange={e => updateAllocInput(d.id, e.target.value)}
+                                className="h-8 w-28 text-right ml-auto"
+                                placeholder="0.00"
+                              />
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        <TableRow className="bg-muted/50 font-medium">
+                          <TableCell colSpan={5} className="text-right text-sm">Allocated / Unallocated</TableCell>
+                          <TableCell className="text-right text-sm tabular-nums">
+                            {fc(totalAllocInput)} / <span className={unallocated < 0 ? "text-destructive" : "text-muted-foreground"}>{fc(unallocated)}</span>
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                    {unallocated > 0 && (
+                      <p className="text-xs text-muted-foreground px-3 py-2">
+                        {fc(unallocated)} will be stored as advance payment.
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <Button size="sm" className="mt-3" onClick={addPayment} disabled={paymentAmount <= 0 || totalAllocInput > paymentAmount}>
                   <Plus className="w-3.5 h-3.5 mr-1" />Record Payment
                 </Button>
               </CardContent>
@@ -594,40 +735,52 @@ const SupplierProfilePage = () => {
                       <TableHead className="text-right">Amount</TableHead>
                       <TableHead>Method</TableHead>
                       <TableHead>Reference</TableHead>
+                      <TableHead>Allocated</TableHead>
                       <TableHead>Notes</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredPayments.length === 0 ? (
-                      <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No payments recorded</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No payments recorded</TableCell></TableRow>
                     ) : (
                       <>
-                        {filteredPayments.map(pay => (
-                          <TableRow key={pay.id}>
-                            <TableCell className="text-sm">{pay.payment_date}</TableCell>
-                            <TableCell className="text-right tabular-nums font-medium text-emerald-600">{fc(Number(pay.amount))}</TableCell>
-                            <TableCell className="text-sm capitalize">{pay.payment_method}</TableCell>
-                            <TableCell className="font-mono text-xs">{pay.reference || "—"}</TableCell>
-                            <TableCell className="text-sm text-muted-foreground truncate max-w-[200px]">{pay.notes || "—"}</TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-1">
-                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handlePrintPaymentReceipt(pay)}>
-                                  <Printer className="w-3.5 h-3.5" />
-                                </Button>
-                                {isSuperAdmin && (
-                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deletePayment(pay.id)}>
-                                    <Trash2 className="w-3.5 h-3.5 text-destructive" />
-                                  </Button>
+                        {filteredPayments.map(pay => {
+                          const payAllocs = getPaymentAllocations(pay.id);
+                          const totalAlloc = payAllocs.reduce((s: number, a: any) => s + Number(a.allocated_amount || 0), 0);
+                          return (
+                            <TableRow key={pay.id}>
+                              <TableCell className="text-sm">{pay.payment_date}</TableCell>
+                              <TableCell className="text-right tabular-nums font-medium text-emerald-600">{fc(Number(pay.amount))}</TableCell>
+                              <TableCell className="text-sm capitalize">{pay.payment_method}</TableCell>
+                              <TableCell className="font-mono text-xs">{pay.reference || "—"}</TableCell>
+                              <TableCell className="text-sm">
+                                {totalAlloc > 0 ? (
+                                  <span className="text-xs">{fc(totalAlloc)} ({payAllocs.length} pur)</span>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">Unallocated</span>
                                 )}
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground truncate max-w-[150px]">{pay.notes || "—"}</TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end gap-1">
+                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handlePrintPaymentReceipt(pay)}>
+                                    <Printer className="w-3.5 h-3.5" />
+                                  </Button>
+                                  {isSuperAdmin && (
+                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deletePayment(pay.id)}>
+                                      <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                                    </Button>
+                                  )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
                         <TableRow className="bg-muted/50 font-medium">
                           <TableCell className="text-right text-sm">Total</TableCell>
                           <TableCell className="text-right tabular-nums font-bold text-emerald-600">{fc(filteredPayments.reduce((s, p) => s + Number(p.amount || 0), 0))}</TableCell>
-                          <TableCell colSpan={4} />
+                          <TableCell colSpan={5} />
                         </TableRow>
                       </>
                     )}
@@ -643,19 +796,12 @@ const SupplierProfilePage = () => {
           <Card>
             <CardHeader className="pb-3"><CardTitle className="text-sm">Add Note</CardTitle></CardHeader>
             <CardContent className="space-y-3">
-              <Textarea
-                placeholder="Write a note about this supplier..."
-                value={newNote}
-                onChange={e => setNewNote(e.target.value)}
-                rows={3}
-                className="resize-none"
-              />
+              <Textarea placeholder="Write a note about this supplier..." value={newNote} onChange={e => setNewNote(e.target.value)} rows={3} className="resize-none" />
               <Button size="sm" onClick={addNote} disabled={!newNote.trim()}>
                 <Plus className="w-3.5 h-3.5 mr-1" />Add Note
               </Button>
             </CardContent>
           </Card>
-
           {notes.length === 0 ? (
             <p className="text-center text-muted-foreground text-sm py-8">No notes yet</p>
           ) : (
