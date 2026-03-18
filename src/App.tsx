@@ -148,6 +148,7 @@ const App = () => (
 
                 {/* ─── Purchase ─────────────────────────────────── */}
                 <Route path="/purchase" element={<P perm="purchase.view"><PurchasesPage /></P>} />
+                <Route path="/purchase/invoices/:id" element={<P perm="purchase.view"><PurchaseDetailPage /></P>} />
                 <Route path="/purchase/returns" element={<P perm="purchase.view"><PurchasesPage /></P>} />
                 <Route path="/suppliers" element={<P perm="purchase.view"><SuppliersPage /></P>} />
                 <Route path="/suppliers/:id" element={<P perm="purchase.view"><SupplierProfilePage /></P>} />
