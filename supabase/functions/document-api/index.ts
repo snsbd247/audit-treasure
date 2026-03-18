@@ -200,8 +200,9 @@ Deno.serve(async (req) => {
 
         const { data: doc } = await admin.from(config.table).select("*").eq("id", id).single();
         if (!doc) return err("Document not found", 404);
-        if (doc.status !== "draft" && doc.status !== "pending" && doc.status !== "completed") {
-          return err("Only draft/pending/completed documents can be approved");
+        const approvableStatuses = ["draft", "pending", "completed", "active"];
+        if (!approvableStatuses.includes(doc.status)) {
+          return err(`Document cannot be approved from '${doc.status}' status`);
         }
 
         const { error } = await admin
