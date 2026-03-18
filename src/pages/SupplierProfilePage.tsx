@@ -44,6 +44,7 @@ const SupplierProfilePage = () => {
   const navigate = useNavigate();
   const { fc } = useCurrency();
   const { isSuperAdmin, user } = useAuth();
+  const { settings } = useCompanySettings();
   const { toast } = useToast();
 
   const [supplier, setSupplier] = useState<any>(null);
