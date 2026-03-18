@@ -68,11 +68,6 @@ const SupplierProfilePage = () => {
     setReturns(rets);
     setNotes((notesRes.data as any[]) || []);
     setPayments((payRes.data as any[]) || []);
-    const purs = purRes.data || [];
-    const rets = retRes.data || [];
-    setPurchases(purs);
-    setReturns(rets);
-    setNotes((notesRes.data as any[]) || []);
 
     // Build combined ledger: purchases (credit/payable) + returns (debit/receivable back)
     const allTxns: Array<{ date: string; type: string; ref: string; dr: number; cr: number; id: string }> = [];

@@ -68,11 +68,6 @@ const CustomerProfilePage = () => {
     setReturns(rets);
     setNotes((notesRes.data as any[]) || []);
     setPayments((payRes.data as any[]) || []);
-    const invs = invRes.data || [];
-    const rets = retRes.data || [];
-    setInvoices(invs);
-    setReturns(rets);
-    setNotes((notesRes.data as any[]) || []);
 
     // Build combined ledger: invoices (debit) + returns (credit)
     const allTxns: Array<{ date: string; type: string; ref: string; dr: number; cr: number; id: string }> = [];
