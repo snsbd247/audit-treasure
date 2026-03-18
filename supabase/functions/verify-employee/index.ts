@@ -51,7 +51,7 @@ serve(async (req) => {
     // Find employee (safe fields only)
     const { data: emp, error } = await supabase
       .from("employees")
-      .select("employee_code, first_name, last_name, photo_url, status, department_id, designation_id")
+      .select("employee_code, first_name, last_name, photo_url, status, department_id, designation_id, joining_date")
       .eq("employee_code", employeeCode)
       .single();
 
