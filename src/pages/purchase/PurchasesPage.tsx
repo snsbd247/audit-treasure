@@ -40,6 +40,7 @@ interface PurchaseReturn {
 }
 
 const PurchasesPage = () => {
+  const navigate = useNavigate();
   const { user, profile, hasPermission, isSuperAdmin } = useAuth();
   const isAdmin = hasPermission("purchase", "can_edit");
   const { userBranchId } = useBranch();
