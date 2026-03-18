@@ -20,6 +20,37 @@ interface EmployeeResult {
   status: string;
   department_id: string | null;
   designation_id: string | null;
+  joining_date: string | null;
+}
+
+function calcExperience(joiningDate: string | null) {
+  if (!joiningDate) return { text: "", years: 0, badge: "" };
+  const join = new Date(joiningDate);
+  const now = new Date();
+  let years = now.getFullYear() - join.getFullYear();
+  let months = now.getMonth() - join.getMonth();
+  if (months < 0) { years--; months += 12; }
+  const totalYears = years + months / 12;
+  const text = years > 0
+    ? `${years} Year${years > 1 ? "s" : ""} ${months} Month${months !== 1 ? "s" : ""}`
+    : `${months} Month${months !== 1 ? "s" : ""}`;
+  let badge = "";
+  if (totalYears < 1) badge = "New Employee";
+  else if (totalYears < 3) badge = "Junior";
+  else if (totalYears < 5) badge = "Mid-Level";
+  else badge = "Senior";
+  return { text, years: totalYears, badge };
+}
+
+function badgeColor(badge: string) {
+  if (badge === "Senior") return "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800";
+  if (badge === "Mid-Level") return "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800";
+  return "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800";
+}
+
+function formatJoinDate(d: string | null) {
+  if (!d) return "—";
+  return new Date(d).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" });
 }
 
 interface DigitalSignature {
@@ -88,7 +119,7 @@ export default function EmployeeVerifyPage() {
 
     const { data: emp } = await supabase
       .from("employees" as any)
-      .select("first_name, last_name, employee_code, photo_url, status, department_id, designation_id")
+      .select("first_name, last_name, employee_code, photo_url, status, department_id, designation_id, joining_date")
       .eq("employee_code", trimmed)
       .single();
 
@@ -237,42 +268,63 @@ export default function EmployeeVerifyPage() {
               )}
 
               {/* Body text */}
-              <div className="mt-7 text-sm text-foreground leading-relaxed max-w-md mx-auto print:text-black">
-                <p>This is to certify that</p>
-                <p className="text-xl font-bold my-3 text-primary print:text-black">
-                  {employee.first_name} {employee.last_name}
-                </p>
-                <p>
-                  bearing Employee ID <span className="font-mono font-semibold">{employee.employee_code}</span> is a
-                  {isActive ? " currently active" : "n"} employee of <strong>{companyName}</strong>.
-                </p>
-              </div>
+              {(() => {
+                const exp = calcExperience(employee.joining_date);
+                return (
+                  <div className="mt-7 text-sm text-foreground leading-relaxed max-w-md mx-auto print:text-black">
+                    <p>This is to certify that</p>
+                    <p className="text-xl font-bold my-3 text-primary print:text-black">
+                      {employee.first_name} {employee.last_name}
+                    </p>
+                    <p>
+                      bearing Employee ID <span className="font-mono font-semibold">{employee.employee_code}</span> is a
+                      {isActive ? " currently active" : "n"} employee of <strong>{companyName}</strong>.
+                      {exp.text && (
+                        <> This employee has been working for <strong>{exp.text}</strong> and holds <strong>{exp.badge}</strong> position.</>
+                      )}
+                    </p>
+                  </div>
+                );
+              })()}
 
               {/* Employee Details Table */}
-              <div className="mt-7 mx-auto max-w-sm">
-                <table className="w-full text-sm">
-                  <tbody>
-                    {[
-                      { label: "Full Name", value: `${employee.first_name} ${employee.last_name}` },
-                      { label: "Employee ID", value: employee.employee_code },
-                      { label: "Department", value: department || "—" },
-                      { label: "Designation", value: designation || "—" },
-                      { label: "Employment Status", value: isActive ? "Active" : "Inactive" },
-                    ].map((row) => (
-                      <tr key={row.label} className="border-b border-muted print:border-gray-200">
-                        <td className="py-2 text-left text-muted-foreground font-medium print:text-gray-500">{row.label}</td>
-                        <td className={`py-2 text-right font-semibold ${
-                          row.label === "Employment Status"
-                            ? isActive ? "text-green-600" : "text-destructive"
-                            : "text-foreground print:text-black"
-                        }`}>
-                          {row.value}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              {(() => {
+                const exp = calcExperience(employee.joining_date);
+                const rows = [
+                  { label: "Full Name", value: `${employee.first_name} ${employee.last_name}` },
+                  { label: "Employee ID", value: employee.employee_code },
+                  { label: "Department", value: department || "—" },
+                  { label: "Designation", value: designation || "—" },
+                  { label: "Date of Joining", value: formatJoinDate(employee.joining_date) },
+                  ...(exp.text ? [{ label: "Experience", value: exp.text }] : []),
+                  ...(exp.badge ? [{ label: "Level", value: exp.badge }] : []),
+                  { label: "Employment Status", value: isActive ? "Active" : "Inactive" },
+                ];
+                return (
+                  <div className="mt-7 mx-auto max-w-sm">
+                    <table className="w-full text-sm">
+                      <tbody>
+                        {rows.map((row) => (
+                          <tr key={row.label} className="border-b border-muted print:border-gray-200">
+                            <td className="py-2 text-left text-muted-foreground font-medium print:text-gray-500">{row.label}</td>
+                            <td className={`py-2 text-right font-semibold ${
+                              row.label === "Employment Status"
+                                ? isActive ? "text-green-600" : "text-destructive"
+                                : "text-foreground print:text-black"
+                            }`}>
+                              {row.label === "Level" ? (
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border ${badgeColor(row.value)}`}>
+                                  {row.value}
+                                </span>
+                              ) : row.value}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
 
               {/* QR + Digital Signature Section */}
               <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-6">
@@ -454,25 +506,43 @@ export default function EmployeeVerifyPage() {
               </div>
 
               {/* Details */}
-              <div className="space-y-2.5 border-t border-b py-4">
-                {[
+              {(() => {
+                const exp = calcExperience(employee.joining_date);
+                const rows = [
                   { label: "Department", value: department },
                   { label: "Designation", value: designation },
+                  { label: "Joining Date", value: formatJoinDate(employee.joining_date) },
+                  ...(exp.text ? [{ label: "Experience", value: exp.text }] : []),
                   { label: "Company", value: companyName },
-                  { label: "Status", value: employee.status, isStatus: true },
-                ].map((row) => (
-                  <div key={row.label} className="flex justify-between items-center px-1">
-                    <span className="text-muted-foreground text-sm">{row.label}</span>
-                    {row.isStatus ? (
-                      <span className={`font-semibold capitalize ${isActive ? "text-green-600" : "text-destructive"}`}>
-                        {row.value}
-                      </span>
-                    ) : (
-                      <span className="font-medium text-foreground">{row.value || "—"}</span>
+                  { label: "Status", value: employee.status, isStatus: true as const },
+                ];
+                return (
+                  <div className="space-y-2.5 border-t border-b py-4">
+                    {rows.map((row) => (
+                      <div key={row.label} className="flex justify-between items-center px-1">
+                        <span className="text-muted-foreground text-sm">{row.label}</span>
+                        {"isStatus" in row && row.isStatus ? (
+                          <span className={`font-semibold capitalize ${isActive ? "text-green-600" : "text-destructive"}`}>
+                            {row.value}
+                          </span>
+                        ) : row.label === "Experience" ? (
+                          <span className="font-medium text-foreground">{row.value || "—"}</span>
+                        ) : (
+                          <span className="font-medium text-foreground">{row.value || "—"}</span>
+                        )}
+                      </div>
+                    ))}
+                    {exp.badge && (
+                      <div className="flex justify-between items-center px-1">
+                        <span className="text-muted-foreground text-sm">Level</span>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border ${badgeColor(exp.badge)}`}>
+                          {exp.badge}
+                        </span>
+                      </div>
                     )}
                   </div>
-                ))}
-              </div>
+                );
+              })()}
 
               {/* QR Code */}
               <div className="mt-4 text-center print:block">
