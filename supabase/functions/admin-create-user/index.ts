@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
         }
         userId = existing.id;
         // Update password and unban existing user
-        const updatePayload: any = { user_metadata: { name, username }, ban_duration: "none" };
+        const updatePayload: any = { user_metadata: { name, username }, ban_duration: "none", email_confirm: true };
         if (password) updatePayload.password = password;
         const { error: updateErr } = await adminClient.auth.admin.updateUserById(userId, updatePayload);
         if (updateErr) {
