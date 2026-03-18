@@ -207,13 +207,17 @@ const SalesPage = () => {
   };
 
   const openPrint = async (inv: SalesInvoice) => {
-    const { data } = await supabase.from("sales_invoice_items").select("*").eq("sales_invoice_id", inv.id);
-    const enriched = (data || []).map((d: any) => {
+    const [itemsRes, allocRes] = await Promise.all([
+      supabase.from("sales_invoice_items").select("*").eq("sales_invoice_id", inv.id),
+      supabase.from("payment_allocations" as any).select("allocated_amount").eq("invoice_id", inv.id).eq("invoice_type", "sales_invoice"),
+    ]);
+    const enriched = (itemsRes.data || []).map((d: any) => {
       const prod = products.find((p) => p.id === d.product_id);
       return { ...d, product_name: prod?.product_name || "—", product_code: prod?.product_code || "" };
     });
+    const paidAmount = ((allocRes.data as any[]) || []).reduce((s: number, a: any) => s + Number(a.allocated_amount || 0), 0);
     setPrintItems(enriched);
-    setPrintInvoice(inv);
+    setPrintInvoice({ ...inv, paid_amount: paidAmount, due_amount: Math.max(0, inv.net_amount - paidAmount) } as any);
   };
 
   const handleSaveInvoice = async () => {
