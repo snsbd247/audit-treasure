@@ -54,6 +54,12 @@ class EmployeeController extends CrudController
 
         // Validate login fields only when login is enabled
         if ($loginEnabled) {
+            // Auto-generate username if empty
+            $username = $request->username;
+            if (empty($username)) {
+                $username = $this->generateUsername();
+                $request->merge(['username' => $username]);
+            }
             $request->validate([
                 'username' => 'required|unique:users,username|max:50',
                 'password' => 'required|min:6',
