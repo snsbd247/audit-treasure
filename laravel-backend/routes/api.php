@@ -299,6 +299,27 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\BranchScope::class, \App
             });
         });
 
+        // ─── Payments & Ledger ──────────────────────────────────
+        Route::prefix('payments')->group(function () {
+            Route::middleware('permission:sales.view')->group(function () {
+                Route::get('/', [\App\Http\Controllers\Payment\PaymentController::class, 'index']);
+                Route::get('ledger', [\App\Http\Controllers\Payment\PaymentController::class, 'ledger']);
+                Route::get('invoice-dues', [\App\Http\Controllers\Payment\PaymentController::class, 'invoiceDues']);
+                Route::get('summary', [\App\Http\Controllers\Payment\PaymentController::class, 'summary']);
+                Route::get('aging', [\App\Http\Controllers\Payment\PaymentController::class, 'aging']);
+                Route::get('notes', [\App\Http\Controllers\Payment\PaymentController::class, 'notes']);
+            });
+            Route::middleware('permission:sales.create')->group(function () {
+                Route::post('/', [\App\Http\Controllers\Payment\PaymentController::class, 'store']);
+                Route::post('{id}/auto-allocate', [\App\Http\Controllers\Payment\PaymentController::class, 'autoAllocate']);
+                Route::post('notes', [\App\Http\Controllers\Payment\PaymentController::class, 'addNote']);
+            });
+            Route::middleware('permission:sales.delete')->group(function () {
+                Route::delete('{id}', [\App\Http\Controllers\Payment\PaymentController::class, 'destroy']);
+                Route::delete('notes/{id}', [\App\Http\Controllers\Payment\PaymentController::class, 'deleteNote']);
+            });
+        });
+
         // ─── Internal Messaging ─────────────────────────────────
         Route::prefix('messaging')->group(function () {
             Route::get('conversations', [\App\Http\Controllers\Messaging\MessageController::class, 'conversations']);
