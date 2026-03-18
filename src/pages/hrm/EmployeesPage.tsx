@@ -412,11 +412,10 @@ export default function EmployeesPage() {
                   setForm({
                     ...form,
                     create_login: v,
-                    // Clear login fields when toggling OFF
                     ...(!v ? { username: "", password: "" } : {}),
-                    // Auto-fill username from employee code when toggling ON
-                    ...(v && !form.username ? { username: form.employee_code } : {}),
+                    ...(v && !form.username ? { username: generateUsername() } : {}),
                   });
+                  if (!v) setShowPassword(false);
                 }}
               />
             </div>
@@ -424,22 +423,46 @@ export default function EmployeesPage() {
               <div className="grid grid-cols-2 gap-4 bg-muted/50 p-3 rounded-lg border border-border/50">
                 <div>
                   <Label>Username *</Label>
-                  <Input
-                    value={form.username}
-                    onChange={e => setForm({...form, username: e.target.value})}
-                    placeholder={form.employee_code || "username"}
-                    autoComplete="off"
-                  />
+                  <div className="flex gap-1">
+                    <Input
+                      value={form.username}
+                      onChange={e => setForm({...form, username: e.target.value})}
+                      placeholder="EMP-0001"
+                      autoComplete="off"
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setForm({...form, username: generateUsername()})}
+                      title="Auto-generate username"
+                    >
+                      <Wand2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
                 <div>
                   <Label>{editId && linkedUsers[editId!] ? "New Password (leave blank to keep)" : "Password *"}</Label>
-                  <Input
-                    type="password"
-                    value={form.password}
-                    onChange={e => setForm({...form, password: e.target.value})}
-                    placeholder={editId && linkedUsers[editId!] ? "Leave blank to keep current" : "Min 6 characters"}
-                    autoComplete="new-password"
-                  />
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      value={form.password}
+                      onChange={e => setForm({...form, password: e.target.value})}
+                      placeholder={editId && linkedUsers[editId!] ? "Leave blank to keep current" : "Min 6 characters"}
+                      autoComplete="new-password"
+                      className="pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-muted-foreground" />}
+                    </Button>
+                  </div>
                 </div>
               </div>
             )}
