@@ -102,6 +102,7 @@ import AccountsPayableReport from "./pages/reports/accounting/AccountsPayableRep
 import { ARAgingReport, APAgingReport } from "./pages/reports/accounting/AgingReports";
 import { ExpenseAnalysisReport, IncomeAnalysisReport } from "./pages/reports/accounting/AnalysisReports";
 import FinancialSummaryDashboard from "./pages/reports/accounting/FinancialSummaryDashboard";
+import CustomerStatementPage from "./pages/reports/CustomerStatementPage";
 
 const queryClient = new QueryClient();
 
