@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import {
-  ArrowLeft, User, DollarSign, FileText, Printer,
+  ArrowLeft, User, DollarSign, FileText, Printer, Download,
   Phone, Mail, MapPin, StickyNote, Plus, Trash2, TrendingDown, Receipt, RotateCcw, Wallet, CheckCircle
 } from "lucide-react";
 
