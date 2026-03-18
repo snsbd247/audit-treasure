@@ -147,7 +147,70 @@ const CustomerProfilePage = () => {
 
   const totalSales = invoices.reduce((s, i) => s + Number(i.net_amount || i.total_amount || 0), 0);
   const totalReturns = returns.reduce((s, r) => s + Number(r.total_amount || 0), 0);
-  const balanceDue = totalSales - totalReturns;
+  const totalPaid = payments.reduce((s, p) => s + Number(p.amount || 0), 0);
+  const balanceDue = totalSales - totalReturns - totalPaid;
+
+  const filteredPayments = payments.filter(p => {
+    if (payDateFrom && p.payment_date < payDateFrom) return false;
+    if (payDateTo && p.payment_date > payDateTo) return false;
+    return true;
+  });
+
+  const addPayment = async () => {
+    if (!id || !newPayment.amount || Number(newPayment.amount) <= 0) return;
+    const { error } = await supabase.from("party_payments" as any).insert({
+      party_type: "customer",
+      party_id: id,
+      payment_date: newPayment.payment_date,
+      amount: Number(newPayment.amount),
+      payment_method: newPayment.payment_method,
+      reference: newPayment.reference || null,
+      notes: newPayment.notes || null,
+      created_by: user?.id || null,
+    } as any);
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      setNewPayment({ amount: "", payment_method: "cash", reference: "", notes: "", payment_date: new Date().toISOString().split("T")[0] });
+      toast({ title: "Payment recorded" });
+      fetchData();
+    }
+  };
+
+  const deletePayment = async (payId: string) => {
+    await supabase.from("party_payments" as any).delete().eq("id", payId);
+    toast({ title: "Payment deleted" });
+    fetchData();
+  };
+
+  const handlePrintPaymentReceipt = (pay: any) => {
+    const win = window.open("", "_blank");
+    if (!win) return;
+    win.document.write(`
+      <html><head><title>Payment Receipt</title>
+      <style>
+        body { font-family: Arial, sans-serif; margin: 40px; font-size: 13px; }
+        h2 { margin-bottom: 5px; }
+        .row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #eee; }
+        .label { color: #666; }
+        .val { font-weight: 600; }
+        .amount { font-size: 22px; font-weight: 700; margin: 20px 0; text-align: center; }
+        .sub { color: #888; font-size: 11px; }
+      </style></head><body>
+      <h2>Payment Receipt</h2>
+      <p class="sub">Customer: ${customer?.name}</p>
+      <hr/>
+      <div class="amount">${fc(Number(pay.amount))}</div>
+      <div class="row"><span class="label">Date</span><span class="val">${pay.payment_date}</span></div>
+      <div class="row"><span class="label">Method</span><span class="val">${pay.payment_method}</span></div>
+      <div class="row"><span class="label">Reference</span><span class="val">${pay.reference || "—"}</span></div>
+      <div class="row"><span class="label">Notes</span><span class="val">${pay.notes || "—"}</span></div>
+      <br/><p class="sub">Printed: ${new Date().toLocaleString()}</p>
+      <script>window.print(); window.close();</script>
+      </body></html>
+    `);
+    win.document.close();
+  };
 
   const handlePrintLedger = () => {
     const printContent = document.getElementById("customer-ledger-print");
