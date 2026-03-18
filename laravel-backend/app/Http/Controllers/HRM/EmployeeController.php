@@ -47,21 +47,24 @@ class EmployeeController extends CrudController
             'national_id' => 'nullable|string',
             'employment_type' => 'nullable|in:permanent,contract,probation',
             'status' => 'nullable|in:active,inactive,terminated',
+            'create_login' => 'sometimes|boolean',
         ]);
 
-        // Validate login fields if create_login is true
-        if ($request->boolean('create_login')) {
+        $loginEnabled = $request->boolean('create_login');
+
+        // Validate login fields only when login is enabled
+        if ($loginEnabled) {
             $request->validate([
                 'username' => 'required|unique:users,username|max:50',
                 'password' => 'required|min:6',
             ]);
         }
 
-        return DB::transaction(function () use ($data, $request) {
+        return DB::transaction(function () use ($data, $request, $loginEnabled) {
             $employee = Employee::create($data);
 
-            // Create user login account if requested
-            if ($request->boolean('create_login')) {
+            // Create user login account only if toggle is ON
+            if ($loginEnabled) {
                 $user = User::create([
                     'username' => $request->username,
                     'name' => "{$employee->first_name} {$employee->last_name}",
