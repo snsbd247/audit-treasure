@@ -425,7 +425,7 @@ export default function EmployeesPage() {
               </div>
             )}
             {!form.create_login && editId && linkedUsers[editId!] && (
-              <p className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 p-2 rounded">
+              <p className="text-xs text-destructive bg-destructive/10 p-2 rounded">
                 ⚠️ Turning off will disable this employee's login access
               </p>
             )}
