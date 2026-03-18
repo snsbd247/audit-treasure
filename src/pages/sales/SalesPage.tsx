@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBranch } from "@/contexts/BranchContext";
@@ -40,6 +41,7 @@ interface SalesReturnRow {
 }
 
 const SalesPage = () => {
+  const navigate = useNavigate();
   const { user, profile, hasPermission, isSuperAdmin } = useAuth();
   const isAdmin = hasPermission("sales", "can_edit");
   const { userBranchId } = useBranch();
@@ -408,7 +410,7 @@ const SalesPage = () => {
                     <TableCell>
                       <div className="flex gap-1">
                         {/* View */}
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openView(inv)} title="View">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => navigate(`/sales/invoices/${inv.id}`)} title="View">
                           <Eye className="w-3.5 h-3.5" />
                         </Button>
                         {/* Edit */}

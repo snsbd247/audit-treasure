@@ -27,6 +27,8 @@ import ChartOfAccounts from "./pages/accounts/ChartOfAccounts";
 import AccountingVouchers from "./pages/accounts/AccountingVouchers";
 import PurchasesPage from "./pages/purchase/PurchasesPage";
 import SalesPage from "./pages/sales/SalesPage";
+import SalesInvoiceDetailPage from "./pages/sales/SalesInvoiceDetailPage";
+import PurchaseDetailPage from "./pages/purchase/PurchaseDetailPage";
 import InventoryPage from "./pages/inventory/InventoryPage";
 import UnitsPage from "./pages/inventory/UnitsPage";
 import ItemCategoriesPage from "./pages/inventory/ItemCategoriesPage";
@@ -139,12 +141,14 @@ const App = () => (
 
                 {/* ─── Sales ────────────────────────────────────── */}
                 <Route path="/sales" element={<P perm="sales.view"><SalesPage /></P>} />
+                <Route path="/sales/invoices/:id" element={<P perm="sales.view"><SalesInvoiceDetailPage /></P>} />
                 <Route path="/sales/returns" element={<P perm="sales.view"><SalesPage /></P>} />
                 <Route path="/customers" element={<P perm="sales.view"><CustomersPage /></P>} />
                 <Route path="/customers/:id" element={<P perm="sales.view"><CustomerProfilePage /></P>} />
 
                 {/* ─── Purchase ─────────────────────────────────── */}
                 <Route path="/purchase" element={<P perm="purchase.view"><PurchasesPage /></P>} />
+                <Route path="/purchase/invoices/:id" element={<P perm="purchase.view"><PurchaseDetailPage /></P>} />
                 <Route path="/purchase/returns" element={<P perm="purchase.view"><PurchasesPage /></P>} />
                 <Route path="/suppliers" element={<P perm="purchase.view"><SuppliersPage /></P>} />
                 <Route path="/suppliers/:id" element={<P perm="purchase.view"><SupplierProfilePage /></P>} />
