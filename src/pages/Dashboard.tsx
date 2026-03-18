@@ -12,7 +12,8 @@ import { useNavigate } from "react-router-dom";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, Legend,
+  AreaChart, Area, PieChart, Pie, Cell,
+  Legend,
 } from "recharts";
 
 interface Stats {
@@ -70,30 +71,51 @@ const Dashboard = () => {
   useEffect(() => { loadDashboardData(); }, []);
 
   const loadDashboardData = async () => {
-    const [salesRes, purchasesRes, auditRes, recentInvRes, recentPayRes] = await Promise.all([
+    const [salesRes, purchasesRes, auditRes, recentInvRes, recentPayRes, paymentsRes, voucherRes] = await Promise.all([
       supabase.from("sales_invoices").select("total_amount, net_amount, discount, invoice_date, status"),
       supabase.from("purchases").select("total_amount, purchase_date, status"),
       supabase.from("audit_log").select("*").order("created_at", { ascending: false }).limit(8),
       supabase.from("sales_invoices").select("id, invoice_number, invoice_date, total_amount, net_amount, status, customers(name)").order("created_at", { ascending: false }).limit(5),
       supabase.from("party_payments").select("id, payment_date, amount, payment_method, party_type, party_id").order("created_at", { ascending: false }).limit(5),
+      supabase.from("party_payments").select("amount, party_type"),
+      supabase.from("acc_vouchers").select("voucher_type, total_amount, status").neq("status", "cancelled"),
     ]);
 
     const sales = salesRes.data || [];
     const purchases = purchasesRes.data || [];
+    const payments = paymentsRes.data || [];
+    const vouchers = voucherRes.data || [];
+
     const totalSales = sales.reduce((s, r) => s + Number(r.total_amount), 0);
     const totalPurchases = purchases.reduce((s, r) => s + Number(r.total_amount), 0);
 
+    // Real receivable: total sales - payments received from customers
+    const customerPayments = payments.filter(p => p.party_type === 'customer').reduce((s, p) => s + Number(p.amount), 0);
+    const supplierPayments = payments.filter(p => p.party_type === 'supplier').reduce((s, p) => s + Number(p.amount), 0);
+
+    const totalReceivable = Math.max(0, totalSales - customerPayments);
+    const totalPayable = Math.max(0, totalPurchases - supplierPayments);
+
+    // Real income/expense from vouchers
+    const receiptVouchers = vouchers.filter(v => v.voucher_type === 'receipt').reduce((s, v) => s + Number(v.total_amount), 0);
+    const paymentVouchers = vouchers.filter(v => v.voucher_type === 'payment').reduce((s, v) => s + Number(v.total_amount), 0);
+
+    const totalIncome = totalSales + receiptVouchers;
+    const totalExpenses = totalPurchases + paymentVouchers;
+
     setStats({
       totalSales, totalPurchases,
-      totalIncome: totalSales, totalExpenses: totalPurchases,
-      cashBalance: totalSales - totalPurchases, bankBalance: 0,
-      totalReceivable: totalSales * 0.3, totalPayable: totalPurchases * 0.25,
+      totalIncome, totalExpenses,
+      cashBalance: totalIncome - totalExpenses,
+      bankBalance: 0,
+      totalReceivable, totalPayable,
       salesCount: sales.length, purchaseCount: purchases.length,
     });
     setRecentActivities(auditRes.data || []);
     setRecentInvoices(recentInvRes.data || []);
     setRecentPayments(recentPayRes.data || []);
 
+    // Monthly chart data from real transactions
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const currentYear = new Date().getFullYear();
 
@@ -105,12 +127,12 @@ const Dashboard = () => {
     setMonthlySales(monthlyData);
     setProfitData(monthlyData);
 
-    setExpenseBreakdown([
-      { name: "Materials", value: totalPurchases * 0.45 },
-      { name: "Labor", value: totalPurchases * 0.25 },
-      { name: "Utilities", value: totalPurchases * 0.15 },
-      { name: "Other", value: totalPurchases * 0.15 },
-    ].filter(e => e.value > 0));
+    // Real expense breakdown from voucher types
+    const expenseCategories: { name: string; value: number }[] = [];
+    if (totalPurchases > 0) expenseCategories.push({ name: "Purchases", value: totalPurchases });
+    if (paymentVouchers > 0) expenseCategories.push({ name: "Payments", value: paymentVouchers });
+    // If no data at all, show empty
+    setExpenseBreakdown(expenseCategories.filter(e => e.value > 0));
   };
 
   const summaryCards = [
@@ -234,16 +256,20 @@ const Dashboard = () => {
             <CardTitle className="text-xs sm:text-sm font-medium">Expense Breakdown</CardTitle>
           </CardHeader>
           <CardContent className="flex items-center justify-center px-2 sm:px-6 pb-3 sm:pb-6">
-            <ResponsiveContainer width="100%" height={220}>
-              <PieChart>
-                <Pie data={expenseBreakdown} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={75} innerRadius={40} label={e => e.name} className="text-[10px]">
-                  {expenseBreakdown.map((_, i) => (
-                    <Cell key={i} fill={COLORS.pie[i % COLORS.pie.length]} />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-              </PieChart>
-            </ResponsiveContainer>
+            {expenseBreakdown.length === 0 ? (
+              <p className="text-xs text-muted-foreground py-16 text-center">No expense data yet</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie data={expenseBreakdown} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={75} innerRadius={40} label={e => e.name} className="text-[10px]">
+                    {expenseBreakdown.map((_, i) => (
+                      <Cell key={i} fill={COLORS.pie[i % COLORS.pie.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
 
