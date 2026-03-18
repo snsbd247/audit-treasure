@@ -53,6 +53,7 @@ const UsersPage = () => {
   const [formCustomRole, setFormCustomRole] = useState<string>("");
 
   const { toast } = useToast();
+  const { isSuperAdmin } = useAuth();
 
   const fetchData = async () => {
     setLoading(true);
