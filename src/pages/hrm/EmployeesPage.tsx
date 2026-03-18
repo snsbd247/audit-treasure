@@ -108,8 +108,26 @@ export default function EmployeesPage() {
       employment_type: emp.employment_type, status: emp.status,
       create_login: hasLogin, username: hasLogin ? linkedUsers[emp.id] : "", password: "",
     });
+    setShowPassword(false);
     setDialogOpen(true);
   };
+
+  /** Auto-generate username in EMP-XXXX format */
+  const generateUsername = useCallback(() => {
+    // Find the highest existing EMP-XXXX number
+    let maxNum = 0;
+    Object.values(linkedUsers).forEach(uname => {
+      const match = uname.match(/^EMP-(\d+)$/i);
+      if (match) maxNum = Math.max(maxNum, parseInt(match[1], 10));
+    });
+    // Also check employee codes for a fallback
+    employees.forEach(emp => {
+      const match = emp.employee_code.match(/(\d+)/);
+      if (match) maxNum = Math.max(maxNum, parseInt(match[1], 10));
+    });
+    const nextNum = maxNum + 1;
+    return `EMP-${String(nextNum).padStart(4, "0")}`;
+  }, [linkedUsers, employees]);
 
   const handleSave = async () => {
     if (!form.employee_code || !form.first_name || !form.last_name) {
