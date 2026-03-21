@@ -80,6 +80,8 @@ import IspPackagesPage from "./pages/isp/IspPackagesPage";
 import IspInvoicesPage from "./pages/isp/IspInvoicesPage";
 import IspPaymentsPage from "./pages/isp/IspPaymentsPage";
 import IspRoutersPage from "./pages/isp/IspRoutersPage";
+import IspResellersPage from "./pages/isp/IspResellersPage";
+import IspUsagePage from "./pages/isp/IspUsagePage";
 
 // ISP Customer Portal
 import IspPortalLoginPage from "./pages/isp-portal/IspPortalLoginPage";
@@ -253,6 +255,8 @@ const App = () => (
                 <Route path="/isp/invoices" element={<P perm="isp.view"><IspInvoicesPage /></P>} />
                 <Route path="/isp/payments" element={<P perm="isp.view"><IspPaymentsPage /></P>} />
                 <Route path="/isp/routers" element={<P perm="isp.view"><IspRoutersPage /></P>} />
+                <Route path="/isp/resellers" element={<P perm="isp.view"><IspResellersPage /></P>} />
+                <Route path="/isp/customers/:id/usage" element={<P perm="isp.view"><IspUsagePage /></P>} />
 
                 {/* ─── Administration ──────────────────────────── */}
                 <Route path="/admin/users" element={<P perm="users.view"><UsersPage /></P>} />

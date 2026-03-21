@@ -156,6 +156,7 @@ const navGroups: NavGroup[] = [
       { to: "/isp/invoices", label: "Invoices", icon: FileText, permission: "isp.view" },
       { to: "/isp/payments", label: "Payments", icon: CreditCard, permission: "isp.view" },
       { to: "/isp/routers", label: "Routers", icon: Router, permission: "isp.view" },
+      { to: "/isp/resellers", label: "Resellers", icon: Briefcase, permission: "isp.view" },
     ],
   },
   {

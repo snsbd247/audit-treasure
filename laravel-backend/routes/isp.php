@@ -10,6 +10,8 @@ use App\Modules\ISP\Controllers\IspRouterController;
 use App\Modules\ISP\Controllers\IspMikrotikActionController;
 use App\Modules\ISP\Controllers\IspBkashController;
 use App\Modules\ISP\Controllers\IspCustomerAuthController;
+use App\Modules\ISP\Controllers\IspResellerController;
+use App\Modules\ISP\Controllers\IspUsageController;
 
 /*
 |--------------------------------------------------------------------------
@@ -52,4 +54,13 @@ Route::middleware(['auth:sanctum'])->prefix('isp')->group(function () {
     Route::post('customers/{id}/activate',   [IspMikrotikActionController::class, 'activate']);
     Route::post('customers/{id}/sync-pppoe', [IspMikrotikActionController::class, 'syncPPPoE']);
     Route::post('customers/{id}/disconnect', [IspMikrotikActionController::class, 'disconnectSession']);
+
+    // ─── Usage Tracking ─────────────────────────────────
+    Route::get('customers/{id}/usage',       [IspUsageController::class, 'customerUsage']);
+    Route::get('customers/{id}/usage/daily', [IspUsageController::class, 'dailyChart']);
+
+    // ─── Resellers ──────────────────────────────────────
+    Route::apiResource('resellers', IspResellerController::class);
+    Route::get('resellers/{id}/customers',  [IspResellerController::class, 'customers']);
+    Route::get('resellers/{id}/earnings',   [IspResellerController::class, 'earnings']);
 });

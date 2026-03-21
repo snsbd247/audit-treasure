@@ -20,6 +20,12 @@ class Kernel extends ConsoleKernel
 
         // ISP: Send due reminders daily at 9 AM
         $schedule->command('isp:send-due-reminders')->dailyAt('09:00');
+
+        // ISP: Auto-disconnect overdue users daily at 10 AM
+        $schedule->command('isp:disconnect-overdue')->dailyAt('10:00');
+
+        // ISP: Track bandwidth usage every 10 minutes
+        $schedule->command('isp:track-usage')->everyTenMinutes();
     }
 
     protected function commands(): void

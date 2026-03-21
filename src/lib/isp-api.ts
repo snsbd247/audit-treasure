@@ -58,6 +58,14 @@ export const ispCustomers = {
   activate: (id: string) => ispRequest(`/customers/${id}/activate`, { method: 'POST' }),
   syncPPPoE: (id: string) => ispRequest(`/customers/${id}/sync-pppoe`, { method: 'POST' }),
   disconnect: (id: string) => ispRequest(`/customers/${id}/disconnect`, { method: 'POST' }),
+  usage: (id: string, params?: Record<string, string>) => {
+    const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+    return ispRequest(`/customers/${id}/usage${qs}`);
+  },
+  usageDaily: (id: string, days?: string) => {
+    const qs = days ? `?days=${days}` : '';
+    return ispRequest(`/customers/${id}/usage/daily${qs}`);
+  },
 };
 
 // ─── Invoices ──────────────────────────────────
@@ -105,4 +113,21 @@ export const ispBilling = {
 export const ispBkash = {
   createPayment: (invoiceId: string) => ispRequest('/bkash/create', { method: 'POST', body: JSON.stringify({ invoice_id: invoiceId }) }),
   queryPayment: (paymentId: string) => ispRequest('/bkash/query', { method: 'POST', body: JSON.stringify({ payment_id: paymentId }) }),
+};
+
+// ─── Resellers ──────────────────────────────────
+export const ispResellers = {
+  list: (params?: Record<string, string>) => {
+    const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+    return ispRequest(`/resellers${qs}`);
+  },
+  get: (id: string) => ispRequest(`/resellers/${id}`),
+  create: (data: any) => ispRequest('/resellers', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: any) => ispRequest(`/resellers/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id: string) => ispRequest(`/resellers/${id}`, { method: 'DELETE' }),
+  customers: (id: string) => ispRequest(`/resellers/${id}/customers`),
+  earnings: (id: string, params?: Record<string, string>) => {
+    const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+    return ispRequest(`/resellers/${id}/earnings${qs}`);
+  },
 };

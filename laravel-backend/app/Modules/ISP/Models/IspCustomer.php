@@ -18,6 +18,7 @@ class IspCustomer extends Model
         'address',
         'package_id',
         'router_id',
+        'reseller_id',
         'pppoe_username',
         'pppoe_password',
         'ip_address',
@@ -40,5 +41,15 @@ class IspCustomer extends Model
     public function invoices()
     {
         return $this->hasMany(IspInvoice::class, 'customer_id');
+    }
+
+    public function reseller()
+    {
+        return $this->belongsTo(IspReseller::class, 'reseller_id');
+    }
+
+    public function usageLogs()
+    {
+        return $this->hasMany(IspUsageLog::class, 'customer_id');
     }
 }
