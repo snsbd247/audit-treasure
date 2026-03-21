@@ -6,7 +6,7 @@ import { useModules, type ModuleKey } from "@/contexts/ModuleContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   LayoutDashboard, ChevronDown, ChevronRight, BookOpen, FileText, Receipt,
-  ShoppingCart, Package, Warehouse, Factory, Layers, ClipboardList, BarChart3,
+  ShoppingCart, Package, Warehouse, Layers, ClipboardList, BarChart3,
   ScrollText, Database, Users, Shield, Building2, LogOut,
   CreditCard, Landmark, PiggyBank, TrendingUp,
   ArrowLeftRight, Calendar, Activity, Menu, X, CircleDot, Truck, UserCheck,
