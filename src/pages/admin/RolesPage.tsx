@@ -25,7 +25,7 @@ const MODULES: { key: string; label: string; group: string }[] = [
   { key: "sales", label: "Sales", group: "Business" },
   { key: "purchase", label: "Purchase", group: "Business" },
   { key: "inventory", label: "Inventory", group: "Business" },
-  { key: "manufacturing", label: "Manufacturing", group: "Business" },
+  
   { key: "bank", label: "Bank & Cash", group: "Business" },
   // HRM
   { key: "hrm", label: "HRM & Payroll", group: "HRM" },
