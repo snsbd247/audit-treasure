@@ -18,6 +18,7 @@ class IspCustomer extends Model
         'address',
         'package_id',
         'router_id',
+        'reseller_id',
         'pppoe_username',
         'pppoe_password',
         'ip_address',
