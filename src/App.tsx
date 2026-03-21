@@ -76,6 +76,14 @@ import HrDashboardPage from "./pages/hrm/HrDashboardPage";
 import EmployeeProfilePage from "./pages/hrm/EmployeeProfilePage";
 import LoginActivityPage from "./pages/hrm/LoginActivityPage";
 
+// ISP Pages
+import IspDashboardPage from "./pages/isp/IspDashboardPage";
+import IspCustomersPage from "./pages/isp/IspCustomersPage";
+import IspPackagesPage from "./pages/isp/IspPackagesPage";
+import IspInvoicesPage from "./pages/isp/IspInvoicesPage";
+import IspPaymentsPage from "./pages/isp/IspPaymentsPage";
+import IspRoutersPage from "./pages/isp/IspRoutersPage";
+
 // Inventory - Stock Ledger
 import StockLedgerPage from "./pages/inventory/StockLedgerPage";
 
