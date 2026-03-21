@@ -17,6 +17,7 @@ class IspCustomer extends Model
         'phone',
         'address',
         'package_id',
+        'router_id',
         'pppoe_username',
         'pppoe_password',
         'ip_address',
@@ -29,6 +30,11 @@ class IspCustomer extends Model
     public function package()
     {
         return $this->belongsTo(IspPackage::class, 'package_id');
+    }
+
+    public function router()
+    {
+        return $this->belongsTo(IspRouter::class, 'router_id');
     }
 
     public function invoices()
