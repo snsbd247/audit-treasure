@@ -10,6 +10,8 @@ use App\Modules\ISP\Controllers\IspRouterController;
 use App\Modules\ISP\Controllers\IspMikrotikActionController;
 use App\Modules\ISP\Controllers\IspBkashController;
 use App\Modules\ISP\Controllers\IspCustomerAuthController;
+use App\Modules\ISP\Controllers\IspResellerController;
+use App\Modules\ISP\Controllers\IspUsageController;
 
 /*
 |--------------------------------------------------------------------------
