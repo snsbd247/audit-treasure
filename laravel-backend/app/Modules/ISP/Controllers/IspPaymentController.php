@@ -6,11 +6,12 @@ use App\Http\Controllers\BaseController;
 use App\Modules\ISP\Models\IspInvoice;
 use App\Modules\ISP\Models\IspPayment;
 use App\Modules\ISP\Services\BillingService;
+use App\Modules\ISP\Services\IspSmsService;
 use Illuminate\Http\Request;
 
 class IspPaymentController extends BaseController
 {
-    public function __construct(private BillingService $billing) {}
+    public function __construct(private BillingService $billing, private IspSmsService $ispSms) {}
 
     public function index(Request $request)
     {
@@ -46,9 +47,14 @@ class IspPaymentController extends BaseController
         $totalPaid = $invoice->payments()->sum('amount');
         if ($totalPaid >= $invoice->amount) {
             $invoice->update(['status' => 'paid']);
-
-            // Auto re-activate customer if all invoices cleared
             $this->billing->reactivateIfClear($invoice->customer_id);
+        }
+
+        // Send payment SMS
+        try {
+            $this->ispSms->sendPaymentReceivedSms($invoice->load('customer'), $data['amount'], $data['method']);
+        } catch (\Exception $e) {
+            // SMS failure should not block payment
         }
 
         return $this->created($payment->load('invoice.customer'));

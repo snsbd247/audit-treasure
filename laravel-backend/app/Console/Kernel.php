@@ -17,6 +17,9 @@ class Kernel extends ConsoleKernel
 
         // ISP: Generate monthly bills on 1st of each month at 6 AM
         $schedule->command('isp:generate-bills')->monthlyOn(1, '06:00');
+
+        // ISP: Send due reminders daily at 9 AM
+        $schedule->command('isp:send-due-reminders')->dailyAt('09:00');
     }
 
     protected function commands(): void

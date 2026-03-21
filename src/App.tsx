@@ -84,6 +84,12 @@ import IspInvoicesPage from "./pages/isp/IspInvoicesPage";
 import IspPaymentsPage from "./pages/isp/IspPaymentsPage";
 import IspRoutersPage from "./pages/isp/IspRoutersPage";
 
+// ISP Customer Portal
+import IspPortalLoginPage from "./pages/isp-portal/IspPortalLoginPage";
+import IspPortalDashboard from "./pages/isp-portal/IspPortalDashboard";
+import IspPortalBillsPage from "./pages/isp-portal/IspPortalBillsPage";
+import IspPortalPaymentsPage from "./pages/isp-portal/IspPortalPaymentsPage";
+
 // Inventory - Stock Ledger
 import StockLedgerPage from "./pages/inventory/StockLedgerPage";
 
@@ -139,6 +145,13 @@ const App = () => (
               <Route path="/employee/verify" element={<EmployeeVerifyPage />} />
               <Route path="/employee/verify/:code" element={<EmployeeVerifyPage />} />
               <Route path="/verify/:code" element={<EmployeeVerifyPage />} />
+
+              {/* ISP Customer Portal (public, no ERP auth) */}
+              <Route path="/isp-portal/login" element={<IspPortalLoginPage />} />
+              <Route path="/isp-portal/dashboard" element={<IspPortalDashboard />} />
+              <Route path="/isp-portal/bills" element={<IspPortalBillsPage />} />
+              <Route path="/isp-portal/payments" element={<IspPortalPaymentsPage />} />
+
               <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                 {/* Dashboard — all authenticated users */}
                 <Route path="/" element={<Dashboard />} />

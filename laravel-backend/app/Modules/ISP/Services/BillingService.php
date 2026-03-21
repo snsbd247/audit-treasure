@@ -4,6 +4,7 @@ namespace App\Modules\ISP\Services;
 
 use App\Modules\ISP\Models\IspCustomer;
 use App\Modules\ISP\Models\IspInvoice;
+use App\Modules\ISP\Services\IspSmsService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -47,13 +48,20 @@ class BillingService
                     continue;
                 }
 
-                IspInvoice::create([
+                $invoice = IspInvoice::create([
                     'customer_id'  => $customer->id,
                     'amount'       => $amount,
                     'billing_date' => $now->toDateString(),
                     'due_date'     => $now->copy()->addDays(7)->toDateString(),
                     'status'       => 'unpaid',
                 ]);
+
+                // Send SMS notification
+                try {
+                    app(IspSmsService::class)->sendInvoiceGeneratedSms($invoice->load('customer'));
+                } catch (\Exception $e) {
+                    Log::warning("ISP SMS failed for invoice {$invoice->id}: {$e->getMessage()}");
+                }
 
                 $generated++;
             } catch (\Exception $e) {
