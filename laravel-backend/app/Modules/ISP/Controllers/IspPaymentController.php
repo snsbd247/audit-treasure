@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 
 class IspPaymentController extends BaseController
 {
-    public function __construct(private BillingService $billing) {}
+    public function __construct(private BillingService $billing, private IspSmsService $ispSms) {}
 
     public function index(Request $request)
     {
