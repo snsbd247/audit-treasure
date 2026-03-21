@@ -35,9 +35,6 @@ import ItemCategoriesPage from "./pages/inventory/ItemCategoriesPage";
 import ItemMasterPage from "./pages/inventory/ItemMasterPage";
 import WarehousesPage from "./pages/inventory/WarehousesPage";
 import StockTransferPage from "./pages/inventory/StockTransferPage";
-import BOMPage from "./pages/manufacturing/BOMPage";
-import ProductionPage from "./pages/manufacturing/ProductionPage";
-import ManufacturingReports from "./pages/manufacturing/ManufacturingReports";
 import FinancialReports from "./pages/reports/FinancialReports";
 import StockLedger from "./pages/reports/StockLedger";
 import CustomersPage from "./pages/CustomersPage";
@@ -189,11 +186,6 @@ const App = () => (
                 <Route path="/inventory/stock-ledger" element={<P perm="inventory.view"><StockLedgerPage /></P>} />
                 <Route path="/products" element={<P perm="inventory.view"><ItemMasterPage /></P>} />
 
-                {/* ─── Manufacturing ────────────────────────────── */}
-                <Route path="/manufacturing/materials" element={<P perm="manufacturing.view"><ItemMasterPage /></P>} />
-                <Route path="/manufacturing/bom" element={<P perm="manufacturing.view"><BOMPage /></P>} />
-                <Route path="/manufacturing/production" element={<P perm="manufacturing.view"><ProductionPage /></P>} />
-                <Route path="/manufacturing/reports" element={<P perm="manufacturing.view"><ManufacturingReports /></P>} />
 
                 {/* ─── Bank & Cash ──────────────────────────────── */}
                 <Route path="/bank/accounts" element={<P perm="bank.view"><BankAccountsPage /></P>} />

@@ -6,7 +6,7 @@ import { useModules, type ModuleKey } from "@/contexts/ModuleContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   LayoutDashboard, ChevronDown, ChevronRight, BookOpen, FileText, Receipt,
-  ShoppingCart, Package, Warehouse, Factory, Layers, ClipboardList, BarChart3,
+  ShoppingCart, Package, Warehouse, Layers, ClipboardList, BarChart3,
   ScrollText, Database, Users, Shield, Building2, LogOut,
   CreditCard, Landmark, PiggyBank, TrendingUp,
   ArrowLeftRight, Calendar, Activity, Menu, X, CircleDot, Truck, UserCheck,
@@ -93,17 +93,6 @@ const navGroups: NavGroup[] = [
       { to: "/inventory/stock-ledger", label: "Stock Ledger", icon: ScrollText, permission: "inventory.view" },
       { to: "/reports/stock-reports", label: "Stock Reports", icon: BarChart3, permission: "inventory.view" },
       { to: "/reports/low-stock", label: "Low Stock Alert", icon: CircleDot, permission: "inventory.view" },
-    ],
-  },
-  {
-    label: "Manufacturing",
-    icon: Factory,
-    permission: "manufacturing.view",
-    requiredModules: ["manufacturing"],
-    children: [
-      { to: "/manufacturing/bom", label: "Bill of Materials", icon: ClipboardList, permission: "manufacturing.view" },
-      { to: "/manufacturing/production", label: "Production Entry", icon: Factory, permission: "manufacturing.view" },
-      { to: "/manufacturing/reports", label: "Production Report", icon: BarChart3, permission: "manufacturing.view" },
     ],
   },
   {
@@ -200,7 +189,7 @@ const navGroups: NavGroup[] = [
 ];
 
 const routeModuleMap: Record<string, ModuleKey[]> = {
-  "/manufacturing/reports": ["manufacturing"],
+  
   "/reports/stock-ledger": ["inventory"],
   "/inventory/warehouses": ["multi_warehouse"],
   "/reports/trial-balance": ["accounts"],
