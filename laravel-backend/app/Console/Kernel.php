@@ -14,10 +14,14 @@ class Kernel extends ConsoleKernel
 
         // Automated SQL backup (daily at 2 AM)
         $schedule->command('backup:database --type=auto')->dailyAt('02:00');
+
+        // ISP: Generate monthly bills on 1st of each month at 6 AM
+        $schedule->command('isp:generate-bills')->monthlyOn(1, '06:00');
     }
 
     protected function commands(): void
     {
         $this->load(__DIR__ . '/Commands');
+        $this->load(app_path('Modules/ISP/Commands'));
     }
 }
