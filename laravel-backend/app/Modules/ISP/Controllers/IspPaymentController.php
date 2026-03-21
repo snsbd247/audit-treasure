@@ -47,9 +47,14 @@ class IspPaymentController extends BaseController
         $totalPaid = $invoice->payments()->sum('amount');
         if ($totalPaid >= $invoice->amount) {
             $invoice->update(['status' => 'paid']);
-
-            // Auto re-activate customer if all invoices cleared
             $this->billing->reactivateIfClear($invoice->customer_id);
+        }
+
+        // Send payment SMS
+        try {
+            $this->ispSms->sendPaymentReceivedSms($invoice->load('customer'), $data['amount'], $data['method']);
+        } catch (\Exception $e) {
+            // SMS failure should not block payment
         }
 
         return $this->created($payment->load('invoice.customer'));

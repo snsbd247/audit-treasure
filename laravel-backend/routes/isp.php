@@ -9,6 +9,7 @@ use App\Modules\ISP\Controllers\IspBillingController;
 use App\Modules\ISP\Controllers\IspRouterController;
 use App\Modules\ISP\Controllers\IspMikrotikActionController;
 use App\Modules\ISP\Controllers\IspBkashController;
+use App\Modules\ISP\Controllers\IspCustomerAuthController;
 
 /*
 |--------------------------------------------------------------------------
@@ -18,6 +19,14 @@ use App\Modules\ISP\Controllers\IspBkashController;
 
 // bKash callback (public — no auth, bKash redirects here)
 Route::get('isp/bkash/callback', [IspBkashController::class, 'callback']);
+
+// ─── Customer Self-Service Portal (public auth) ─────────────
+Route::prefix('isp/customer-portal')->group(function () {
+    Route::post('login', [IspCustomerAuthController::class, 'login']);
+    Route::get('profile', [IspCustomerAuthController::class, 'profile']);
+    Route::get('invoices', [IspCustomerAuthController::class, 'invoices']);
+    Route::get('payments', [IspCustomerAuthController::class, 'payments']);
+});
 
 Route::middleware(['auth:sanctum'])->prefix('isp')->group(function () {
 
