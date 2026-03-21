@@ -145,6 +145,13 @@ const App = () => (
               <Route path="/employee/verify" element={<EmployeeVerifyPage />} />
               <Route path="/employee/verify/:code" element={<EmployeeVerifyPage />} />
               <Route path="/verify/:code" element={<EmployeeVerifyPage />} />
+
+              {/* ISP Customer Portal (public, no ERP auth) */}
+              <Route path="/isp-portal/login" element={<IspPortalLoginPage />} />
+              <Route path="/isp-portal/dashboard" element={<IspPortalDashboard />} />
+              <Route path="/isp-portal/bills" element={<IspPortalBillsPage />} />
+              <Route path="/isp-portal/payments" element={<IspPortalPaymentsPage />} />
+
               <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                 {/* Dashboard — all authenticated users */}
                 <Route path="/" element={<Dashboard />} />
