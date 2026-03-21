@@ -84,6 +84,12 @@ import IspInvoicesPage from "./pages/isp/IspInvoicesPage";
 import IspPaymentsPage from "./pages/isp/IspPaymentsPage";
 import IspRoutersPage from "./pages/isp/IspRoutersPage";
 
+// ISP Customer Portal
+import IspPortalLoginPage from "./pages/isp-portal/IspPortalLoginPage";
+import IspPortalDashboard from "./pages/isp-portal/IspPortalDashboard";
+import IspPortalBillsPage from "./pages/isp-portal/IspPortalBillsPage";
+import IspPortalPaymentsPage from "./pages/isp-portal/IspPortalPaymentsPage";
+
 // Inventory - Stock Ledger
 import StockLedgerPage from "./pages/inventory/StockLedgerPage";
 
