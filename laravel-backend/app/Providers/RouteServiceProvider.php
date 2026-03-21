@@ -23,6 +23,11 @@ class RouteServiceProvider extends ServiceProvider
                 ->prefix('api')
                 ->group(base_path('routes/api.php'));
 
+            // ISP Module routes (isolated)
+            Route::middleware('api')
+                ->prefix('api')
+                ->group(base_path('routes/isp.php'));
+
             Route::middleware('web')
                 ->group(base_path('routes/web.php'));
         });
