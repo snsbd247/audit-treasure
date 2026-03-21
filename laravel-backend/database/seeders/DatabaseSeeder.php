@@ -21,7 +21,7 @@ class DatabaseSeeder extends Seeder
             // Accounting
             'accounts', 'journal', 'payment', 'receipt', 'contra',
             // Business
-            'sales', 'purchase', 'inventory', 'manufacturing', 'bank',
+            'sales', 'purchase', 'inventory', 'bank',
             // HRM
             'hrm',
             // Reports
