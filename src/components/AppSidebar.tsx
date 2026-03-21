@@ -189,7 +189,7 @@ const navGroups: NavGroup[] = [
 ];
 
 const routeModuleMap: Record<string, ModuleKey[]> = {
-  "/manufacturing/reports": ["manufacturing"],
+  
   "/reports/stock-ledger": ["inventory"],
   "/inventory/warehouses": ["multi_warehouse"],
   "/reports/trial-balance": ["accounts"],
