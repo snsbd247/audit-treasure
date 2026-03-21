@@ -42,4 +42,14 @@ class IspCustomer extends Model
     {
         return $this->hasMany(IspInvoice::class, 'customer_id');
     }
+
+    public function reseller()
+    {
+        return $this->belongsTo(IspReseller::class, 'reseller_id');
+    }
+
+    public function usageLogs()
+    {
+        return $this->hasMany(IspUsageLog::class, 'customer_id');
+    }
 }
