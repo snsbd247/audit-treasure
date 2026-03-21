@@ -8,14 +8,16 @@ use App\Modules\ISP\Controllers\IspPaymentController;
 use App\Modules\ISP\Controllers\IspBillingController;
 use App\Modules\ISP\Controllers\IspRouterController;
 use App\Modules\ISP\Controllers\IspMikrotikActionController;
+use App\Modules\ISP\Controllers\IspBkashController;
 
 /*
 |--------------------------------------------------------------------------
 | ISP Module Routes
 |--------------------------------------------------------------------------
-| Prefix: /api/isp
-| Auth:   sanctum
 */
+
+// bKash callback (public — no auth, bKash redirects here)
+Route::get('isp/bkash/callback', [IspBkashController::class, 'callback']);
 
 Route::middleware(['auth:sanctum'])->prefix('isp')->group(function () {
 
@@ -27,6 +29,10 @@ Route::middleware(['auth:sanctum'])->prefix('isp')->group(function () {
 
     // ─── Billing ────────────────────────────────────────
     Route::post('generate-bills', [IspBillingController::class, 'generate']);
+
+    // ─── bKash Payment ──────────────────────────────────
+    Route::post('bkash/create', [IspBkashController::class, 'create']);
+    Route::post('bkash/query',  [IspBkashController::class, 'query']);
 
     // ─── Routers ────────────────────────────────────────
     Route::apiResource('routers', IspRouterController::class);

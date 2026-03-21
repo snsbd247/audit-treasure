@@ -100,3 +100,9 @@ export const ispRouters = {
 export const ispBilling = {
   generate: (month?: string) => ispRequest('/generate-bills', { method: 'POST', body: JSON.stringify({ month }) }),
 };
+
+// ─── bKash ──────────────────────────────────
+export const ispBkash = {
+  createPayment: (invoiceId: string) => ispRequest('/bkash/create', { method: 'POST', body: JSON.stringify({ invoice_id: invoiceId }) }),
+  queryPayment: (paymentId: string) => ispRequest('/bkash/query', { method: 'POST', body: JSON.stringify({ payment_id: paymentId }) }),
+};

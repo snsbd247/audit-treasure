@@ -15,12 +15,17 @@ class IspPayment extends Model
         'invoice_id',
         'amount',
         'method',
+        'transaction_id',
+        'gateway',
+        'gateway_status',
+        'gateway_response',
         'paid_at',
     ];
 
     protected $casts = [
-        'amount' => 'decimal:2',
-        'paid_at' => 'datetime',
+        'amount'           => 'decimal:2',
+        'paid_at'          => 'datetime',
+        'gateway_response' => 'array',
     ];
 
     public function invoice()
