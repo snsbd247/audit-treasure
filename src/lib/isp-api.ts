@@ -114,3 +114,20 @@ export const ispBkash = {
   createPayment: (invoiceId: string) => ispRequest('/bkash/create', { method: 'POST', body: JSON.stringify({ invoice_id: invoiceId }) }),
   queryPayment: (paymentId: string) => ispRequest('/bkash/query', { method: 'POST', body: JSON.stringify({ payment_id: paymentId }) }),
 };
+
+// ─── Resellers ──────────────────────────────────
+export const ispResellers = {
+  list: (params?: Record<string, string>) => {
+    const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+    return ispRequest(`/resellers${qs}`);
+  },
+  get: (id: string) => ispRequest(`/resellers/${id}`),
+  create: (data: any) => ispRequest('/resellers', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: any) => ispRequest(`/resellers/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id: string) => ispRequest(`/resellers/${id}`, { method: 'DELETE' }),
+  customers: (id: string) => ispRequest(`/resellers/${id}/customers`),
+  earnings: (id: string, params?: Record<string, string>) => {
+    const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+    return ispRequest(`/resellers/${id}/earnings${qs}`);
+  },
+};
