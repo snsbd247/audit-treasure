@@ -5,6 +5,7 @@ use App\Modules\ISP\Controllers\IspPackageController;
 use App\Modules\ISP\Controllers\IspCustomerController;
 use App\Modules\ISP\Controllers\IspInvoiceController;
 use App\Modules\ISP\Controllers\IspPaymentController;
+use App\Modules\ISP\Controllers\IspBillingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,4 +20,7 @@ Route::middleware(['auth:sanctum'])->prefix('isp')->group(function () {
     Route::apiResource('customers', IspCustomerController::class);
     Route::apiResource('invoices',  IspInvoiceController::class);
     Route::apiResource('payments',  IspPaymentController::class)->except(['update']);
+
+    // Billing
+    Route::post('generate-bills', [IspBillingController::class, 'generate']);
 });

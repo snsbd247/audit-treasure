@@ -5,10 +5,13 @@ namespace App\Modules\ISP\Controllers;
 use App\Http\Controllers\BaseController;
 use App\Modules\ISP\Models\IspInvoice;
 use App\Modules\ISP\Models\IspPayment;
+use App\Modules\ISP\Services\BillingService;
 use Illuminate\Http\Request;
 
 class IspPaymentController extends BaseController
 {
+    public function __construct(private BillingService $billing) {}
+
     public function index(Request $request)
     {
         $query = IspPayment::with('invoice.customer');
@@ -43,9 +46,12 @@ class IspPaymentController extends BaseController
         $totalPaid = $invoice->payments()->sum('amount');
         if ($totalPaid >= $invoice->amount) {
             $invoice->update(['status' => 'paid']);
+
+            // Auto re-activate customer if all invoices cleared
+            $this->billing->reactivateIfClear($invoice->customer_id);
         }
 
-        return $this->created($payment->load('invoice'));
+        return $this->created($payment->load('invoice.customer'));
     }
 
     public function show(string $id)
