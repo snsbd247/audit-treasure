@@ -58,6 +58,14 @@ export const ispCustomers = {
   activate: (id: string) => ispRequest(`/customers/${id}/activate`, { method: 'POST' }),
   syncPPPoE: (id: string) => ispRequest(`/customers/${id}/sync-pppoe`, { method: 'POST' }),
   disconnect: (id: string) => ispRequest(`/customers/${id}/disconnect`, { method: 'POST' }),
+  usage: (id: string, params?: Record<string, string>) => {
+    const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+    return ispRequest(`/customers/${id}/usage${qs}`);
+  },
+  usageDaily: (id: string, days?: string) => {
+    const qs = days ? `?days=${days}` : '';
+    return ispRequest(`/customers/${id}/usage/daily${qs}`);
+  },
 };
 
 // ─── Invoices ──────────────────────────────────
