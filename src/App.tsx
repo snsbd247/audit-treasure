@@ -80,6 +80,8 @@ import IspPackagesPage from "./pages/isp/IspPackagesPage";
 import IspInvoicesPage from "./pages/isp/IspInvoicesPage";
 import IspPaymentsPage from "./pages/isp/IspPaymentsPage";
 import IspRoutersPage from "./pages/isp/IspRoutersPage";
+import IspResellersPage from "./pages/isp/IspResellersPage";
+import IspUsagePage from "./pages/isp/IspUsagePage";
 
 // ISP Customer Portal
 import IspPortalLoginPage from "./pages/isp-portal/IspPortalLoginPage";
