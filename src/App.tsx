@@ -76,6 +76,14 @@ import HrDashboardPage from "./pages/hrm/HrDashboardPage";
 import EmployeeProfilePage from "./pages/hrm/EmployeeProfilePage";
 import LoginActivityPage from "./pages/hrm/LoginActivityPage";
 
+// ISP Pages
+import IspDashboardPage from "./pages/isp/IspDashboardPage";
+import IspCustomersPage from "./pages/isp/IspCustomersPage";
+import IspPackagesPage from "./pages/isp/IspPackagesPage";
+import IspInvoicesPage from "./pages/isp/IspInvoicesPage";
+import IspPaymentsPage from "./pages/isp/IspPaymentsPage";
+import IspRoutersPage from "./pages/isp/IspRoutersPage";
+
 // Inventory - Stock Ledger
 import StockLedgerPage from "./pages/inventory/StockLedgerPage";
 
@@ -232,6 +240,14 @@ const App = () => (
                 <Route path="/reports/customer-statement" element={<P perm="sales.view"><CustomerStatementPage /></P>} />
                 <Route path="/reports/sales" element={<P perm="sales.view"><FinancialReports /></P>} />
                 <Route path="/reports/purchase" element={<P perm="purchase.view"><FinancialReports /></P>} />
+
+                {/* ─── ISP Management ──────────────────────────── */}
+                <Route path="/isp" element={<P perm="isp.view"><IspDashboardPage /></P>} />
+                <Route path="/isp/customers" element={<P perm="isp.view"><IspCustomersPage /></P>} />
+                <Route path="/isp/packages" element={<P perm="isp.view"><IspPackagesPage /></P>} />
+                <Route path="/isp/invoices" element={<P perm="isp.view"><IspInvoicesPage /></P>} />
+                <Route path="/isp/payments" element={<P perm="isp.view"><IspPaymentsPage /></P>} />
+                <Route path="/isp/routers" element={<P perm="isp.view"><IspRoutersPage /></P>} />
 
                 {/* ─── Administration ──────────────────────────── */}
                 <Route path="/admin/users" element={<P perm="users.view"><UsersPage /></P>} />

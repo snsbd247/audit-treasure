@@ -12,7 +12,7 @@ import {
   ArrowLeftRight, Calendar, Activity, Menu, X, CircleDot, Truck, UserCheck,
   Briefcase, Clock, CalendarDays, DollarSign, FileCheck, BadgeCheck, User,
   Fingerprint, ScanFace, Timer, Gauge, Keyboard, Palette, MessageSquare,
-  Mail,
+  Mail, Wifi, Router,
 } from "lucide-react";
 import { useBranding } from "@/contexts/BrandingContext";
 import { Button } from "@/components/ui/button";
@@ -154,6 +154,19 @@ const navGroups: NavGroup[] = [
       { to: "/portal/leave", label: "My Leave", icon: CalendarDays },
       { to: "/portal/payslips", label: "My Payslips", icon: DollarSign },
       { to: "/portal/documents", label: "My Documents", icon: FileText },
+    ],
+  },
+  {
+    label: "ISP Management",
+    icon: Wifi,
+    permission: "isp.view",
+    children: [
+      { to: "/isp", label: "ISP Dashboard", icon: Gauge, permission: "isp.view" },
+      { to: "/isp/customers", label: "ISP Customers", icon: Users, permission: "isp.view" },
+      { to: "/isp/packages", label: "Packages", icon: Package, permission: "isp.view" },
+      { to: "/isp/invoices", label: "Invoices", icon: FileText, permission: "isp.view" },
+      { to: "/isp/payments", label: "Payments", icon: CreditCard, permission: "isp.view" },
+      { to: "/isp/routers", label: "Routers", icon: Router, permission: "isp.view" },
     ],
   },
   {
