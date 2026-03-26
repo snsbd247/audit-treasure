@@ -89,6 +89,12 @@ import IspPortalDashboard from "./pages/isp-portal/IspPortalDashboard";
 import IspPortalBillsPage from "./pages/isp-portal/IspPortalBillsPage";
 import IspPortalPaymentsPage from "./pages/isp-portal/IspPortalPaymentsPage";
 
+// Manufacturing Pages
+import BOMPage from "./pages/manufacturing/BOMPage";
+import ProductionPage from "./pages/manufacturing/ProductionPage";
+import ManufacturingReports from "./pages/manufacturing/ManufacturingReports";
+import RawMaterialsPage from "./pages/manufacturing/RawMaterialsPage";
+
 // Inventory - Stock Ledger
 import StockLedgerPage from "./pages/inventory/StockLedgerPage";
 
