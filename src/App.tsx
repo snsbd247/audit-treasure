@@ -72,6 +72,7 @@ import FaceAttendancePage from "./pages/hrm/FaceAttendancePage";
 import HrDashboardPage from "./pages/hrm/HrDashboardPage";
 import EmployeeProfilePage from "./pages/hrm/EmployeeProfilePage";
 import LoginActivityPage from "./pages/hrm/LoginActivityPage";
+import FundsPage from "./pages/hrm/FundsPage";
 
 // Manufacturing Pages
 import BOMPage from "./pages/manufacturing/BOMPage";
