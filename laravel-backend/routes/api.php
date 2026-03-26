@@ -224,6 +224,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\BranchScope::class, \App
             Route::delete('leave-requests/{id}', [\App\Http\Controllers\HRM\LeaveRequestController::class, 'destroy']);
             Route::delete('overtime/{id}', [\App\Http\Controllers\HRM\OvertimeController::class, 'destroy']);
             Route::delete('salary-structures/{id}', [\App\Http\Controllers\Payroll\SalaryStructureController::class, 'destroy']);
+            Route::delete('fund-settings/{id}', [\App\Http\Controllers\HRM\FundController::class, 'settingsDestroy']);
         });
 
         // ─── Administration ─────────────────────────────────────
