@@ -133,8 +133,20 @@ export default function PayrollPage() {
     const absentDeduction = absentDays * dailySalary;
     const lateDeduction = lateDays * LATE_PENALTY;
 
+    // Fetch fund settings for PF & Savings Fund
+    const { data: fundSettings } = await supabase.from("employee_fund_settings" as any)
+      .select("*").eq("employee_id", emp.id).eq("is_active", true);
+    
+    let pfEmployee = 0, pfEmployer = 0, sfEmployee = 0, sfEmployer = 0;
+    for (const fs of (fundSettings || []) as any[]) {
+      const rate = fs.calculation_type === "percentage" ? basic * fs.employee_rate / 100 : fs.employee_rate;
+      const erRate = fs.calculation_type === "percentage" ? basic * fs.employer_rate / 100 : fs.employer_rate;
+      if (fs.fund_type === "provident_fund") { pfEmployee = rate; pfEmployer = erRate; }
+      else { sfEmployee = rate; sfEmployer = erRate; }
+    }
+
     const gross = totalSalary + overtimePay;
-    const totalDeductions = absentDeduction + lateDeduction;
+    const totalDeductions = absentDeduction + lateDeduction + pfEmployee + sfEmployee;
     const netSalary = Math.max(0, gross - totalDeductions);
 
     return {
@@ -154,6 +166,8 @@ export default function PayrollPage() {
       absent_deduction: absentDeduction,
       late_deduction: lateDeduction,
       base_deductions: 0,
+      pf_employee: pfEmployee, sf_employee: sfEmployee,
+      pf_employer: pfEmployer, sf_employer: sfEmployer,
       gross,
       total_deductions: totalDeductions,
       net_salary: netSalary,
