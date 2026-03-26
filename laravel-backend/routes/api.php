@@ -212,6 +212,8 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\BranchScope::class, \App
             Route::post('payroll/{id}/approve', [\App\Http\Controllers\Payroll\PayrollController::class, 'approve']);
             Route::post('payroll/approve-all', [\App\Http\Controllers\Payroll\PayrollController::class, 'approveAll']);
             Route::put('salary-structures/{id}', [\App\Http\Controllers\Payroll\SalaryStructureController::class, 'update']);
+            // Funds
+            Route::put('fund-settings/{id}', [\App\Http\Controllers\HRM\FundController::class, 'settingsUpdate']);
         });
         Route::middleware('permission:hrm.delete')->group(function () {
             Route::delete('employees/{id}', [\App\Http\Controllers\HRM\EmployeeController::class, 'destroy']);
