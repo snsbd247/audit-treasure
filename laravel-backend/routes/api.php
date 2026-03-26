@@ -175,6 +175,11 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\BranchScope::class, \App
             Route::get('payroll/{id}', [\App\Http\Controllers\Payroll\PayrollController::class, 'show']);
             Route::get('salary-structures', [\App\Http\Controllers\Payroll\SalaryStructureController::class, 'index']);
             Route::get('salary-structures/{id}', [\App\Http\Controllers\Payroll\SalaryStructureController::class, 'show']);
+            // Funds (PF & Savings)
+            Route::get('fund-settings', [\App\Http\Controllers\HRM\FundController::class, 'settingsIndex']);
+            Route::get('fund-transactions', [\App\Http\Controllers\HRM\FundController::class, 'transactionsIndex']);
+            Route::get('fund-balance/{employeeId}', [\App\Http\Controllers\HRM\FundController::class, 'balance']);
+            Route::get('fund-contribution/{employeeId}', [\App\Http\Controllers\HRM\FundController::class, 'calculateContribution']);
         });
         Route::middleware('permission:hrm.create')->group(function () {
             Route::post('employees', [\App\Http\Controllers\HRM\EmployeeController::class, 'store']);
@@ -190,6 +195,9 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\BranchScope::class, \App
             Route::post('overtime', [\App\Http\Controllers\HRM\OvertimeController::class, 'store']);
             Route::post('payroll/process', [\App\Http\Controllers\Payroll\PayrollController::class, 'process']);
             Route::post('salary-structures', [\App\Http\Controllers\Payroll\SalaryStructureController::class, 'store']);
+            // Funds
+            Route::post('fund-settings', [\App\Http\Controllers\HRM\FundController::class, 'settingsStore']);
+            Route::post('fund-transactions', [\App\Http\Controllers\HRM\FundController::class, 'transactionsStore']);
         });
         Route::middleware('permission:hrm.edit')->group(function () {
             Route::put('employees/{id}', [\App\Http\Controllers\HRM\EmployeeController::class, 'update']);
