@@ -293,7 +293,7 @@ const GeneralSettingsPage = () => {
                   { key: "sales" as ModuleKey, name: "Sales Module", desc: "Sales Invoices, Sales Returns, Customer management, and Sales Reports." },
                   { key: "purchase" as ModuleKey, name: "Purchase Module", desc: "Purchase Entry, Purchase Returns, Supplier management, and Purchase Reports." },
                   { key: "inventory" as ModuleKey, name: "Inventory Module", desc: "Items, Categories, Units, Warehouses, Stock Ledger, Stock Transfer, Stock Reports. When OFF, Sales and Purchases work without stock tracking." },
-                  
+                  { key: "manufacturing" as ModuleKey, name: "Manufacturing Module", desc: "Bill of Materials, Production Entries, Raw Materials tracking, and Manufacturing Reports." },
                   { key: "bank" as ModuleKey, name: "Bank & Cash Module", desc: "Bank Accounts and Cash Book management for tracking banking transactions." },
                   { key: "hrm" as ModuleKey, name: "HRM Module", desc: "Employees, Departments, Attendance, Leave, Payroll, Documents, ID Cards, and Employee Portal." },
                   { key: "reports" as ModuleKey, name: "Reports Module", desc: "Financial Reports, Stock Ledger, Production Reports, and other analytical reports." },

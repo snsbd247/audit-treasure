@@ -47,7 +47,7 @@ interface SecurityAlert {
 }
 
 const MODULES = [
-  "Accounts", "Sales", "Purchase", "Inventory",
+  "Accounts", "Sales", "Purchase", "Inventory", "Manufacturing",
   "HRM", "Payroll", "Users", "Branches", "Roles", "Settings",
   "Dashboard", "Administration", "users",
 ];

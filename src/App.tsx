@@ -195,6 +195,12 @@ const App = () => (
                 <Route path="/products" element={<P perm="inventory.view"><ItemMasterPage /></P>} />
 
 
+                {/* ─── Manufacturing ────────────────────────────── */}
+                <Route path="/manufacturing/materials" element={<P perm="inventory.view"><RawMaterialsPage /></P>} />
+                <Route path="/manufacturing/bom" element={<P perm="inventory.view"><BOMPage /></P>} />
+                <Route path="/manufacturing/production" element={<P perm="inventory.view"><ProductionPage /></P>} />
+                <Route path="/manufacturing/reports" element={<P perm="reports.view"><ManufacturingReports /></P>} />
+
                 {/* ─── Bank & Cash ──────────────────────────────── */}
                 <Route path="/bank/accounts" element={<P perm="bank.view"><BankAccountsPage /></P>} />
                 <Route path="/bank/cashbook" element={<P perm="bank.view"><CashBookPage /></P>} />

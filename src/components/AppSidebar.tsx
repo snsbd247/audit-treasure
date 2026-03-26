@@ -146,6 +146,18 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
+    label: "Manufacturing",
+    icon: Factory,
+    permission: "inventory.view",
+    requiredModules: ["manufacturing"],
+    children: [
+      { to: "/manufacturing/materials", label: "Raw Materials", icon: Package, permission: "inventory.view" },
+      { to: "/manufacturing/bom", label: "Bill of Materials", icon: ClipboardList, permission: "inventory.view" },
+      { to: "/manufacturing/production", label: "Production", icon: Factory, permission: "inventory.view" },
+      { to: "/manufacturing/reports", label: "Reports", icon: BarChart3, permission: "reports.view" },
+    ],
+  },
+  {
     label: "ISP Management",
     icon: Wifi,
     permission: "isp.view",

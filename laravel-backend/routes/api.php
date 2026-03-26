@@ -130,6 +130,26 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\BranchScope::class, \App
         });
 
 
+        // ─── Manufacturing ──────────────────────────────────────
+        Route::middleware('permission:inventory.view')->group(function () {
+            Route::get('bom', [\App\Http\Controllers\Manufacturing\BomController::class, 'index']);
+            Route::get('bom/{id}', [\App\Http\Controllers\Manufacturing\BomController::class, 'show']);
+            Route::get('production', [\App\Http\Controllers\Manufacturing\ProductionController::class, 'index']);
+            Route::get('production/{id}', [\App\Http\Controllers\Manufacturing\ProductionController::class, 'show']);
+        });
+        Route::middleware('permission:inventory.create')->group(function () {
+            Route::post('bom', [\App\Http\Controllers\Manufacturing\BomController::class, 'store']);
+            Route::post('production', [\App\Http\Controllers\Manufacturing\ProductionController::class, 'store']);
+        });
+        Route::middleware('permission:inventory.edit')->group(function () {
+            Route::put('bom/{id}', [\App\Http\Controllers\Manufacturing\BomController::class, 'update']);
+            Route::post('production/{id}/complete', [\App\Http\Controllers\Manufacturing\ProductionController::class, 'complete']);
+        });
+        Route::middleware('permission:inventory.delete')->group(function () {
+            Route::delete('bom/{id}', [\App\Http\Controllers\Manufacturing\BomController::class, 'destroy']);
+            Route::delete('production/{id}', [\App\Http\Controllers\Manufacturing\ProductionController::class, 'destroy']);
+        });
+
         // ─── HRM ────────────────────────────────────────────────
         Route::middleware('permission:hrm.view')->group(function () {
             Route::get('hr-dashboard', [\App\Http\Controllers\HRM\HrDashboardController::class, 'index']);
