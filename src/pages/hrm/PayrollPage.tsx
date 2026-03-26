@@ -577,6 +577,8 @@ export default function PayrollPage() {
                     <TableCell className="text-right text-destructive">{d.absent_days}</TableCell>
                     <TableCell className="text-right">{d.late_count}</TableCell>
                     <TableCell className="text-right">{d.overtime_hours}</TableCell>
+                    <TableCell className="text-right text-muted-foreground">{d.pf_employee > 0 ? formatAmount(d.pf_employee) : "-"}</TableCell>
+                    <TableCell className="text-right text-muted-foreground">{d.sf_employee > 0 ? formatAmount(d.sf_employee) : "-"}</TableCell>
                     <TableCell className="text-right">{formatAmount(d.gross)}</TableCell>
                     <TableCell className="text-right text-destructive">{formatAmount(d.total_deductions)}</TableCell>
                     <TableCell className="text-right font-bold">{formatAmount(d.net_salary)}</TableCell>
