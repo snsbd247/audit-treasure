@@ -12,5 +12,5 @@ class CustomRole extends Model
     protected $fillable = ['name', 'description'];
 
     public function permissions() { return $this->hasMany(RolePermission::class); }
-    public function users() { return $this->belongsToMany(User::class, 'user_roles', 'role_id', 'user_id'); }
+    public function users() { return $this->belongsToMany(User::class, 'user_custom_roles', 'custom_role_id', 'user_id'); }
 }

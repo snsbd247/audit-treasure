@@ -150,7 +150,7 @@ class UserController extends BaseController
             $user->update(['status' => 'deleted', 'deleted_at' => now()]);
 
             // Remove roles
-            DB::table('user_roles')->where('user_id', $id)->delete();
+            DB::table('user_custom_roles')->where('user_id', $id)->delete();
         });
 
         $this->auditService->log('users', 'Data Transfer & Delete', $id,
@@ -190,7 +190,7 @@ class UserController extends BaseController
         $user->update(['status' => 'deleted', 'deleted_at' => now()]);
 
         // Remove roles
-        DB::table('user_roles')->where('user_id', $id)->delete();
+        DB::table('user_custom_roles')->where('user_id', $id)->delete();
 
         $this->auditService->logDelete('users', $id, $oldData, $request);
 

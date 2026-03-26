@@ -148,13 +148,13 @@ const navGroups: NavGroup[] = [
   {
     label: "Manufacturing",
     icon: Factory,
-    permission: "inventory.view",
+    permission: "manufacturing.view",
     requiredModules: ["manufacturing"],
     children: [
-      { to: "/manufacturing/materials", label: "Raw Materials", icon: Package, permission: "inventory.view" },
-      { to: "/manufacturing/bom", label: "Bill of Materials", icon: ClipboardList, permission: "inventory.view" },
-      { to: "/manufacturing/production", label: "Production", icon: Factory, permission: "inventory.view" },
-      { to: "/manufacturing/reports", label: "Reports", icon: BarChart3, permission: "reports.view" },
+      { to: "/manufacturing/materials", label: "Raw Materials", icon: Package, permission: "manufacturing.view" },
+      { to: "/manufacturing/bom", label: "Bill of Materials", icon: ClipboardList, permission: "manufacturing.view" },
+      { to: "/manufacturing/production", label: "Production", icon: Factory, permission: "manufacturing.view" },
+      { to: "/manufacturing/reports", label: "Reports", icon: BarChart3, permission: "manufacturing.view" },
     ],
   },
   {
