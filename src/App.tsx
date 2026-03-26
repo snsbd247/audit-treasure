@@ -89,6 +89,12 @@ import IspPortalDashboard from "./pages/isp-portal/IspPortalDashboard";
 import IspPortalBillsPage from "./pages/isp-portal/IspPortalBillsPage";
 import IspPortalPaymentsPage from "./pages/isp-portal/IspPortalPaymentsPage";
 
+// Manufacturing Pages
+import BOMPage from "./pages/manufacturing/BOMPage";
+import ProductionPage from "./pages/manufacturing/ProductionPage";
+import ManufacturingReports from "./pages/manufacturing/ManufacturingReports";
+import RawMaterialsPage from "./pages/manufacturing/RawMaterialsPage";
+
 // Inventory - Stock Ledger
 import StockLedgerPage from "./pages/inventory/StockLedgerPage";
 
@@ -188,6 +194,12 @@ const App = () => (
                 <Route path="/inventory/stock-ledger" element={<P perm="inventory.view"><StockLedgerPage /></P>} />
                 <Route path="/products" element={<P perm="inventory.view"><ItemMasterPage /></P>} />
 
+
+                {/* ─── Manufacturing ────────────────────────────── */}
+                <Route path="/manufacturing/materials" element={<P perm="inventory.view"><RawMaterialsPage /></P>} />
+                <Route path="/manufacturing/bom" element={<P perm="inventory.view"><BOMPage /></P>} />
+                <Route path="/manufacturing/production" element={<P perm="inventory.view"><ProductionPage /></P>} />
+                <Route path="/manufacturing/reports" element={<P perm="reports.view"><ManufacturingReports /></P>} />
 
                 {/* ─── Bank & Cash ──────────────────────────────── */}
                 <Route path="/bank/accounts" element={<P perm="bank.view"><BankAccountsPage /></P>} />

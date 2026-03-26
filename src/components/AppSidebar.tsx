@@ -12,7 +12,7 @@ import {
   ArrowLeftRight, Calendar, Activity, Menu, X, CircleDot, Truck, UserCheck,
   Briefcase, Clock, CalendarDays, DollarSign, FileCheck, BadgeCheck, User,
   Fingerprint, ScanFace, Timer, Gauge, Keyboard, Palette, MessageSquare,
-  Mail, Wifi, Router,
+  Mail, Wifi, Router, Factory,
 } from "lucide-react";
 import { useBranding } from "@/contexts/BrandingContext";
 import { Button } from "@/components/ui/button";
@@ -143,6 +143,18 @@ const navGroups: NavGroup[] = [
       { to: "/portal/leave", label: "My Leave", icon: CalendarDays },
       { to: "/portal/payslips", label: "My Payslips", icon: DollarSign },
       { to: "/portal/documents", label: "My Documents", icon: FileText },
+    ],
+  },
+  {
+    label: "Manufacturing",
+    icon: Factory,
+    permission: "inventory.view",
+    requiredModules: ["manufacturing"],
+    children: [
+      { to: "/manufacturing/materials", label: "Raw Materials", icon: Package, permission: "inventory.view" },
+      { to: "/manufacturing/bom", label: "Bill of Materials", icon: ClipboardList, permission: "inventory.view" },
+      { to: "/manufacturing/production", label: "Production", icon: Factory, permission: "inventory.view" },
+      { to: "/manufacturing/reports", label: "Reports", icon: BarChart3, permission: "reports.view" },
     ],
   },
   {
