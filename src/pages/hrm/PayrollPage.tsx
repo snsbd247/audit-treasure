@@ -303,6 +303,7 @@ export default function PayrollPage() {
       present_days: 0, absent_days: 0, late_count: 0, leave_days: 0,
       total_working_days: 0,
       absent_deduction: 0, late_deduction: 0, base_deductions: 0,
+      pf_employee: 0, sf_employee: 0, pf_employer: 0, sf_employer: 0,
       gross: record.basic_salary + record.allowances,
       total_deductions: record.deductions,
       net_salary: record.net_salary,
