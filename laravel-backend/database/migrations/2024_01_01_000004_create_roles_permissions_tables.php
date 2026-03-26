@@ -28,15 +28,14 @@ return new class extends Migration
             $table->unique(['custom_role_id', 'module']);
         });
 
-        Schema::create('user_roles', function (Blueprint $table) {
+        Schema::create('user_custom_roles', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('user_id');
-            $table->uuid('role_id');
-            $table->timestamps();
+            $table->uuid('custom_role_id');
 
             $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
-            $table->foreign('role_id')->references('id')->on('custom_roles')->cascadeOnDelete();
-            $table->unique(['user_id', 'role_id']);
+            $table->foreign('custom_role_id')->references('id')->on('custom_roles')->cascadeOnDelete();
+            $table->unique(['user_id', 'custom_role_id']);
         });
     }
 
