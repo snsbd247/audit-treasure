@@ -12,7 +12,7 @@ import {
   ArrowLeftRight, Calendar, Activity, Menu, X, CircleDot, Truck, UserCheck,
   Briefcase, Clock, CalendarDays, DollarSign, FileCheck, BadgeCheck, User,
   Fingerprint, ScanFace, Timer, Gauge, Keyboard, Palette, MessageSquare,
-  Mail, Wifi, Router, Factory,
+  Mail, Factory,
 } from "lucide-react";
 import { useBranding } from "@/contexts/BrandingContext";
 import { Button } from "@/components/ui/button";
@@ -155,20 +155,6 @@ const navGroups: NavGroup[] = [
       { to: "/manufacturing/bom", label: "Bill of Materials", icon: ClipboardList, permission: "inventory.view" },
       { to: "/manufacturing/production", label: "Production", icon: Factory, permission: "inventory.view" },
       { to: "/manufacturing/reports", label: "Reports", icon: BarChart3, permission: "reports.view" },
-    ],
-  },
-  {
-    label: "ISP Management",
-    icon: Wifi,
-    permission: "isp.view",
-    children: [
-      { to: "/isp", label: "ISP Dashboard", icon: Gauge, permission: "isp.view" },
-      { to: "/isp/customers", label: "ISP Customers", icon: Users, permission: "isp.view" },
-      { to: "/isp/packages", label: "Packages", icon: Package, permission: "isp.view" },
-      { to: "/isp/invoices", label: "Invoices", icon: FileText, permission: "isp.view" },
-      { to: "/isp/payments", label: "Payments", icon: CreditCard, permission: "isp.view" },
-      { to: "/isp/routers", label: "Routers", icon: Router, permission: "isp.view" },
-      { to: "/isp/resellers", label: "Resellers", icon: Briefcase, permission: "isp.view" },
     ],
   },
   {

@@ -73,22 +73,6 @@ import HrDashboardPage from "./pages/hrm/HrDashboardPage";
 import EmployeeProfilePage from "./pages/hrm/EmployeeProfilePage";
 import LoginActivityPage from "./pages/hrm/LoginActivityPage";
 
-// ISP Pages
-import IspDashboardPage from "./pages/isp/IspDashboardPage";
-import IspCustomersPage from "./pages/isp/IspCustomersPage";
-import IspPackagesPage from "./pages/isp/IspPackagesPage";
-import IspInvoicesPage from "./pages/isp/IspInvoicesPage";
-import IspPaymentsPage from "./pages/isp/IspPaymentsPage";
-import IspRoutersPage from "./pages/isp/IspRoutersPage";
-import IspResellersPage from "./pages/isp/IspResellersPage";
-import IspUsagePage from "./pages/isp/IspUsagePage";
-
-// ISP Customer Portal
-import IspPortalLoginPage from "./pages/isp-portal/IspPortalLoginPage";
-import IspPortalDashboard from "./pages/isp-portal/IspPortalDashboard";
-import IspPortalBillsPage from "./pages/isp-portal/IspPortalBillsPage";
-import IspPortalPaymentsPage from "./pages/isp-portal/IspPortalPaymentsPage";
-
 // Manufacturing Pages
 import BOMPage from "./pages/manufacturing/BOMPage";
 import ProductionPage from "./pages/manufacturing/ProductionPage";
@@ -151,11 +135,7 @@ const App = () => (
               <Route path="/employee/verify/:code" element={<EmployeeVerifyPage />} />
               <Route path="/verify/:code" element={<EmployeeVerifyPage />} />
 
-              {/* ISP Customer Portal (public, no ERP auth) */}
-              <Route path="/isp-portal/login" element={<IspPortalLoginPage />} />
-              <Route path="/isp-portal/dashboard" element={<IspPortalDashboard />} />
-              <Route path="/isp-portal/bills" element={<IspPortalBillsPage />} />
-              <Route path="/isp-portal/payments" element={<IspPortalPaymentsPage />} />
+
 
               <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                 {/* Dashboard — all authenticated users */}
@@ -259,16 +239,6 @@ const App = () => (
                 <Route path="/reports/customer-statement" element={<P perm="sales.view"><CustomerStatementPage /></P>} />
                 <Route path="/reports/sales" element={<P perm="sales.view"><FinancialReports /></P>} />
                 <Route path="/reports/purchase" element={<P perm="purchase.view"><FinancialReports /></P>} />
-
-                {/* ─── ISP Management ──────────────────────────── */}
-                <Route path="/isp" element={<P perm="isp.view"><IspDashboardPage /></P>} />
-                <Route path="/isp/customers" element={<P perm="isp.view"><IspCustomersPage /></P>} />
-                <Route path="/isp/packages" element={<P perm="isp.view"><IspPackagesPage /></P>} />
-                <Route path="/isp/invoices" element={<P perm="isp.view"><IspInvoicesPage /></P>} />
-                <Route path="/isp/payments" element={<P perm="isp.view"><IspPaymentsPage /></P>} />
-                <Route path="/isp/routers" element={<P perm="isp.view"><IspRoutersPage /></P>} />
-                <Route path="/isp/resellers" element={<P perm="isp.view"><IspResellersPage /></P>} />
-                <Route path="/isp/customers/:id/usage" element={<P perm="isp.view"><IspUsagePage /></P>} />
 
                 {/* ─── Administration ──────────────────────────── */}
                 <Route path="/admin/users" element={<P perm="users.view"><UsersPage /></P>} />
