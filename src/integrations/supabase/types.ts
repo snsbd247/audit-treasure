@@ -896,6 +896,45 @@ export type Database = {
           },
         ]
       }
+      employee_fund_settings: {
+        Row: {
+          calculation_type: string
+          created_at: string
+          effective_from: string
+          employee_id: string
+          employee_rate: number
+          employer_rate: number
+          fund_type: string
+          id: string
+          is_active: boolean
+          updated_at: string
+        }
+        Insert: {
+          calculation_type?: string
+          created_at?: string
+          effective_from?: string
+          employee_id: string
+          employee_rate?: number
+          employer_rate?: number
+          fund_type: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Update: {
+          calculation_type?: string
+          created_at?: string
+          effective_from?: string
+          employee_id?: string
+          employee_rate?: number
+          employer_rate?: number
+          fund_type?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       employees: {
         Row: {
           address: string | null
@@ -1050,6 +1089,57 @@ export type Database = {
           is_active?: boolean
           name?: string
           start_date?: string
+        }
+        Relationships: []
+      }
+      fund_transactions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          employee_amount: number
+          employee_id: string
+          employer_amount: number
+          fund_type: string
+          id: string
+          month: number | null
+          notes: string | null
+          payroll_id: string | null
+          total_amount: number
+          transaction_type: string
+          voucher_id: string | null
+          year: number | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          employee_amount?: number
+          employee_id: string
+          employer_amount?: number
+          fund_type: string
+          id?: string
+          month?: number | null
+          notes?: string | null
+          payroll_id?: string | null
+          total_amount?: number
+          transaction_type?: string
+          voucher_id?: string | null
+          year?: number | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          employee_amount?: number
+          employee_id?: string
+          employer_amount?: number
+          fund_type?: string
+          id?: string
+          month?: number | null
+          notes?: string | null
+          payroll_id?: string | null
+          total_amount?: number
+          transaction_type?: string
+          voucher_id?: string | null
+          year?: number | null
         }
         Relationships: []
       }
