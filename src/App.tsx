@@ -73,22 +73,6 @@ import HrDashboardPage from "./pages/hrm/HrDashboardPage";
 import EmployeeProfilePage from "./pages/hrm/EmployeeProfilePage";
 import LoginActivityPage from "./pages/hrm/LoginActivityPage";
 
-// ISP Pages
-import IspDashboardPage from "./pages/isp/IspDashboardPage";
-import IspCustomersPage from "./pages/isp/IspCustomersPage";
-import IspPackagesPage from "./pages/isp/IspPackagesPage";
-import IspInvoicesPage from "./pages/isp/IspInvoicesPage";
-import IspPaymentsPage from "./pages/isp/IspPaymentsPage";
-import IspRoutersPage from "./pages/isp/IspRoutersPage";
-import IspResellersPage from "./pages/isp/IspResellersPage";
-import IspUsagePage from "./pages/isp/IspUsagePage";
-
-// ISP Customer Portal
-import IspPortalLoginPage from "./pages/isp-portal/IspPortalLoginPage";
-import IspPortalDashboard from "./pages/isp-portal/IspPortalDashboard";
-import IspPortalBillsPage from "./pages/isp-portal/IspPortalBillsPage";
-import IspPortalPaymentsPage from "./pages/isp-portal/IspPortalPaymentsPage";
-
 // Manufacturing Pages
 import BOMPage from "./pages/manufacturing/BOMPage";
 import ProductionPage from "./pages/manufacturing/ProductionPage";
