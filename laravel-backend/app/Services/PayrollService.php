@@ -13,6 +13,7 @@ class PayrollService
 {
     public function __construct(
         private AccountingService $accountingService,
+        private FundService $fundService,
     ) {}
 
     /**
