@@ -13,6 +13,7 @@ class PayrollService
 {
     public function __construct(
         private AccountingService $accountingService,
+        private FundService $fundService,
     ) {}
 
     /**
@@ -72,6 +73,12 @@ class PayrollService
                 $lateDeduction = round($lateDays * 50, 2); // ৳50 per late
                 $totalDeductions = $absentDeduction + $lateDeduction;
 
+                // Fund deductions (PF & Savings Fund)
+                $pfContribution = $this->fundService->calculateContribution($emp->id, 'provident_fund');
+                $sfContribution = $this->fundService->calculateContribution($emp->id, 'savings_fund');
+                $fundEmployeeDeduction = $pfContribution['employee'] + $sfContribution['employee'];
+                $totalDeductions += $fundEmployeeDeduction;
+
                 $netSalary = $totalSalary + $otPay - $totalDeductions;
 
                 $payroll = Payroll::create([
@@ -84,6 +91,9 @@ class PayrollService
                     'net_salary' => max(0, round($netSalary, 2)),
                     'status' => 'draft',
                 ]);
+
+                // Record fund transactions linked to payroll
+                $this->fundService->processPayrollDeduction($emp->id, $month, $year, $payroll->id);
 
                 $results[] = $payroll;
             }

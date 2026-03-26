@@ -72,6 +72,7 @@ import FaceAttendancePage from "./pages/hrm/FaceAttendancePage";
 import HrDashboardPage from "./pages/hrm/HrDashboardPage";
 import EmployeeProfilePage from "./pages/hrm/EmployeeProfilePage";
 import LoginActivityPage from "./pages/hrm/LoginActivityPage";
+import FundsPage from "./pages/hrm/FundsPage";
 
 // Manufacturing Pages
 import BOMPage from "./pages/manufacturing/BOMPage";
@@ -198,6 +199,7 @@ const App = () => (
                 <Route path="/hrm/overtime" element={<P perm="hrm.view"><OvertimePage /></P>} />
                 <Route path="/hrm/leave" element={<P perm="hrm.view"><LeavePage /></P>} />
                 <Route path="/hrm/payroll" element={<P perm="hrm.view"><PayrollPage /></P>} />
+                <Route path="/hrm/funds" element={<P perm="hrm.view"><FundsPage /></P>} />
                 <Route path="/hrm/documents" element={<P perm="hrm.view"><DocumentsPage /></P>} />
                 <Route path="/hrm/id-cards" element={<P perm="hrm.view"><IdCardsPage /></P>} />
                 <Route path="/hrm/reports" element={<P perm="hrm.view"><HrReportsPage /></P>} />

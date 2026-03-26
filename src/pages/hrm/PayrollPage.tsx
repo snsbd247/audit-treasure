@@ -36,6 +36,7 @@ interface PayrollDetail {
   present_days: number; absent_days: number; late_count: number; leave_days: number;
   total_working_days: number;
   absent_deduction: number; late_deduction: number; base_deductions: number;
+  pf_employee: number; sf_employee: number; pf_employer: number; sf_employer: number;
   gross: number; total_deductions: number; net_salary: number;
 }
 
@@ -132,8 +133,20 @@ export default function PayrollPage() {
     const absentDeduction = absentDays * dailySalary;
     const lateDeduction = lateDays * LATE_PENALTY;
 
+    // Fetch fund settings for PF & Savings Fund
+    const { data: fundSettings } = await supabase.from("employee_fund_settings" as any)
+      .select("*").eq("employee_id", emp.id).eq("is_active", true);
+    
+    let pfEmployee = 0, pfEmployer = 0, sfEmployee = 0, sfEmployer = 0;
+    for (const fs of (fundSettings || []) as any[]) {
+      const rate = fs.calculation_type === "percentage" ? basic * fs.employee_rate / 100 : fs.employee_rate;
+      const erRate = fs.calculation_type === "percentage" ? basic * fs.employer_rate / 100 : fs.employer_rate;
+      if (fs.fund_type === "provident_fund") { pfEmployee = rate; pfEmployer = erRate; }
+      else { sfEmployee = rate; sfEmployer = erRate; }
+    }
+
     const gross = totalSalary + overtimePay;
-    const totalDeductions = absentDeduction + lateDeduction;
+    const totalDeductions = absentDeduction + lateDeduction + pfEmployee + sfEmployee;
     const netSalary = Math.max(0, gross - totalDeductions);
 
     return {
@@ -153,6 +166,8 @@ export default function PayrollPage() {
       absent_deduction: absentDeduction,
       late_deduction: lateDeduction,
       base_deductions: 0,
+      pf_employee: pfEmployee, sf_employee: sfEmployee,
+      pf_employer: pfEmployer, sf_employer: sfEmployer,
       gross,
       total_deductions: totalDeductions,
       net_salary: netSalary,
@@ -207,14 +222,34 @@ export default function PayrollPage() {
     for (const emp of toGenerate) {
       const detail = await calculatePayrollForEmployee(emp, daysInMonth, totalWorkingDays, startDate, endDate);
 
-      const { error } = await supabase.from("payroll" as any).insert({
+      const { data: payrollData, error } = await supabase.from("payroll" as any).insert({
         employee_id: emp.id, month: selMonth, year: selYear,
         basic_salary: detail.basic_salary,
         allowances: detail.house_rent + detail.medical + detail.other_allowance + detail.overtime_pay,
         deductions: detail.total_deductions,
         net_salary: detail.net_salary,
-      });
-      if (!error) count++;
+      }).select().single();
+
+      if (!error && payrollData) {
+        count++;
+        // Record fund transactions linked to payroll
+        const payrollId = (payrollData as any).id;
+        for (const ft of [
+          { type: "provident_fund", empAmt: detail.pf_employee, erAmt: detail.pf_employer },
+          { type: "savings_fund", empAmt: detail.sf_employee, erAmt: detail.sf_employer },
+        ]) {
+          if (ft.empAmt > 0 || ft.erAmt > 0) {
+            await supabase.from("fund_transactions" as any).insert({
+              employee_id: emp.id, fund_type: ft.type, transaction_type: "contribution",
+              employee_amount: ft.empAmt, employer_amount: ft.erAmt,
+              total_amount: ft.empAmt + ft.erAmt,
+              month: selMonth, year: selYear, payroll_id: payrollId,
+              notes: `Payroll auto-deduction ${selMonth}/${selYear}`,
+              created_by: user?.id,
+            } as any);
+          }
+        }
+      }
     }
 
     toast.success(`Generated payroll for ${count} employees`);
@@ -288,6 +323,7 @@ export default function PayrollPage() {
       present_days: 0, absent_days: 0, late_count: 0, leave_days: 0,
       total_working_days: 0,
       absent_deduction: 0, late_deduction: 0, base_deductions: 0,
+      pf_employee: 0, sf_employee: 0, pf_employer: 0, sf_employer: 0,
       gross: record.basic_salary + record.allowances,
       total_deductions: record.deductions,
       net_salary: record.net_salary,
@@ -546,6 +582,8 @@ export default function PayrollPage() {
                   <TableHead className="text-right">Absent</TableHead>
                   <TableHead className="text-right">Late</TableHead>
                   <TableHead className="text-right">OT Hrs</TableHead>
+                  <TableHead className="text-right">PF</TableHead>
+                  <TableHead className="text-right">SF</TableHead>
                   <TableHead className="text-right">Gross</TableHead>
                   <TableHead className="text-right">Deductions</TableHead>
                   <TableHead className="text-right">Net</TableHead>
@@ -559,6 +597,8 @@ export default function PayrollPage() {
                     <TableCell className="text-right text-destructive">{d.absent_days}</TableCell>
                     <TableCell className="text-right">{d.late_count}</TableCell>
                     <TableCell className="text-right">{d.overtime_hours}</TableCell>
+                    <TableCell className="text-right text-muted-foreground">{d.pf_employee > 0 ? formatAmount(d.pf_employee) : "-"}</TableCell>
+                    <TableCell className="text-right text-muted-foreground">{d.sf_employee > 0 ? formatAmount(d.sf_employee) : "-"}</TableCell>
                     <TableCell className="text-right">{formatAmount(d.gross)}</TableCell>
                     <TableCell className="text-right text-destructive">{formatAmount(d.total_deductions)}</TableCell>
                     <TableCell className="text-right font-bold">{formatAmount(d.net_salary)}</TableCell>
@@ -604,7 +644,11 @@ export default function PayrollPage() {
                   {payslipData.other_allowance > 0 && <tr className="border-b"><td className="py-2 text-muted-foreground">Other Allowance</td><td className="py-2 text-right">{formatAmount(payslipData.other_allowance)}</td></tr>}
                   {payslipData.overtime_pay > 0 && <tr className="border-b"><td className="py-2 text-muted-foreground">Overtime ({payslipData.overtime_hours} hrs × 1.5x)</td><td className="py-2 text-right">{formatAmount(payslipData.overtime_pay)}</td></tr>}
                   <tr className="border-b font-bold"><td className="py-2">Gross</td><td className="py-2 text-right">{formatAmount(payslipData.gross)}</td></tr>
-                  {payslipData.total_deductions > 0 && <tr className="border-b text-destructive"><td className="py-2">Deductions</td><td className="py-2 text-right">-{formatAmount(payslipData.total_deductions)}</td></tr>}
+                  {payslipData.absent_deduction > 0 && <tr className="border-b text-destructive"><td className="py-2">Absent Deduction ({payslipData.absent_days} days)</td><td className="py-2 text-right">-{formatAmount(payslipData.absent_deduction)}</td></tr>}
+                  {payslipData.late_deduction > 0 && <tr className="border-b text-destructive"><td className="py-2">Late Deduction ({payslipData.late_count}×)</td><td className="py-2 text-right">-{formatAmount(payslipData.late_deduction)}</td></tr>}
+                  {payslipData.pf_employee > 0 && <tr className="border-b text-destructive"><td className="py-2">Provident Fund (Employee)</td><td className="py-2 text-right">-{formatAmount(payslipData.pf_employee)}</td></tr>}
+                  {payslipData.sf_employee > 0 && <tr className="border-b text-destructive"><td className="py-2">Savings Fund (Employee)</td><td className="py-2 text-right">-{formatAmount(payslipData.sf_employee)}</td></tr>}
+                  {payslipData.total_deductions > 0 && <tr className="border-b text-destructive"><td className="py-2 font-semibold">Total Deductions</td><td className="py-2 text-right font-semibold">-{formatAmount(payslipData.total_deductions)}</td></tr>}
                   <tr className="font-bold text-lg"><td className="py-3">Net Salary</td><td className="py-3 text-right">{formatAmount(payslipData.net_salary)}</td></tr>
                 </tbody>
               </table>
