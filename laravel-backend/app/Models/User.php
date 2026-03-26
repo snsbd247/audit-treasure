@@ -16,7 +16,7 @@ class User extends Authenticatable
 
     public function branch() { return $this->belongsTo(Branch::class); }
     public function employee() { return $this->belongsTo(Employee::class); }
-    public function roles() { return $this->belongsToMany(CustomRole::class, 'user_roles', 'user_id', 'role_id'); }
+    public function roles() { return $this->belongsToMany(CustomRole::class, 'user_custom_roles', 'user_id', 'custom_role_id'); }
 
     /**
      * Super Admin = user with NO linked employee (employee_id IS NULL).
