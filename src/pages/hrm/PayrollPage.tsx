@@ -620,7 +620,11 @@ export default function PayrollPage() {
                   {payslipData.other_allowance > 0 && <tr className="border-b"><td className="py-2 text-muted-foreground">Other Allowance</td><td className="py-2 text-right">{formatAmount(payslipData.other_allowance)}</td></tr>}
                   {payslipData.overtime_pay > 0 && <tr className="border-b"><td className="py-2 text-muted-foreground">Overtime ({payslipData.overtime_hours} hrs × 1.5x)</td><td className="py-2 text-right">{formatAmount(payslipData.overtime_pay)}</td></tr>}
                   <tr className="border-b font-bold"><td className="py-2">Gross</td><td className="py-2 text-right">{formatAmount(payslipData.gross)}</td></tr>
-                  {payslipData.total_deductions > 0 && <tr className="border-b text-destructive"><td className="py-2">Deductions</td><td className="py-2 text-right">-{formatAmount(payslipData.total_deductions)}</td></tr>}
+                  {payslipData.absent_deduction > 0 && <tr className="border-b text-destructive"><td className="py-2">Absent Deduction ({payslipData.absent_days} days)</td><td className="py-2 text-right">-{formatAmount(payslipData.absent_deduction)}</td></tr>}
+                  {payslipData.late_deduction > 0 && <tr className="border-b text-destructive"><td className="py-2">Late Deduction ({payslipData.late_count}×)</td><td className="py-2 text-right">-{formatAmount(payslipData.late_deduction)}</td></tr>}
+                  {payslipData.pf_employee > 0 && <tr className="border-b text-destructive"><td className="py-2">Provident Fund (Employee)</td><td className="py-2 text-right">-{formatAmount(payslipData.pf_employee)}</td></tr>}
+                  {payslipData.sf_employee > 0 && <tr className="border-b text-destructive"><td className="py-2">Savings Fund (Employee)</td><td className="py-2 text-right">-{formatAmount(payslipData.sf_employee)}</td></tr>}
+                  {payslipData.total_deductions > 0 && <tr className="border-b text-destructive"><td className="py-2 font-semibold">Total Deductions</td><td className="py-2 text-right font-semibold">-{formatAmount(payslipData.total_deductions)}</td></tr>}
                   <tr className="font-bold text-lg"><td className="py-3">Net Salary</td><td className="py-3 text-right">{formatAmount(payslipData.net_salary)}</td></tr>
                 </tbody>
               </table>
