@@ -36,6 +36,7 @@ interface PayrollDetail {
   present_days: number; absent_days: number; late_count: number; leave_days: number;
   total_working_days: number;
   absent_deduction: number; late_deduction: number; base_deductions: number;
+  pf_employee: number; sf_employee: number; pf_employer: number; sf_employer: number;
   gross: number; total_deductions: number; net_salary: number;
 }
 
