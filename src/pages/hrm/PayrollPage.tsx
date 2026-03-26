@@ -222,14 +222,34 @@ export default function PayrollPage() {
     for (const emp of toGenerate) {
       const detail = await calculatePayrollForEmployee(emp, daysInMonth, totalWorkingDays, startDate, endDate);
 
-      const { error } = await supabase.from("payroll" as any).insert({
+      const { data: payrollData, error } = await supabase.from("payroll" as any).insert({
         employee_id: emp.id, month: selMonth, year: selYear,
         basic_salary: detail.basic_salary,
         allowances: detail.house_rent + detail.medical + detail.other_allowance + detail.overtime_pay,
         deductions: detail.total_deductions,
         net_salary: detail.net_salary,
-      });
-      if (!error) count++;
+      }).select().single();
+
+      if (!error && payrollData) {
+        count++;
+        // Record fund transactions linked to payroll
+        const payrollId = (payrollData as any).id;
+        for (const ft of [
+          { type: "provident_fund", empAmt: detail.pf_employee, erAmt: detail.pf_employer },
+          { type: "savings_fund", empAmt: detail.sf_employee, erAmt: detail.sf_employer },
+        ]) {
+          if (ft.empAmt > 0 || ft.erAmt > 0) {
+            await supabase.from("fund_transactions" as any).insert({
+              employee_id: emp.id, fund_type: ft.type, transaction_type: "contribution",
+              employee_amount: ft.empAmt, employer_amount: ft.erAmt,
+              total_amount: ft.empAmt + ft.erAmt,
+              month: selMonth, year: selYear, payroll_id: payrollId,
+              notes: `Payroll auto-deduction ${selMonth}/${selYear}`,
+              created_by: user?.id,
+            } as any);
+          }
+        }
+      }
     }
 
     toast.success(`Generated payroll for ${count} employees`);
