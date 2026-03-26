@@ -562,6 +562,8 @@ export default function PayrollPage() {
                   <TableHead className="text-right">Absent</TableHead>
                   <TableHead className="text-right">Late</TableHead>
                   <TableHead className="text-right">OT Hrs</TableHead>
+                  <TableHead className="text-right">PF</TableHead>
+                  <TableHead className="text-right">SF</TableHead>
                   <TableHead className="text-right">Gross</TableHead>
                   <TableHead className="text-right">Deductions</TableHead>
                   <TableHead className="text-right">Net</TableHead>
