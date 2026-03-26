@@ -125,6 +125,7 @@ const navGroups: NavGroup[] = [
       { to: "/hrm/overtime", label: "Overtime", icon: Clock, permission: "hrm.view" },
       { to: "/hrm/leave", label: "Leave Management", icon: CalendarDays, permission: "hrm.view" },
       { to: "/hrm/payroll", label: "Payroll", icon: DollarSign, permission: "hrm.view" },
+      { to: "/hrm/funds", label: "PF & Savings Fund", icon: PiggyBank, permission: "hrm.view" },
       { to: "/hrm/documents", label: "Documents", icon: FileCheck, permission: "hrm.view" },
       { to: "/hrm/id-cards", label: "Employee ID Cards", icon: BadgeCheck, permission: "hrm.view" },
       { to: "/hrm/reports", label: "HR Reports", icon: BarChart3, permission: "hrm.view" },
