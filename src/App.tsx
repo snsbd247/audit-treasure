@@ -176,10 +176,10 @@ const App = () => (
 
 
                 {/* ─── Manufacturing ────────────────────────────── */}
-                <Route path="/manufacturing/materials" element={<P perm="inventory.view"><RawMaterialsPage /></P>} />
-                <Route path="/manufacturing/bom" element={<P perm="inventory.view"><BOMPage /></P>} />
-                <Route path="/manufacturing/production" element={<P perm="inventory.view"><ProductionPage /></P>} />
-                <Route path="/manufacturing/reports" element={<P perm="reports.view"><ManufacturingReports /></P>} />
+                <Route path="/manufacturing/materials" element={<P perm="manufacturing.view"><RawMaterialsPage /></P>} />
+                <Route path="/manufacturing/bom" element={<P perm="manufacturing.view"><BOMPage /></P>} />
+                <Route path="/manufacturing/production" element={<P perm="manufacturing.view"><ProductionPage /></P>} />
+                <Route path="/manufacturing/reports" element={<P perm="manufacturing.view"><ManufacturingReports /></P>} />
 
                 {/* ─── Bank & Cash ──────────────────────────────── */}
                 <Route path="/bank/accounts" element={<P perm="bank.view"><BankAccountsPage /></P>} />
