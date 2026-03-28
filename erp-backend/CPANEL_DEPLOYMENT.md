@@ -35,7 +35,7 @@ npm run build
 
 ### 2. Install Laravel Dependencies
 ```bash
-cd laravel-backend
+cd erp-backend
 composer install --no-dev --optimize-autoloader
 ```
 
