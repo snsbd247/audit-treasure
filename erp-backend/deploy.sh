@@ -3,7 +3,7 @@
 # SmartERP - Single Company ERP
 # Build & Package Script for cPanel Deployment
 # ============================================================
-# Usage: cd laravel-backend && bash deploy.sh
+# Usage: cd erp-backend && bash deploy.sh
 # ============================================================
 
 set -e
