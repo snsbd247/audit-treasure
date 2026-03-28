@@ -18,7 +18,7 @@
 
 ## Quick Deploy (Automated)
 ```bash
-cd laravel-backend
+cd erp-backend
 bash deploy.sh
 ```
 This builds React, copies to Laravel `public/`, and creates a deployment ZIP.
@@ -35,7 +35,7 @@ npm run build
 
 ### 2. Install Laravel Dependencies
 ```bash
-cd laravel-backend
+cd erp-backend
 composer install --no-dev --optimize-autoloader
 ```
 
@@ -47,7 +47,7 @@ cp ../dist/favicon.ico public/
 ```
 
 ### 4. Upload to Server
-Upload the `laravel-backend/` folder content:
+Upload the `erp-backend/` folder content:
 ```
 /home/username/erp/
 ├── app/

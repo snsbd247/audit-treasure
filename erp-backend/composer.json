@@ -1,5 +1,5 @@
 {
-    "name": "erp/laravel-backend",
+    "name": "erp/erp-backend",
     "type": "project",
     "description": "SmartERP Backend System - Laravel",
     "require": {
