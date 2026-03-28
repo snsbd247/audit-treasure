@@ -18,7 +18,7 @@
 
 ## Quick Deploy (Automated)
 ```bash
-cd laravel-backend
+cd erp-backend
 bash deploy.sh
 ```
 This builds React, copies to Laravel `public/`, and creates a deployment ZIP.
