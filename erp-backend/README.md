@@ -30,7 +30,7 @@ Controllers → Services → Repositories → Models
 
 ```bash
 # 1. Clone/upload to server
-cd /home/user/laravel-backend
+cd /home/user/erp-backend
 
 # 2. Install dependencies
 composer install --no-dev --optimize-autoloader

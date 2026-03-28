@@ -47,7 +47,7 @@ cp ../dist/favicon.ico public/
 ```
 
 ### 4. Upload to Server
-Upload the `laravel-backend/` folder content:
+Upload the `erp-backend/` folder content:
 ```
 /home/username/erp/
 ├── app/
