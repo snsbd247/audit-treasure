@@ -81,17 +81,17 @@ cd "$PROJECT_ROOT"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 PACKAGE_NAME="smarterp_${TIMESTAMP}.zip"
 
-zip -r "$PACKAGE_NAME" laravel-backend/ \
-    -x "laravel-backend/node_modules/*" \
-    -x "laravel-backend/.git/*" \
-    -x "laravel-backend/tests/*" \
-    -x "laravel-backend/storage/logs/*.log" \
-    -x "laravel-backend/storage/framework/cache/data/*" \
-    -x "laravel-backend/storage/framework/sessions/*" \
-    -x "laravel-backend/storage/framework/views/*" \
-    -x "laravel-backend/storage/installed" \
-    -x "laravel-backend/deploy.sh" \
-    -x "laravel-backend/.env"
+zip -r "$PACKAGE_NAME" erp-backend/ \
+    -x "erp-backend/node_modules/*" \
+    -x "erp-backend/.git/*" \
+    -x "erp-backend/tests/*" \
+    -x "erp-backend/storage/logs/*.log" \
+    -x "erp-backend/storage/framework/cache/data/*" \
+    -x "erp-backend/storage/framework/sessions/*" \
+    -x "erp-backend/storage/framework/views/*" \
+    -x "erp-backend/storage/installed" \
+    -x "erp-backend/deploy.sh" \
+    -x "erp-backend/.env"
 
 echo ""
 echo "============================================"
