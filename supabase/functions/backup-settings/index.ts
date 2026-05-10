@@ -9,7 +9,8 @@ const corsHeaders = {
 
 // Simple AES-like encryption using Web Crypto API with the ENCRYPTION_KEY secret
 async function getKey(): Promise<CryptoKey> {
-  const secret = Deno.env.get("ENCRYPTION_KEY") || "default-key-change-me";
+  const secret = Deno.env.get("ENCRYPTION_KEY");
+  if (!secret) throw new Error("ENCRYPTION_KEY secret is not configured");
   const enc = new TextEncoder();
   const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(secret.padEnd(32, "0").slice(0, 32)), "AES-GCM", false, ["encrypt", "decrypt"]);
   return keyMaterial;

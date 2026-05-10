@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { FileText, Printer, Save, Download, Trash2 } from "lucide-react";
+import DOMPurify from "dompurify";
 
 interface Employee {
   id: string; employee_code: string; first_name: string; last_name: string;
@@ -285,7 +286,7 @@ export default function DocumentsPage() {
               </div>
 
               {preview && (
-                <div className="border rounded-lg p-10 bg-white text-black dark:bg-white dark:text-black max-w-3xl mx-auto shadow-sm" dangerouslySetInnerHTML={{ __html: preview }} style={{ fontFamily: "Georgia, 'Times New Roman', serif", lineHeight: 1.9 }} />
+                <div className="border rounded-lg p-10 bg-white text-black dark:bg-white dark:text-black max-w-3xl mx-auto shadow-sm" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(preview) }} style={{ fontFamily: "Georgia, 'Times New Roman', serif", lineHeight: 1.9 }} />
               )}
             </CardContent>
           </Card>
