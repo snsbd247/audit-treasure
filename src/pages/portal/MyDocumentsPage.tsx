@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileText, Printer, Download } from "lucide-react";
+import DOMPurify from "dompurify";
 
 interface DocRecord { id: string; document_type: string; document_title: string; document_html: string | null; created_at: string; }
 
@@ -204,7 +205,7 @@ export default function MyDocumentsPage() {
                   {preview && <Button variant="outline" onClick={() => handlePrint(preview)}><Printer className="w-4 h-4 mr-2" />Print</Button>}
                 </div>
                 {preview && (
-                  <div className="border rounded-lg p-10 bg-white text-black dark:bg-white dark:text-black max-w-3xl mx-auto shadow-sm" dangerouslySetInnerHTML={{ __html: preview }} style={{ fontFamily: "Georgia, 'Times New Roman', serif", lineHeight: 1.9 }} />
+                  <div className="border rounded-lg p-10 bg-white text-black dark:bg-white dark:text-black max-w-3xl mx-auto shadow-sm" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(preview) }} style={{ fontFamily: "Georgia, 'Times New Roman', serif", lineHeight: 1.9 }} />
                 )}
               </CardContent>
             </Card>
