@@ -45,14 +45,7 @@ export async function nextNumber(seqId: string, retries = 3): Promise<string> {
  * Application-layer replacement for the dropped `get_email_by_username` function.
  */
 export async function getEmailByUsername(username: string): Promise<string | null> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("email")
-    .eq("username", username)
-    .eq("status", "active")
-    .limit(1)
-    .single();
-
+  const { data, error } = await supabase.rpc("get_email_by_username", { _username: username });
   if (error || !data) return null;
-  return (data as any).email;
+  return data as string;
 }
